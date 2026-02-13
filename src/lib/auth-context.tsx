@@ -46,6 +46,21 @@ export function AuthProvider({
     const supabase = React.useMemo(() => createClient(), []);
 
     // Listen for changes (Login, Logout, Refresh)
+    // Sync state if server passes a new user (e.g. after login redirect)
+    useEffect(() => {
+        if (initialUser) {
+            console.log("Hydrating user from server prop update:", initialUser.email);
+            const role = (initialUser.user_metadata?.role as any) || "guest";
+            setUser({
+                id: initialUser.id,
+                email: initialUser.email!,
+                full_name: initialUser.user_metadata?.full_name,
+                role: role,
+            });
+            setIsLoading(false);
+        }
+    }, [initialUser]);
+
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             console.log("Auth State Change:", event, session?.user?.email);
