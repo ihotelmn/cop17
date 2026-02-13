@@ -66,10 +66,10 @@ export async function getPublishedHotels(searchParams?: HotelSearchParams) {
     // Process and Filter/Sort in JS
     let results = hotels.map((h: any) => ({
         ...h,
-        // Ensure amenities is a string array
+        // Ensure amenities is strictly a string array
         amenities: Array.isArray(h.amenities)
             ? h.amenities.map((a: any) => typeof a === 'string' ? a : JSON.stringify(a))
-            : h.amenities,
+            : [], // Fallback to empty array if not an array (e.g. null, object, string)
         // Ensure coordinates are numbers
         latitude: h.latitude ? Number(h.latitude) : null,
         longitude: h.longitude ? Number(h.longitude) : null,
