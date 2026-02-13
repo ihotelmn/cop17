@@ -24,8 +24,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
-    const pathname = usePathname();
-    const supabase = createClient();
+    // Use useMemo to ensure single instance of supabase client per session
+    const supabase = React.useMemo(() => createClient(), []);
 
     const checkUser = async () => {
         try {
