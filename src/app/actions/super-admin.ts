@@ -31,27 +31,25 @@ async function logAction(userId: string, action: string, details: any) {
 }
 
 export async function getUsers() {
-    // We need to fetch from 'profiles' table which mirrors auth.users
-    // Or fetch from auth.users using admin client if profiles are not in sync
-    // Standard approach: Query 'profiles' table
     const supabase = await createClient();
+    const adminClient = getSupabaseAdmin();
 
-    // Check if current user is admin
+    // Check auth
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    // Verify role (optional, for strict security)
-
-    const { data: profiles, error } = await supabase
+    // Fetch from 'profiles' table using admin client to see everything
+    const { data: profiles, error } = await adminClient
         .from("profiles")
         .select("*")
         .order("created_at", { ascending: false });
 
     if (error) {
-        console.error("Error fetching users:", error);
+        console.error("Error fetching users (Admin Client):", error);
         return [];
     }
 
+    console.log(`[getUsers] Found ${profiles?.length || 0} user profiles.`);
     return profiles as UserProfile[];
 }
 

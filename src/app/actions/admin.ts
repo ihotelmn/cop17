@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -52,12 +53,13 @@ export type Hotel = {
 
 export async function getHotels() {
     const supabase = await createClient();
+    const adminClient = getSupabaseAdmin();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) return [];
 
-    // Get User Role
-    const { data: profile } = await supabase
+    // Get User Role via Admin Client to bypass RLS
+    const { data: profile } = await adminClient
         .from("profiles")
         .select("role")
         .eq("id", user.id)
@@ -65,12 +67,11 @@ export async function getHotels() {
 
     if (!profile) return [];
 
-    let query = supabase
+    let query = adminClient
         .from("hotels")
         .select("*");
 
     // If NOT super_admin, only show own hotels
-    // We treat 'admin' as Tour Company
     if (profile.role !== "super_admin") {
         query = query.eq("owner_id", user.id);
     }
@@ -78,10 +79,11 @@ export async function getHotels() {
     const { data: hotels, error } = await query.order("created_at", { ascending: false });
 
     if (error) {
-        console.error("Error fetching hotels:", error);
+        console.error("Error fetching hotels (Admin Client):", error);
         return [];
     }
 
+    console.log(`[getHotels] Found ${hotels?.length || 0} hotels for user ${user.id} (${profile.role})`);
     return hotels as Hotel[];
 }
 
@@ -202,12 +204,13 @@ export async function deleteHotel(id: string) {
 export async function getHotel(id: string) {
     console.log("getHotel called with ID:", id);
     const supabase = await createClient();
+    const adminClient = getSupabaseAdmin();
 
     // Auth Check
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    const { data: profile } = await supabase
+    const { data: profile } = await adminClient
         .from("profiles")
         .select("role")
         .eq("id", user.id)
@@ -215,16 +218,16 @@ export async function getHotel(id: string) {
 
     // Check if user is super admin
     if (profile?.role === "super_admin") {
-        const { data: hotel, error } = await supabase.from("hotels").select("*").eq("id", id).single();
+        const { data: hotel, error } = await adminClient.from("hotels").select("*").eq("id", id).single();
         if (error) {
-            console.error(`Error fetching hotel (ID: ${id}):`, error);
+            console.error(`Error fetching hotel (ID: ${id}) via Admin Client:`, error);
             return null;
         }
         return hotel as Hotel;
     }
 
     // Normal User (Tour Company): Enforce ownership
-    const { data: hotel, error } = await supabase
+    const { data: hotel, error } = await adminClient
         .from("hotels")
         .select("*")
         .eq("id", id)
@@ -232,7 +235,7 @@ export async function getHotel(id: string) {
         .single();
 
     if (error) {
-        console.error(`Error fetching hotel (ID: ${id}):`, error);
+        console.error(`Error fetching owned hotel (ID: ${id}) via Admin Client:`, error);
         return null;
     }
 
@@ -352,16 +355,17 @@ const roomSchema = z.object({
 
 export async function getRooms(hotelId: string) {
     const supabase = await createClient();
+    const adminClient = getSupabaseAdmin();
 
     // Auth & Permission Check
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    const { data: profile } = await adminClient.from("profiles").select("role").eq("id", user.id).single();
 
     if (profile?.role !== "super_admin") {
-        // Verify user owns the hotel before fetching rooms
-        const { count } = await supabase
+        // Verify user owns the hotel via Admin Client (bypass RLS if needed)
+        const { count } = await adminClient
             .from("hotels")
             .select("id", { count: "exact", head: true })
             .eq("id", hotelId)
@@ -373,14 +377,14 @@ export async function getRooms(hotelId: string) {
         }
     }
 
-    const { data: rooms, error } = await supabase
+    const { data: rooms, error } = await adminClient
         .from("rooms")
         .select("*")
         .eq("hotel_id", hotelId)
         .order("created_at", { ascending: false });
 
     if (error) {
-        console.error("Error fetching rooms:", error);
+        console.error("Error fetching rooms (Admin Client):", error);
         return [];
     }
     return rooms as Room[];
