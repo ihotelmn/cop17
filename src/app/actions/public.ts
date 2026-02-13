@@ -4,10 +4,25 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export type Hotel = {
     id: string;
-    // ...
+    name: string;
+    description: string | null;
+    address: string | null;
+    stars: number;
+    amenities: string[] | null;
+    images: string[] | null;
+    created_at: string;
+    latitude?: number | null;
+    longitude?: number | null;
 };
 
-// ... type definitions ...
+export type HotelSearchParams = {
+    query?: string;
+    stars?: string;
+    amenities?: string;
+    sortBy?: string; // price-asc, price-desc, stars-desc, newest
+    minPrice?: string;
+    maxPrice?: string;
+};
 
 export async function getPublishedHotels(searchParams?: HotelSearchParams) {
     const supabase = getSupabaseAdmin();
