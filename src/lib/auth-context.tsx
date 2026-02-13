@@ -69,8 +69,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             } else if (event === 'SIGNED_OUT') {
                 setUser(null);
                 setIsLoading(false);
-                router.push("/");
-                router.refresh();
+                // Removing aggressive redirect to prevent "flashing" logout behavior
+                // router.push("/"); 
+                // router.refresh();
             } else if (event === 'INITIAL_SESSION') {
                 // Handle initial session if needed, but checkUser covers it usually.
                 if (session?.user) {
