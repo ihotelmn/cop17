@@ -80,35 +80,7 @@ export function AuthProvider({
 
     // ... fetchProfile and logout remain ...
 
-    // Listen for changes
-    useEffect(() => {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log("Auth State Change:", event, session?.user?.email);
 
-            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                if (session?.user) {
-                    await fetchProfile(session.user);
-                }
-            } else if (event === 'SIGNED_OUT') {
-                setUser(null);
-                setIsLoading(false);
-                // Removing aggressive redirect to prevent "flashing" logout behavior
-                // router.push("/"); 
-                // router.refresh();
-            } else if (event === 'INITIAL_SESSION') {
-                // Handle initial session if needed, but checkUser covers it usually.
-                if (session?.user) {
-                    await fetchProfile(session.user);
-                } else {
-                    setIsLoading(false);
-                }
-            }
-        });
-
-        return () => {
-            subscription.unsubscribe();
-        };
-    }, [supabase, router]);
 
     const fetchProfile = async (authUser: SupabaseUser) => {
         try {
@@ -152,11 +124,17 @@ export function AuthProvider({
 
     const logout = async () => {
         setIsLoading(true);
-        await supabase.auth.signOut();
-        setUser(null);
-        setIsLoading(false);
-        router.push("/login");
-        router.refresh();
+        try {
+            await supabase.auth.signOut();
+        } catch (error) {
+            console.error("Logout error:", error);
+        } finally {
+            // Always clear local state
+            setUser(null);
+            setIsLoading(false);
+            router.push("/login"); // or root
+            router.refresh();
+        }
     };
 
     return (
