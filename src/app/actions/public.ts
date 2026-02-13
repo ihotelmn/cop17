@@ -13,6 +13,13 @@ export type Hotel = {
     created_at: string;
     latitude?: number | null;
     longitude?: number | null;
+    // New fields
+    hotel_type?: string | null;
+    contact_phone?: string | null;
+    contact_email?: string | null;
+    website?: string | null;
+    check_in_time?: string | null;
+    check_out_time?: string | null;
 };
 
 export type HotelSearchParams = {
@@ -119,4 +126,44 @@ export async function getPublishedHotels(searchParams?: HotelSearchParams) {
     // Actually, serializing `null` is fine. `Infinity` was the problem.
     // I will cast it as any to bypass strict type check for now or update type if possible.
     return results as unknown as (Hotel & { minPrice: number })[];
+}
+
+export async function getPublicHotel(id: string) {
+    const supabase = getSupabaseAdmin();
+
+    // Fetch hotel with basic info
+    const { data: hotel, error } = await supabase
+        .from("hotels")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+    if (error) {
+        console.error(`Error fetching public hotel (ID: ${id}):`, error);
+        return null;
+    }
+
+    // Cast properties to match UI expectations
+    return {
+        ...hotel,
+        latitude: hotel.latitude ? Number(hotel.latitude) : null,
+        longitude: hotel.longitude ? Number(hotel.longitude) : null,
+    } as Hotel;
+}
+
+export async function getPublicRooms(hotelId: string) {
+    const supabase = getSupabaseAdmin();
+
+    const { data: rooms, error } = await supabase
+        .from("rooms")
+        .select("*")
+        .eq("hotel_id", hotelId)
+        .order("price_per_night", { ascending: true }); // Show cheapest first
+
+    if (error) {
+        console.error(`Error fetching public rooms (Hotel ID: ${hotelId}):`, error);
+        return [];
+    }
+
+    return rooms;
 }

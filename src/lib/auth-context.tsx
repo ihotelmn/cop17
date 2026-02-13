@@ -112,7 +112,16 @@ export function AuthProvider({
                 .single();
 
             if (error) {
-                console.error("Error fetching profile from DB:", error);
+                // Ignore "PGRST116" which means no rows returned (profile not created yet)
+                if (error.code !== "PGRST116") {
+                    console.error("Error fetching profile from DB:", {
+                        code: error.code,
+                        message: error.message,
+                        details: error.details,
+                    });
+                } else {
+                    console.log("Profile not found in DB (User likely new or guest), using metadata.");
+                }
             }
 
             // Construct user object

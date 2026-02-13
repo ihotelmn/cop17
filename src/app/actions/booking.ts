@@ -181,7 +181,13 @@ export async function getMyBookings() {
         .order("created_at", { ascending: false });
 
     if (error) {
-        console.error("Error fetching my bookings:", error);
+        console.error("Error fetching my bookings (Detailed):", {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+            full: error
+        });
         return [];
     }
 

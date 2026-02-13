@@ -2,8 +2,12 @@ import Image from "next/image";
 import { Star, MapPin } from "lucide-react";
 import { RoomList } from "@/components/room-list";
 import { SearchForm } from "@/components/search-form";
-import { getHotel, getRooms } from "@/app/actions/admin";
+// import { getHotel, getRooms } from "@/app/actions/admin"; // WRONG: Admin only
+import { getPublicHotel, getPublicRooms } from "@/app/actions/public"; // CORRECT: Public access
 import { notFound } from "next/navigation";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -11,8 +15,8 @@ interface PageProps {
 
 export default async function HotelDetailPage({ params }: PageProps) {
     const { id } = await params;
-    const hotel = await getHotel(id);
-    const rooms = await getRooms(id);
+    const hotel = await getPublicHotel(id); // Use public action
+    const rooms = await getPublicRooms(id); // Use public action
 
     if (!hotel) {
         notFound();
