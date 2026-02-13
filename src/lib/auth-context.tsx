@@ -20,42 +20,65 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+export function AuthProvider({
+    children,
+    initialUser
+}: {
+    children: React.ReactNode;
+    initialUser: SupabaseUser | null;
+}) {
+    // Hydrate state from server-provided user
+    const [user, setUser] = useState<User | null>(() => {
+        if (!initialUser) return null;
+        return {
+            id: initialUser.id,
+            email: initialUser.email!,
+            full_name: initialUser.user_metadata?.full_name,
+            role: (initialUser.user_metadata?.role as any) || "guest",
+        };
+    });
+
+    // Server-side hydration means we know the state immediately
+    const [isLoading, setIsLoading] = useState(false);
+
     const router = useRouter();
     // Use useMemo to ensure single instance of supabase client per session
     const supabase = React.useMemo(() => createClient(), []);
 
-    const checkUser = async () => {
-        try {
-            // Get session first
-            const { data: { session }, error } = await supabase.auth.getSession();
-            if (error) {
-                console.error("Session check error:", error);
-                setUser(null);
-                setIsLoading(false);
-                return;
-            }
+    // Listen for changes (Login, Logout, Refresh)
+    useEffect(() => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log("Auth State Change:", event, session?.user?.email);
 
             if (session?.user) {
-                // If we have a session, fetch profile
-                await fetchProfile(session.user);
+                // Refresh profile data if needed, or just trust session
+                // Ideally we fetch profile to ensure we have strict DB role if metadata is stale
+                // but for now, let's trust metadata for speed and stability
+                // We can silently update profile in background
+                fetchProfile(session.user);
             } else {
-                setUser(null);
-                setIsLoading(false);
+                // Explicit logout event
+                if (event === 'SIGNED_OUT') {
+                    setUser(null);
+                    router.push("/login");
+                    router.refresh();
+                } else if (!user) {
+                    // If we thought we were logged in but session is gone?
+                    // Verify if initialUser was set but now session is null (shouldn't happen with server hydration)
+                    // allow silent null
+                    setUser(null);
+                }
             }
-        } catch (error) {
-            console.error("Error checking auth:", error);
-            setUser(null);
-            setIsLoading(false);
-        }
-    };
+        });
 
-    // Initial check
-    useEffect(() => {
-        checkUser();
-    }, []);
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [supabase, router]);
+
+    // Removed old checkUser() logic entirely as it's redundant with server hydration
+
+    // ... fetchProfile and logout remain ...
 
     // Listen for changes
     useEffect(() => {
