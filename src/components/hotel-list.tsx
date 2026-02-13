@@ -53,7 +53,7 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                    {hotel.amenities?.map((amenity, i) => (
+                    {hotel.amenities?.filter(a => typeof a === 'string').map((amenity, i) => (
                         <span key={i} className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 bg-zinc-50 dark:bg-zinc-800 px-2 py-0.5 rounded">
                             {amenity}
                         </span>

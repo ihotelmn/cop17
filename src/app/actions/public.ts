@@ -66,7 +66,14 @@ export async function getPublishedHotels(searchParams?: HotelSearchParams) {
     // Process and Filter/Sort in JS
     let results = hotels.map((h: any) => ({
         ...h,
-        minPrice: h.rooms?.length > 0 ? Math.min(...h.rooms.map((r: any) => r.price_per_night)) : Infinity
+        // Ensure amenities is a string array
+        amenities: Array.isArray(h.amenities)
+            ? h.amenities.map((a: any) => typeof a === 'string' ? a : JSON.stringify(a))
+            : h.amenities,
+        // Ensure coordinates are numbers
+        latitude: h.latitude ? Number(h.latitude) : null,
+        longitude: h.longitude ? Number(h.longitude) : null,
+        minPrice: h.rooms?.length > 0 ? Math.min(...h.rooms.map((r: any) => Number(r.price_per_night))) : Infinity
     }));
 
     // Filter by Price
