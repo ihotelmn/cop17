@@ -112,14 +112,17 @@ export function AuthProvider({
                 .single();
 
             if (error) {
-                // Ignore "PGRST116" which means no rows returned (profile not created yet)
-                if (error.code !== "PGRST116") {
+                // Skip logging if it's "no rows found" or if the error object is essentially empty/null
+                const isNotFoundError = error.code === "PGRST116";
+                const isMeaninglessError = !error.code && !error.message;
+
+                if (!isNotFoundError && !isMeaninglessError) {
                     console.error("Error fetching profile from DB:", {
                         code: error.code,
                         message: error.message,
                         details: error.details,
                     });
-                } else {
+                } else if (isNotFoundError) {
                     console.log("Profile not found in DB (User likely new or guest), using metadata.");
                 }
             }
