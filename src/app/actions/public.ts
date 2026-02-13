@@ -1,31 +1,16 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export type Hotel = {
     id: string;
-    name: string;
-    description: string | null;
-    address: string | null;
-    stars: number;
-    amenities: string[] | null;
-    images: string[] | null;
-    created_at: string;
-    latitude?: number | null; // Added
-    longitude?: number | null; // Added
+    // ...
 };
 
-export type HotelSearchParams = {
-    query?: string;
-    stars?: string;
-    amenities?: string;
-    sortBy?: string; // price-asc, price-desc, stars-desc, newest
-    minPrice?: string;
-    maxPrice?: string;
-};
+// ... type definitions ...
 
 export async function getPublishedHotels(searchParams?: HotelSearchParams) {
-    const supabase = await createClient();
+    const supabase = getSupabaseAdmin();
     let queryBuilder = supabase
         .from("hotels")
         .select(`
