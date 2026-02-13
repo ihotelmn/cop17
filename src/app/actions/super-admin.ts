@@ -38,7 +38,18 @@ export async function getUsers() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    // Fetch from 'profiles' table using admin client to see everything
+    // SECURITY CHECK: Verify user is super_admin before letting them list all users
+    const { data: requesterProfile } = await adminClient
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+    if (requesterProfile?.role !== "super_admin") {
+        console.error(`[Security Alert] User ${user.id} tried to list users but is not super_admin`);
+        return [];
+    }
+
     const { data: profiles, error } = await adminClient
         .from("profiles")
         .select("*")
