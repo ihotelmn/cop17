@@ -1,6 +1,6 @@
 "use server";
 
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -77,7 +77,7 @@ export async function createUser(prevState: any, formData: FormData) {
     const { email, password, fullName, role, organization } = validated.data;
 
     // 1. Create User in Supabase Auth
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    const { data: authUser, error: authError } = await getSupabaseAdmin().auth.admin.createUser({
         email,
         password,
         email_confirm: true, // Auto-confirm for admin-created users
@@ -94,7 +94,7 @@ export async function createUser(prevState: any, formData: FormData) {
     // 2. Profile creation is usually handled by a Database Trigger on auth.users insert
     // But if we don't have that trigger set up, we must manually insert into profiles
     // Let's manually insert to be safe, using upsert to avoid conflict if trigger exists
-    const { error: profileError } = await supabaseAdmin
+    const { error: profileError } = await getSupabaseAdmin()
         .from("profiles")
         .upsert({
             id: authUser.user.id,
@@ -124,7 +124,7 @@ export async function deleteUser(userId: string) {
 
     // 1. Delete from Auth (This should cascade to profiles if configured with ON DELETE CASCADE)
     // We use Admin client for this
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    const { error } = await getSupabaseAdmin().auth.admin.deleteUser(userId);
 
     if (error) {
         console.error("Delete User Error:", error);

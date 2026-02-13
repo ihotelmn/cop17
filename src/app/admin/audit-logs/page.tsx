@@ -1,6 +1,6 @@
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
@@ -26,16 +26,8 @@ export default async function AuditLogsPage() {
     }
 
     // 2. Use Service Role to bypass RLS and fetch logs
-    const supabaseAdmin = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        {
-            auth: {
-                autoRefreshToken: false,
-                persistSession: false
-            }
-        }
-    );
+    // 2. Use Service Role to bypass RLS and fetch logs
+    const supabaseAdmin = getSupabaseAdmin();
 
     const { data: logs, error } = await supabaseAdmin
         .from("audit_logs")
