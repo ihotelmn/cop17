@@ -4,6 +4,7 @@ import { HotelSearch } from "@/components/hotel-search";
 import { HotelMapWrapper as HotelMap } from "@/components/hotel-map-wrapper";
 import { Suspense } from 'react';
 import { Search } from 'lucide-react';
+import Link from 'next/link';
 
 
 type Props = {
@@ -84,12 +85,12 @@ export default async function HotelsPage(props: Props) {
                                 Try adjusting your filters or search terms to find your ideal accommodation.
                             </p>
                             <div className="mt-10">
-                                <button
-                                    onClick={() => {/* This will be handled by the Search clear button */ }}
-                                    className="text-blue-600 font-bold hover:underline"
+                                <Link
+                                    href="/hotels"
+                                    className="text-blue-600 font-bold hover:underline inline-block"
                                 >
                                     Reset all filters
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     )}
