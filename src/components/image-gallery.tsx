@@ -26,8 +26,44 @@ export function ImageGallery({
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
 
-    // Filter valid images
-    const validImages = images.filter(img => img && typeof img === 'string' && img.length > 0);
+    // Helper to clean malformed URLs (e.g. stringified JSON ["url"])
+    const cleanUrl = (url: string): string | null => {
+        if (!url) return null;
+
+        let cleaned = url;
+
+        // Handle ["url"] format (JSON stringified array)
+        if (typeof cleaned === 'string' && (cleaned.startsWith('[') || cleaned.startsWith('"['))) {
+            try {
+                // Remove extra outer quotes if present
+                if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+                    cleaned = cleaned.slice(1, -1);
+                }
+
+                const parsed = JSON.parse(cleaned);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    return parsed[0];
+                }
+            } catch (e) {
+                // Fallback: try to extract http url via regex if parsing fails
+                const match = cleaned.match(/https?:\/\/[^"\]]+/);
+                if (match) return match[0];
+            }
+        }
+
+        // Basic validity check
+        if (!cleaned.startsWith('http') && !cleaned.startsWith('/')) {
+            return null;
+        }
+
+        return cleaned;
+    };
+
+    // Filter and clean images
+    const validImages = images
+        .map(cleanUrl)
+        .filter((img): img is string => img !== null && img.length > 0);
+
     const hasMultipleImages = validImages.length > 1;
 
     const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi]);
