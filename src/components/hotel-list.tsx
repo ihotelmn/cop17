@@ -64,7 +64,7 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
                     <div>
                         <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">Starting from</p>
                         <p className="text-xl font-black text-zinc-900 dark:text-white">
-                            {hotel.minPrice !== Infinity ? `$${hotel.minPrice}` : "N/A"}<span className="text-xs font-medium text-zinc-400 ml-1">/night</span>
+                            {hotel.minPrice != null && hotel.minPrice > 0 ? `$${hotel.minPrice}` : "N/A"}<span className="text-xs font-medium text-zinc-400 ml-1">/night</span>
                         </p>
                     </div>
                     <Button asChild className="rounded-full shadow-md hover:shadow-lg transition-all" size="sm">

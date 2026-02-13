@@ -37,17 +37,22 @@ export async function loginAction(prevState: AuthState, formData: FormData): Pro
     });
 
     if (error) {
+        console.error("Login failed:", error.message);
         return { error: error.message };
     }
 
     // Check Role for Redirect
     const { data: { user } } = await supabase.auth.getUser();
+    console.log("Login successful. User:", user?.id);
+
     if (user) {
         const { data: profile } = await supabase
             .from("profiles")
             .select("role")
             .eq("id", user.id)
             .single();
+
+        console.log("User Profile Role:", profile?.role);
 
         if (profile) {
             if (profile.role === "admin" || profile.role === "super_admin") {

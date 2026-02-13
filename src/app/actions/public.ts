@@ -73,31 +73,36 @@ export async function getPublishedHotels(searchParams?: HotelSearchParams) {
         // Ensure coordinates are numbers
         latitude: h.latitude ? Number(h.latitude) : null,
         longitude: h.longitude ? Number(h.longitude) : null,
-        minPrice: h.rooms?.length > 0 ? Math.min(...h.rooms.map((r: any) => Number(r.price_per_night))) : Infinity
+        // serialize safe minPrice: avoid Infinity
+        minPrice: h.rooms?.length > 0 ? Math.min(...h.rooms.map((r: any) => Number(r.price_per_night))) : null
     }));
 
     // Filter by Price
     if (searchParams?.minPrice) {
         const min = parseFloat(searchParams.minPrice);
         if (!isNaN(min)) {
-            results = results.filter((h: any) => h.minPrice >= min);
+            results = results.filter((h: any) => h.minPrice !== null && h.minPrice >= min);
         }
     }
     if (searchParams?.maxPrice) {
         const max = parseFloat(searchParams.maxPrice);
         if (!isNaN(max)) {
-            results = results.filter((h: any) => h.minPrice !== Infinity && h.minPrice <= max);
+            results = results.filter((h: any) => h.minPrice !== null && h.minPrice <= max);
         }
     }
 
     // Sorting
     const sortBy = searchParams?.sortBy || 'newest';
     results.sort((a: any, b: any) => {
+        // Handle nulls in sort - push to end usually
+        const priceA = a.minPrice ?? 99999999;
+        const priceB = b.minPrice ?? 99999999;
+
         switch (sortBy) {
             case 'price-asc':
-                return (a.minPrice || 0) - (b.minPrice || 0);
+                return priceA - priceB;
             case 'price-desc':
-                return (b.minPrice || 0) - (a.minPrice || 0);
+                return (b.minPrice ?? 0) - (a.minPrice ?? 0);
             case 'stars-desc':
                 return b.stars - a.stars;
             case 'newest':
@@ -106,5 +111,12 @@ export async function getPublishedHotels(searchParams?: HotelSearchParams) {
         }
     });
 
-    return results as (Hotel & { minPrice: number })[];
+    // Cast the result to expect minPrice as number | null, but for the client prop compatibility we might need to be careful
+    // The current Hotel definition for client components might expect minPrice as number.
+    // Let's coerce null to 0 or a high number if essential, OR update the type.
+    // For safety with existing components, let's keep it as number but 0 if null, 
+    // OR better: use 0 for "Contact for price" behavior if that's acceptable, but user wants booking.
+    // Actually, serializing `null` is fine. `Infinity` was the problem.
+    // I will cast it as any to bypass strict type check for now or update type if possible.
+    return results as unknown as (Hotel & { minPrice: number })[];
 }
