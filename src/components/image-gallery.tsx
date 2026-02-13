@@ -27,42 +27,45 @@ export function ImageGallery({
     const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
 
     // Helper to clean malformed URLs (e.g. stringified JSON ["url"])
-    const cleanUrl = (url: string): string | null => {
-        if (!url) return null;
+    const cleanUrls = (url: string | any): string[] => {
+        if (!url) return [];
 
-        let cleaned = url;
+        if (Array.isArray(url)) return url.filter(u => typeof u === 'string');
+
+        let cleaned = String(url);
 
         // Handle ["url"] format (JSON stringified array)
-        if (typeof cleaned === 'string' && (cleaned.startsWith('[') || cleaned.startsWith('"['))) {
+        if (cleaned.startsWith('[') || cleaned.startsWith('"[')) {
             try {
                 // Remove extra outer quotes if present
-                if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
-                    cleaned = cleaned.slice(1, -1);
+                let jsonStr = cleaned;
+                if (jsonStr.startsWith('"') && jsonStr.endsWith('"')) {
+                    jsonStr = jsonStr.slice(1, -1);
                 }
 
-                const parsed = JSON.parse(cleaned);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    return parsed[0];
+                const parsed = JSON.parse(jsonStr);
+                if (Array.isArray(parsed)) {
+                    return parsed.filter(u => typeof u === 'string');
                 }
             } catch (e) {
-                // Fallback: try to extract http url via regex if parsing fails
-                const match = cleaned.match(/https?:\/\/[^"\]]+/);
-                if (match) return match[0];
+                // Fallback: try to extract all http urls via regex if parsing fails
+                const matches = cleaned.match(/https?:\/\/[^"\]]+/g);
+                return matches || [];
             }
         }
 
         // Basic validity check
         if (!cleaned.startsWith('http') && !cleaned.startsWith('/')) {
-            return null;
+            return [];
         }
 
-        return cleaned;
+        return [cleaned];
     };
 
     // Filter and clean images
     const validImages = images
-        .map(cleanUrl)
-        .filter((img): img is string => img !== null && img.length > 0);
+        .flatMap(cleanUrls)
+        .filter((img): img is string => !!img && img.length > 0);
 
     const hasMultipleImages = validImages.length > 1;
 
