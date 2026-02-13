@@ -18,10 +18,10 @@ export type BookingAdmin = {
     rawStatus: string;
 };
 
-// Helper: Get room IDs belonging to hotels owned by the user
-async function getOwnerRoomIds(supabase: any, userId: string): Promise<string[]> {
+// Helper: Get room IDs belonging to hotels owned by the user (Admin Client recommended)
+async function getOwnerRoomIds(adminClient: any, userId: string): Promise<string[]> {
     // 1. Get Hotels owned by user
-    const { data: hotels } = await supabase
+    const { data: hotels } = await adminClient
         .from("hotels")
         .select("id")
         .eq("owner_id", userId);
@@ -31,7 +31,7 @@ async function getOwnerRoomIds(supabase: any, userId: string): Promise<string[]>
     const hotelIds = hotels.map((h: any) => h.id);
 
     // 2. Get Rooms in those hotels
-    const { data: rooms } = await supabase
+    const { data: rooms } = await adminClient
         .from("rooms")
         .select("id")
         .in("hotel_id", hotelIds);
@@ -43,12 +43,13 @@ async function getOwnerRoomIds(supabase: any, userId: string): Promise<string[]>
 
 export async function getAllBookings(): Promise<{ success: boolean; data?: BookingAdmin[]; error?: string }> {
     const supabase = await createClient();
+    const adminClient = getSupabaseAdmin();
 
     try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return { success: false, error: "Unauthorized" };
 
-        const { data: profile } = await supabase
+        const { data: profile } = await adminClient
             .from("profiles")
             .select("role")
             .eq("id", user.id)
@@ -56,7 +57,7 @@ export async function getAllBookings(): Promise<{ success: boolean; data?: Booki
 
         console.log("getAllBookings debug:", { userId: user.id, role: profile?.role });
 
-        let query = supabase
+        let query = adminClient
             .from("bookings")
             .select(`
                 id,
@@ -77,7 +78,7 @@ export async function getAllBookings(): Promise<{ success: boolean; data?: Booki
 
         // RBAC: If not super_admin, filter by owned rooms
         if (profile?.role !== "super_admin") {
-            const allowedRoomIds = await getOwnerRoomIds(supabase, user.id);
+            const allowedRoomIds = await getOwnerRoomIds(adminClient, user.id);
             if (allowedRoomIds.length === 0) {
                 return { success: true, data: [] }; // No rooms = no bookings
             }
@@ -181,23 +182,29 @@ export async function updateBookingStatus(bookingId: string, status: string) {
     }
 }
 
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
+
 export async function getDashboardStats() {
+    // 1. Authenticate with regular client
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return {
+            success: false,
+            error: "Unauthorized",
+            data: { totalBookings: 0, revenue: 0, activeGuests: 0, pendingBookings: 0, occupancyRate: 0 }
+        };
+    }
+
+    // 2. Use Admin client for all subsequent data fetching to bypass RLS issues
+    const adminClient = getSupabaseAdmin();
 
     try {
-        const { data: { user } } = await supabase.auth.getUser();
-        // If no user, unauthorized
-        if (!user) {
-            return {
-                success: false,
-                error: "Unauthorized",
-                data: { totalBookings: 0, revenue: 0, activeGuests: 0, pendingBookings: 0, occupancyRate: 0 }
-            };
-        }
+        // Fetch profile using admin client to avoid potential RLS recursion on 'profiles'
+        const { data: profile } = await adminClient.from("profiles").select("role").eq("id", user.id).single();
 
-        const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-
-        console.log("getDashboardStats debug:", {
+        console.log("getDashboardStats (Admin Client) debug:", {
             userId: user.id,
             role: profile?.role,
             email: user.email
@@ -206,23 +213,26 @@ export async function getDashboardStats() {
         let roomFilter: string[] | null = null;
         let hotelFilter: string[] | null = null;
 
+        // RBAC: Non-superadmins only see their own hotels/rooms
         if (profile?.role !== "super_admin") {
-            roomFilter = await getOwnerRoomIds(supabase, user.id);
-            // Also need hotel IDs for occupancy calc
-            const { data: hotels } = await supabase.from("hotels").select("id").eq("owner_id", user.id);
+            const { data: hotels } = await adminClient.from("hotels").select("id").eq("owner_id", user.id);
             hotelFilter = hotels?.map((h: any) => h.id) || [];
 
-            if (!roomFilter.length && (!hotelFilter || !hotelFilter.length)) {
-                // User owns nothing
+            if (!hotelFilter.length) {
+                // User owns nothing - return empty stats immediately
                 return {
                     success: true,
-                    data: {
-                        totalBookings: 0,
-                        revenue: 0,
-                        activeGuests: 0,
-                        pendingBookings: 0,
-                        occupancyRate: 0
-                    }
+                    data: { totalBookings: 0, revenue: 0, activeGuests: 0, pendingBookings: 0, occupancyRate: 0 }
+                };
+            }
+
+            const { data: rooms } = await adminClient.from("rooms").select("id").in("hotel_id", hotelFilter);
+            roomFilter = rooms?.map((r: any) => r.id) || [];
+
+            if (!roomFilter.length) {
+                return {
+                    success: true,
+                    data: { totalBookings: 0, revenue: 0, activeGuests: 0, pendingBookings: 0, occupancyRate: 0 }
                 };
             }
         }
@@ -236,30 +246,30 @@ export async function getDashboardStats() {
         };
 
         // 1. Total Bookings Count
-        let bookingsQuery = supabase.from("bookings").select("*", { count: "exact", head: true });
+        let bookingsQuery = adminClient.from("bookings").select("*", { count: "exact", head: true });
         bookingsQuery = applyFilter(bookingsQuery);
         const { count: totalBookings } = await bookingsQuery;
 
         // 2. Revenue (Sum total_price for non-cancelled)
-        let revenueQuery = supabase.from("bookings").select("total_price").neq("status", "cancelled");
+        let revenueQuery = adminClient.from("bookings").select("total_price").neq("status", "cancelled");
         revenueQuery = applyFilter(revenueQuery);
         const { data: revenueData } = await revenueQuery;
 
         const totalRevenue = revenueData?.reduce((sum: number, b: any) => sum + (b.total_price || 0), 0) || 0;
 
         // 3. Active/Checked-In Guests
-        let activeGuestsQuery = supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "checked-in");
+        let activeGuestsQuery = adminClient.from("bookings").select("*", { count: "exact", head: true }).eq("status", "checked-in");
         activeGuestsQuery = applyFilter(activeGuestsQuery);
         const { count: activeGuests } = await activeGuestsQuery;
 
         // 4. Pending Bookings
-        let pendingBookingsQuery = supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "pending");
+        let pendingBookingsQuery = adminClient.from("bookings").select("*", { count: "exact", head: true }).eq("status", "pending");
         pendingBookingsQuery = applyFilter(pendingBookingsQuery);
         const { count: pendingBookings } = await pendingBookingsQuery;
 
         // 5. Occupancy Rate (Approximate)
         // Get total rooms inventory
-        let roomsQuery = supabase.from("rooms").select("total_inventory");
+        let roomsQuery = adminClient.from("rooms").select("total_inventory");
         if (hotelFilter) {
             roomsQuery = roomsQuery.in("hotel_id", hotelFilter);
         }
@@ -269,7 +279,7 @@ export async function getDashboardStats() {
 
         // Count confirmed/checked-in bookings for TODAY
         const today = new Date().toISOString().split('T')[0];
-        let occupancyQuery = supabase
+        let occupancyQuery = adminClient
             .from("bookings")
             .select("*", { count: "exact", head: true })
             .neq("status", "cancelled")
