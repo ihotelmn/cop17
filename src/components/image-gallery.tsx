@@ -67,6 +67,13 @@ export function ImageGallery({
         .flatMap(cleanUrls)
         .filter((img): img is string => !!img && img.length > 0);
 
+    // Debug logging for the user to report what's happening
+    useEffect(() => {
+        if (images.length > 0 && validImages.length === 0) {
+            console.warn(`[ImageGallery] Input had ${images.length} items but validImages is empty. Input:`, images);
+        }
+    }, [images, validImages]);
+
     const hasMultipleImages = validImages.length > 1;
 
     const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi]);

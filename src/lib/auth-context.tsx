@@ -111,21 +111,20 @@ export function AuthProvider({
                 .eq("id", authUser.id)
                 .single();
 
-            if (error) {
-                // PGRST116 is "No rows found" - expected for new users/guests
-                // We only log if it's a real error with a code that isn't PGRST116
-                const isRealError = error.code && error.code !== "PGRST116";
+            if (error && typeof error === 'object') {
+                const code = (error as any).code;
+                const message = (error as any).message;
 
-                if (isRealError) {
+                // ONLY log if there is a real code/message and it's NOT the expected PGRST116
+                if (code && code !== "PGRST116") {
                     console.error("Error fetching profile from DB:", {
-                        code: error.code,
-                        message: error.message,
-                        details: error.details,
+                        code,
+                        message,
+                        details: (error as any).details,
                     });
-                } else if (error.code === "PGRST116") {
+                } else if (code === "PGRST116") {
                     console.log("Profile not found in DB (New user or guest), falling back to metadata.");
                 }
-                // If error exists but has no code (like {}), we assume it's noise and ignore
             }
 
             // Construct user object

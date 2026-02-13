@@ -22,14 +22,16 @@ export function RoomList({ hotelId, rooms }: RoomListProps) {
         );
     }
 
-    const cleanImages = (images: string[] | null | undefined): string[] => {
-        if (!images || !Array.isArray(images)) return [];
-        return images.map(url => {
-            if (!url) return "";
-            // Handle double-encoded JSON strings if necessary, though simpler is better
-            // Ideally backend sends clean arrays. Assuming clean arrays for now based on public.ts logic
-            return url;
-        }).filter(Boolean);
+    const cleanImages = (images: any): string[] => {
+        if (!images) return [];
+
+        // If it's already an array, return it (ImageGallery will clean nested strings)
+        if (Array.isArray(images)) return images;
+
+        // If it's a string (malformed data), wrap in array and let ImageGallery handle it
+        if (typeof images === 'string') return [images];
+
+        return [];
     };
 
     return (
