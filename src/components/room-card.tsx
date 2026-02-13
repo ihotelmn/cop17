@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import { ImageGallery } from "@/components/image-gallery";
 import { Check, User, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -23,7 +23,7 @@ interface Room {
     capacity: number;
     size: number; // in sqm
     amenities: string[];
-    image: string;
+    images: string[]; // Changed from image: string
 }
 
 interface RoomCardProps {
@@ -39,11 +39,12 @@ export function RoomCard({ room, hotelId, checkIn, checkOut }: RoomCardProps) {
     return (
         <div className="group relative overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900 flex flex-col md:flex-row">
             <div className="relative aspect-video md:w-1/3 md:aspect-auto overflow-hidden">
-                <Image
-                    src={room.image}
+                <ImageGallery
+                    images={room.images}
                     alt={room.name}
-                    fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    className="h-full w-full"
+                    aspectRatio="video"
+                    showControls={true}
                 />
             </div>
             <div className="flex flex-1 flex-col justify-between p-6">

@@ -1,9 +1,8 @@
-import Image from "next/image";
+import { ImageGallery } from "@/components/image-gallery";
 import { Star, MapPin } from "lucide-react";
 import { RoomList } from "@/components/room-list";
 import { SearchForm } from "@/components/search-form";
-// import { getHotel, getRooms } from "@/app/actions/admin"; // WRONG: Admin only
-import { getPublicHotel, getPublicRooms } from "@/app/actions/public"; // CORRECT: Public access
+import { getPublicHotel, getPublicRooms } from "@/app/actions/public";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -24,26 +23,24 @@ export default async function HotelDetailPage({ params }: PageProps) {
 
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-20">
-            {/* Hero Image */}
-            <div className="relative h-[50vh] w-full items-end justify-start flex">
-                <div className="absolute inset-0">
-                    <Image
-                        src={hotel.images?.[0] || "/images/placeholder-hotel.jpg"}
-                        alt={hotel.name}
-                        fill
-                        className="object-cover"
-                        priority
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                </div>
+            {/* Hero Section with Gallery */}
+            <div className="relative h-[60vh] w-full">
+                <ImageGallery
+                    images={hotel.images || []}
+                    alt={hotel.name}
+                    className="h-full w-full"
+                    aspectRatio="video"
+                    showControls={true}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
 
-                <div className="container mx-auto px-4 relative z-10 pb-10 text-white">
+                <div className="container mx-auto px-4 absolute bottom-0 left-0 right-0 z-10 pb-10 text-white pointer-events-none">
                     <div className="flex items-center gap-2 mb-2">
-                        <span className="inline-flex items-center rounded-full bg-amber-500/20 px-2 py-1 text-xs font-medium text-amber-300 ring-1 ring-inset ring-amber-500/40">
+                        <span className="inline-flex items-center rounded-full bg-amber-500/20 px-2 py-1 text-xs font-medium text-amber-300 ring-1 ring-inset ring-amber-500/40 backdrop-blur-sm">
                             <Star className="mr-1 h-3 w-3 fill-current" /> {hotel.stars} Stars
                         </span>
                         {hotel.hotel_type && (
-                            <span className="inline-flex items-center rounded-full bg-zinc-500/20 px-2 py-1 text-xs font-medium text-zinc-300 ring-1 ring-inset ring-zinc-500/40">
+                            <span className="inline-flex items-center rounded-full bg-zinc-500/20 px-2 py-1 text-xs font-medium text-zinc-500 ring-1 ring-inset ring-zinc-500/40 backdrop-blur-sm">
                                 {hotel.hotel_type}
                             </span>
                         )}
@@ -115,4 +112,3 @@ export default async function HotelDetailPage({ params }: PageProps) {
         </div>
     )
 }
-

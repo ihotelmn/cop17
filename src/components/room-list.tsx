@@ -22,34 +22,14 @@ export function RoomList({ hotelId, rooms }: RoomListProps) {
         );
     }
 
-    const cleanImage = (url: string | undefined) => {
-        if (!url) return "/images/room-placeholder.jpg";
-
-        // Debug
-        // console.log("Cleaning image URL:", url);
-
-        let cleaned = url;
-
-        // Handle ["url"] format (JSON stringified array)
-        if (typeof cleaned === 'string' && (cleaned.startsWith('[') || cleaned.startsWith('"['))) {
-            try {
-                // Remove extra outer quotes if present
-                if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
-                    cleaned = cleaned.slice(1, -1);
-                }
-
-                const parsed = JSON.parse(cleaned);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    return parsed[0];
-                }
-            } catch (e) {
-                // Fallback regex
-                const match = cleaned.match(/https?:\/\/[^"\]]+/);
-                if (match) return match[0];
-            }
-        }
-
-        return cleaned;
+    const cleanImages = (images: string[] | null | undefined): string[] => {
+        if (!images || !Array.isArray(images)) return [];
+        return images.map(url => {
+            if (!url) return "";
+            // Handle double-encoded JSON strings if necessary, though simpler is better
+            // Ideally backend sends clean arrays. Assuming clean arrays for now based on public.ts logic
+            return url;
+        }).filter(Boolean);
     };
 
     return (
@@ -62,7 +42,7 @@ export function RoomList({ hotelId, rooms }: RoomListProps) {
                         ...room,
                         price: room.price_per_night,
                         size: 40,
-                        image: cleanImage(room.images?.[0]),
+                        images: room.images || [], // Pass full array
                         amenities: room.amenities || []
                     }}
                     hotelId={hotelId}
