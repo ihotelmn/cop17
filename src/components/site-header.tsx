@@ -39,14 +39,14 @@ export function SiteHeader() {
                     {user ? (
                         <>
                             <span className="text-sm text-white/80 hidden sm:inline-block">
-                                Hello, {user.full_name || user.email}
+                                {user.email}
                             </span>
                             <NavLink href="/my-bookings" active={pathname === "/my-bookings"}>My Bookings</NavLink>
-                            {user.role === 'admin' || user.role === 'super_admin' ? (
+                            {(user.role === 'admin' || user.role === 'super_admin') && (
                                 <Button asChild variant="ghost" className="text-white hover:text-white hover:bg-white/10">
                                     <Link href="/admin">Dashboard</Link>
                                 </Button>
-                            ) : null}
+                            )}
                             <Button onClick={() => logout()} variant="outline" className="text-black border-white/20 hover:bg-white/10 hover:text-white bg-white/90">
                                 Sign Out
                             </Button>

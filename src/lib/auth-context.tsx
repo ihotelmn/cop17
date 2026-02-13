@@ -29,76 +29,97 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const checkUser = async () => {
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            // console.log("[AuthProvider] checkUser session:", session?.user?.id);
-            if (session?.user) {
-                await fetchProfile(session.user);
-            } else {
+            // Get session first
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error) {
+                console.error("Session check error:", error);
                 setUser(null);
+                setIsLoading(false);
+                return;
             }
-        } catch (error) {
-            console.error("Error checking auth:", error);
-            setUser(null);
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
-    // Check user on mount and pathname change
-    useEffect(() => {
-        checkUser();
-    }, [pathname]);
-
-    // Subscribe to auth changes
-    useEffect(() => {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
-            // console.log("[AuthProvider] onAuthStateChange:", event, session?.user?.id);
             if (session?.user) {
+                // If we have a session, fetch profile
                 await fetchProfile(session.user);
             } else {
                 setUser(null);
                 setIsLoading(false);
             }
+        } catch (error) {
+            console.error("Error checking auth:", error);
+            setUser(null);
+            setIsLoading(false);
+        }
+    };
 
-            if (event === 'SIGNED_OUT') {
+    // Initial check
+    useEffect(() => {
+        checkUser();
+    }, []);
+
+    // Listen for changes
+    useEffect(() => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log("Auth State Change:", event, session?.user?.email);
+
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                if (session?.user) {
+                    await fetchProfile(session.user);
+                }
+            } else if (event === 'SIGNED_OUT') {
+                setUser(null);
+                setIsLoading(false);
                 router.push("/");
                 router.refresh();
+            } else if (event === 'INITIAL_SESSION') {
+                // Handle initial session if needed, but checkUser covers it usually.
+                if (session?.user) {
+                    await fetchProfile(session.user);
+                } else {
+                    setIsLoading(false);
+                }
             }
         });
 
         return () => {
             subscription.unsubscribe();
         };
-    }, [router, supabase]);
+    }, [supabase, router]);
 
     const fetchProfile = async (authUser: SupabaseUser) => {
         try {
+            console.log("Fetching profile for:", authUser.email);
+
+            // Try to get profile
             const { data: profile, error } = await supabase
                 .from("profiles")
                 .select("*")
                 .eq("id", authUser.id)
                 .single();
 
-            if (profile) {
-                setUser({
-                    id: authUser.id,
-                    email: authUser.email!,
-                    full_name: profile.full_name,
-                    role: profile.role as any,
-                });
-            } else {
-                setUser({
-                    id: authUser.id,
-                    email: authUser.email!,
-                    role: "guest",
-                });
+            if (error) {
+                console.error("Error fetching profile from DB:", error);
             }
-        } catch (error) {
-            console.error("Error fetching profile:", error);
+
+            // Construct user object
+            // If profile is missing (e.g. new user not yet created in DB), fall back to metadata or defaults
+            const role = profile?.role || (authUser.user_metadata?.role as any) || "guest";
+
             setUser({
                 id: authUser.id,
                 email: authUser.email!,
-                role: "guest",
+                full_name: profile?.full_name || authUser.user_metadata?.full_name,
+                role: role,
+            });
+            console.log("User set with role:", role);
+
+        } catch (error) {
+            console.error("Error in fetchProfile:", error);
+            // Fallback to basic user info from Auth
+            setUser({
+                id: authUser.id,
+                email: authUser.email!,
+                role: (authUser.user_metadata?.role as any) || "guest",
             });
         } finally {
             setIsLoading(false);
