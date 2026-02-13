@@ -46,11 +46,24 @@ export async function loginAction(prevState: AuthState, formData: FormData): Pro
     console.log("Login successful. User:", user?.id);
 
     if (user) {
-        const { data: profile } = await supabase
+        let { data: profile } = await supabase
             .from("profiles")
             .select("role")
             .eq("id", user.id)
             .single();
+
+        // Fallback: If profile is not found (which shouldn't happen but might due to RLS lag), try fetching with Admin client
+        if (!profile) {
+            console.log("Profile not found with standard client, trying admin client...");
+            const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
+            const adminClient = getSupabaseAdmin();
+            const { data: adminProfile } = await adminClient
+                .from("profiles")
+                .select("role")
+                .eq("id", user.id)
+                .single();
+            profile = adminProfile;
+        }
 
         console.log("User Profile Role:", profile?.role);
 
