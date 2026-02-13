@@ -26,46 +26,54 @@ export function ImageGallery({
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
 
-    // Helper to clean malformed URLs (e.g. stringified JSON ["url"])
-    const cleanUrls = (url: string | any): string[] => {
-        if (!url) return [];
+    // Recursive helper to extract all actual URLs from any object/string/array
+    const extractUrls = (input: any): string[] => {
+        if (!input) return [];
 
-        if (Array.isArray(url)) return url.filter(u => typeof u === 'string');
+        // 1. If it's already an array, flatten its contents
+        if (Array.isArray(input)) {
+            return input.flatMap(item => extractUrls(item));
+        }
 
-        let cleaned = String(url);
+        // 2. If it's not a string, we can't do much more
+        if (typeof input !== 'string') return [];
 
-        // Handle ["url"] format (JSON stringified array)
-        if (cleaned.startsWith('[') || cleaned.startsWith('"[')) {
+        let str = input.trim();
+        if (!str) return [];
+
+        // 3. Handle stringified JSON (starts with [ or { or quoted [)
+        if (str.startsWith('[') || str.startsWith('"[')) {
             try {
-                // Remove extra outer quotes if present
-                let jsonStr = cleaned;
+                // Remove wrapping quotes if they exist (e.g. "\"[...]\"")
+                let jsonStr = str;
                 if (jsonStr.startsWith('"') && jsonStr.endsWith('"')) {
                     jsonStr = jsonStr.slice(1, -1);
                 }
-
                 const parsed = JSON.parse(jsonStr);
-                if (Array.isArray(parsed)) {
-                    return parsed.filter(u => typeof u === 'string');
-                }
+                return extractUrls(parsed);
             } catch (e) {
-                // Fallback: try to extract all http urls via regex if parsing fails
-                const matches = cleaned.match(/https?:\/\/[^"\]]+/g);
-                return matches || [];
+                // If JSON parse fails, fall through to regex/split
             }
         }
 
-        // Basic validity check
-        if (!cleaned.startsWith('http') && !cleaned.startsWith('/')) {
-            return [];
+        // 4. Handle comma-separated strings (common in some exports)
+        if (str.includes(',') && !str.startsWith('http')) {
+            return str.split(',').flatMap(s => extractUrls(s.trim()));
         }
 
-        return [cleaned];
+        // 5. Final cleaning of a single string
+        // Remove trailing/leading quotes or brackets that might have leaked
+        let cleaned = str.replace(/^["'\[]+|["'\]]+$/g, '').trim();
+
+        if (cleaned.startsWith('http') || cleaned.startsWith('/')) {
+            return [cleaned];
+        }
+
+        return [];
     };
 
     // Filter and clean images
-    const validImages = images
-        .flatMap(cleanUrls)
-        .filter((img): img is string => !!img && img.length > 0);
+    const validImages = Array.from(new Set(extractUrls(images)));
 
     // Debug logging for the user to report what's happening
     useEffect(() => {
@@ -138,43 +146,50 @@ export function ImageGallery({
 
             {hasMultipleImages && showControls && (
                 <>
-                    {/* Navigation Buttons */}
-                    <div className="absolute inset-0 flex items-center justify-between p-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    {/* Navigation Buttons - More visible on mobile and default */}
+                    <div className="absolute inset-0 flex items-center justify-between p-4 pointer-events-none">
                         <Button
                             variant="secondary"
                             size="icon"
-                            className="h-8 w-8 rounded-full bg-white/80 hover:bg-white pointer-events-auto backdrop-blur-sm"
+                            className="h-9 w-9 rounded-full bg-black/30 hover:bg-black/50 text-white border-none pointer-events-auto backdrop-blur-md opacity-0 md:group-hover:opacity-100 transition-opacity"
                             onClick={scrollPrev}
                         >
-                            <ChevronLeft className="h-4 w-4" />
+                            <ChevronLeft className="h-5 w-5" />
                             <span className="sr-only">Previous slide</span>
                         </Button>
                         <Button
                             variant="secondary"
                             size="icon"
-                            className="h-8 w-8 rounded-full bg-white/80 hover:bg-white pointer-events-auto backdrop-blur-sm"
+                            className="h-9 w-9 rounded-full bg-black/30 hover:bg-black/50 text-white border-none pointer-events-auto backdrop-blur-md opacity-0 md:group-hover:opacity-100 transition-opacity"
                             onClick={scrollNext}
                         >
-                            <ChevronRight className="h-4 w-4" />
+                            <ChevronRight className="h-5 w-5" />
                             <span className="sr-only">Next slide</span>
                         </Button>
                     </div>
 
-                    {/* Dots Indicator */}
-                    <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
-                        {scrollSnaps.map((_, index) => (
-                            <button
-                                key={index}
-                                className={cn(
-                                    "h-1.5 rounded-full transition-all duration-300",
-                                    index === selectedIndex
-                                        ? "bg-white w-6"
-                                        : "bg-white/50 w-1.5 hover:bg-white/80"
-                                )}
-                                onClick={() => scrollTo(index)}
-                                aria-label={`Go to slide ${index + 1}`}
-                            />
-                        ))}
+                    {/* Image Counter */}
+                    <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-md text-white px-2 py-1 rounded-md text-xs font-medium">
+                        {selectedIndex + 1} / {validImages.length}
+                    </div>
+
+                    {/* Dots Indicator - ALWAYS VISIBLE */}
+                    <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 px-4">
+                        <div className="flex gap-1.5 bg-black/20 backdrop-blur-sm p-1.5 rounded-full">
+                            {scrollSnaps.map((_, index) => (
+                                <button
+                                    key={index}
+                                    className={cn(
+                                        "h-1.5 rounded-full transition-all duration-300",
+                                        index === selectedIndex
+                                            ? "bg-white w-5"
+                                            : "bg-white/40 w-1.5 hover:bg-white/70"
+                                    )}
+                                    onClick={() => scrollTo(index)}
+                                    aria-label={`Go to slide ${index + 1}`}
+                                />
+                            ))}
+                        </div>
                     </div>
                 </>
             )}
