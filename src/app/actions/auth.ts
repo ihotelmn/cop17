@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const authSchema = z.object({
@@ -68,6 +69,7 @@ export async function loginAction(prevState: AuthState, formData: FormData): Pro
         console.log("User Profile Role:", profile?.role);
 
         if (profile) {
+            revalidatePath("/", "layout");
             if (profile.role === "admin" || profile.role === "super_admin") {
                 redirect("/admin");
             } else {
@@ -76,6 +78,7 @@ export async function loginAction(prevState: AuthState, formData: FormData): Pro
         }
     }
 
+    revalidatePath("/", "layout");
     redirect("/");
 }
 
@@ -110,6 +113,8 @@ export async function signupAction(prevState: AuthState, formData: FormData): Pr
     if (error) {
         return { error: error.message };
     }
+
+    revalidatePath("/", "layout");
 
     return {
         success: true,

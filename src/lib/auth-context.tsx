@@ -16,6 +16,7 @@ interface AuthContextType {
     user: User | null;
     isLoading: boolean;
     logout: () => Promise<void>;
+    refreshSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -70,7 +71,9 @@ export function AuthProvider({
                 // Ideally we fetch profile to ensure we have strict DB role if metadata is stale
                 // but for now, let's trust metadata for speed and stability
                 // We can silently update profile in background
-                fetchProfile(session.user);
+                if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                    fetchProfile(session.user);
+                }
             } else {
                 // Explicit logout event
                 if (event === 'SIGNED_OUT') {
@@ -137,23 +140,36 @@ export function AuthProvider({
         }
     };
 
+    const refreshSession = async () => {
+        try {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error) throw error;
+            if (session?.user) {
+                await fetchProfile(session.user);
+            }
+        } catch (error) {
+            console.error("Error refreshing session:", error);
+        }
+    };
+
     const logout = async () => {
         setIsLoading(true);
+        // Clear local state immediately
+        setUser(null);
+
         try {
             await supabase.auth.signOut();
         } catch (error) {
             console.error("Logout error:", error);
         } finally {
-            // Always clear local state
-            setUser(null);
             setIsLoading(false);
-            router.push("/login"); // or root
+            router.push("/login");
             router.refresh();
         }
     };
 
     return (
-        <AuthContext.Provider value={{ user, isLoading, logout }}>
+        <AuthContext.Provider value={{ user, isLoading, logout, refreshSession }}>
             {children}
         </AuthContext.Provider>
     );

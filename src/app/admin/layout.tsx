@@ -20,11 +20,28 @@ export default async function AdminLayout({
     }
 
     // Verify Role
-    const { data: profile } = await supabase
+    let { data: profile } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", user.id)
         .single();
+
+    // Fallback: If profile is not found with standard client (RLS/latency issue), try admin client
+    if (!profile) {
+        // console.log("Profile not found in AdminLayout, trying admin client...");
+        const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
+        try {
+            const adminClient = getSupabaseAdmin();
+            const { data: adminProfile } = await adminClient
+                .from("profiles")
+                .select("role")
+                .eq("id", user.id)
+                .single();
+            profile = adminProfile;
+        } catch (error) {
+            console.error("Admin client fallback failed:", error);
+        }
+    }
 
     if (!profile || (profile.role !== "admin" && profile.role !== "super_admin")) {
         redirect("/"); // unauthorized

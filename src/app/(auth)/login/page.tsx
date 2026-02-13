@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import React, { useActionState, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -25,7 +27,20 @@ export default function LoginPage() {
     const handleSubmit = (payload: FormData) => {
         formAction(payload);
     };
-
+    // Force refresh if user is already logged in (handles "Ghost Session" case)
+    React.useEffect(() => {
+        const checkSession = async () => {
+            const { createClient } = await import("@/lib/supabase/client");
+            const supabase = createClient();
+            const { data } = await supabase.auth.getUser();
+            if (data.user) {
+                // If we are on login page but have a user, it means middleware/RSC is stale.
+                // Force a hard refresh to sync state.
+                window.location.href = "/dashboard";
+            }
+        };
+        checkSession();
+    }, []);
 
 
     return (
