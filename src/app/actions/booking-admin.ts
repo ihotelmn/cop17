@@ -54,6 +54,8 @@ export async function getAllBookings(): Promise<{ success: boolean; data?: Booki
             .eq("id", user.id)
             .single();
 
+        console.log("getAllBookings debug:", { userId: user.id, role: profile?.role });
+
         let query = supabase
             .from("bookings")
             .select(`
@@ -195,6 +197,12 @@ export async function getDashboardStats() {
 
         const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
 
+        console.log("getDashboardStats debug:", {
+            userId: user.id,
+            role: profile?.role,
+            email: user.email
+        });
+
         let roomFilter: string[] | null = null;
         let hotelFilter: string[] | null = null;
 
@@ -272,6 +280,15 @@ export async function getDashboardStats() {
         const { count: occupiedRooms } = await occupancyQuery;
 
         const occupancyRate = totalInventory > 0 ? Math.round(((occupiedRooms || 0) / totalInventory) * 100) : 0;
+
+        console.log("Final Stats Result:", {
+            totalBookings,
+            totalRevenue,
+            activeGuests,
+            pendingBookings,
+            occupancyRate,
+            roomFilterCount: roomFilter?.length
+        });
 
         return {
             success: true,
