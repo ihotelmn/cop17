@@ -44,26 +44,28 @@ export function SiteHeader() {
                             </span>
                             <NavLink href="/my-bookings" active={pathname === "/my-bookings"}>My Bookings</NavLink>
                             {(user.role === 'admin' || user.role === 'super_admin') && (
-                                <Button asChild variant="ghost" className="text-white hover:text-white hover:bg-white/10">
-                                    <Link href="/admin">Dashboard</Link>
-                                </Button>
-                                <NotificationBell userId={user.id} />
-                            </>
+                                <>
+                                    <Button asChild variant="ghost" className="text-white hover:text-white hover:bg-white/10">
+                                        <Link href="/admin">Dashboard</Link>
+                                    </Button>
+                                    <NotificationBell userId={user.id} />
+                                </>
+                            )}
+                            <Button onClick={() => logout()} variant="outline" className="text-black border-white/20 hover:bg-white/10 hover:text-white bg-white/90">
+                                Sign Out
+                            </Button>
+                        </>
+                    ) : (
+                        <>
+                            <Link href="/login" className="text-sm font-medium text-white/70 hover:text-white transition-colors">
+                                Sign In
+                            </Link>
+                            <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6">
+                                <Link href="/hotels">Book Now</Link>
+                            </Button>
+                        </>
                     )}
-                    <Button onClick={() => logout()} variant="outline" className="text-black border-white/20 hover:bg-white/10 hover:text-white bg-white/90">
-                        Sign Out
-                    </Button>
-                </>
-                ) : (
-                <>
-                    <Link href="/login" className="text-sm font-medium text-white/70 hover:text-white transition-colors">
-                        Sign In
-                    </Link>
-                    <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6">
-                        <Link href="/hotels">Book Now</Link>
-                    </Button>
-                </>
-                    )}
+                </div>
             </div>
         </div>
         </header >
