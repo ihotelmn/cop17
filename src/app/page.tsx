@@ -31,6 +31,21 @@ export default function Home() {
         {/* Hero Section */}
         <div className="relative z-10 container mx-auto px-4 text-center text-white">
           <ScrollReveal width="100%">
+            <div className="flex justify-center mb-8">
+              <div className="inline-flex items-center gap-3 rounded-full bg-white px-5 py-2 shadow-xl ring-1 ring-zinc-900/5 transition-transform hover:scale-105">
+                <Image
+                  src="/images/cop17-logo.png"
+                  alt="COP17 Logo"
+                  width={24}
+                  height={24}
+                  className="h-6 w-auto object-contain"
+                />
+                <span className="text-sm font-bold text-zinc-900 tracking-tight">
+                  Official Accommodation Booking Platform
+                </span>
+              </div>
+            </div>
+
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 drop-shadow-lg">
               UNCCD COP17 <br />
               <span className="text-blue-300">Ulaanbaatar</span>
