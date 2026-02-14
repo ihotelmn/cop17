@@ -131,12 +131,10 @@ export function ImageGallery({
             <div className="overflow-hidden h-full" ref={emblaRef}>
                 <div className="flex h-full touch-pan-y">
                     {validImages.map((src, index) => (
-                        <div className="relative flex-[0_0_100%] min-w-0" key={`${src}-${index}`}>
-                            <Image
+                        <div className="relative flex-[0_0_100%] min-w-0 bg-zinc-100 dark:bg-zinc-800" key={`${src}-${index}`}>
+                            <GalleryImage
                                 src={src}
                                 alt={`${alt} - Image ${index + 1}`}
-                                fill
-                                className="object-cover"
                                 priority={index === 0}
                             />
                         </div>
@@ -194,5 +192,23 @@ export function ImageGallery({
                 </>
             )}
         </div>
+    );
+}
+
+function GalleryImage({ src, alt, priority }: { src: string, alt: string, priority: boolean }) {
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    return (
+        <Image
+            src={src}
+            alt={alt}
+            fill
+            className={cn(
+                "object-cover transition-opacity duration-700",
+                isLoaded ? "opacity-100" : "opacity-0"
+            )}
+            priority={priority}
+            onLoad={() => setIsLoaded(true)}
+        />
     );
 }

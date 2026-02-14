@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Star, MapPin, Wifi, Car, Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Hotel } from "@/app/actions/public";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 export function HotelList({ hotels }: { hotels: (Hotel & { minPrice: number })[] }) {
     if (!hotels || hotels.length === 0) {
@@ -26,15 +28,20 @@ export function HotelList({ hotels }: { hotels: (Hotel & { minPrice: number })[]
 
 function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
     const mainImage = hotel.images && hotel.images.length > 0 ? hotel.images[0] : "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2940";
+    const [isLoaded, setIsLoaded] = useState(false);
 
     return (
         <div className="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all hover:shadow-xl hover:-translate-y-1 dark:border-zinc-800 dark:bg-zinc-900">
-            <div className="relative aspect-[16/10] overflow-hidden">
+            <div className="relative aspect-[16/10] overflow-hidden bg-zinc-100 dark:bg-zinc-800">
                 <Image
                     src={mainImage}
                     alt={hotel.name}
                     fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-110"
+                    className={cn(
+                        "object-cover transition-all duration-700 group-hover:scale-110",
+                        isLoaded ? "opacity-100" : "opacity-0"
+                    )}
+                    onLoad={() => setIsLoaded(true)}
                 />
                 <div className="absolute top-3 right-3 flex items-center rounded-full bg-white/90 backdrop-blur-sm px-2.5 py-1 text-xs font-bold text-amber-600 shadow-sm">
                     <Star className="mr-1 h-3.5 w-3.5 fill-current" />
