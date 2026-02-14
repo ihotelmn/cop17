@@ -4,8 +4,9 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { GoogleMap, useJsApiLoader, OverlayView } from "@react-google-maps/api";
 import { Hotel } from "@/app/actions/public";
 import Link from "next/link";
-import { Star, X } from "lucide-react";
+import { Star, X, MapPin, Navigation } from "lucide-react";
 import { Button } from "./ui/button";
+import { COP17_VENUE } from "@/lib/venue";
 
 const containerStyle = {
     width: "100%",
@@ -13,8 +14,8 @@ const containerStyle = {
 };
 
 const defaultCenter = {
-    lat: 47.9188,
-    lng: 106.9176, // Ulaanbaatar
+    lat: COP17_VENUE.latitude,
+    lng: COP17_VENUE.longitude, // Center on Venue initially
 };
 
 const mapOptions: google.maps.MapOptions = {
@@ -25,94 +26,15 @@ const mapOptions: google.maps.MapOptions = {
     fullscreenControl: true,
     styles: [
         {
-            "featureType": "all",
-            "elementType": "geometry.fill",
-            "stylers": [{ "weight": "2.00" }]
-        },
-        {
-            "featureType": "all",
-            "elementType": "geometry.stroke",
-            "stylers": [{ "color": "#9c9c9c" }]
-        },
-        {
-            "featureType": "all",
+            "featureType": "poi",
             "elementType": "labels.text",
             "stylers": [{ "visibility": "on" }]
         },
-        {
-            "featureType": "landscape",
-            "elementType": "all",
-            "stylers": [{ "color": "#f2f2f2" }]
-        },
-        {
-            "featureType": "landscape",
-            "elementType": "geometry.fill",
-            "stylers": [{ "color": "#ffffff" }]
-        },
-        {
-            "featureType": "landscape.man_made",
-            "elementType": "geometry.fill",
-            "stylers": [{ "color": "#ffffff" }]
-        },
-        {
-            "featureType": "poi",
-            "elementType": "all",
-            "stylers": [{ "visibility": "off" }]
-        },
-        {
-            "featureType": "road",
-            "elementType": "all",
-            "stylers": [{ "saturation": -100 }, { "lightness": 45 }]
-        },
-        {
-            "featureType": "road",
-            "elementType": "geometry.fill",
-            "stylers": [{ "color": "#eeeeee" }]
-        },
-        {
-            "featureType": "road",
-            "elementType": "labels.text.fill",
-            "stylers": [{ "color": "#7b7b7b" }]
-        },
-        {
-            "featureType": "road",
-            "elementType": "labels.text.stroke",
-            "stylers": [{ "color": "#ffffff" }]
-        },
-        {
-            "featureType": "road.highway",
-            "elementType": "all",
-            "stylers": [{ "visibility": "simplified" }]
-        },
-        {
-            "featureType": "road.arterial",
-            "elementType": "labels.icon",
-            "stylers": [{ "visibility": "off" }]
-        },
+        // ... (Keep existing styles or simplify to allow POIs in English)
         {
             "featureType": "transit",
             "elementType": "all",
-            "stylers": [{ "visibility": "off" }]
-        },
-        {
-            "featureType": "water",
-            "elementType": "all",
-            "stylers": [{ "color": "#46bcec" }, { "visibility": "on" }]
-        },
-        {
-            "featureType": "water",
-            "elementType": "geometry.fill",
-            "stylers": [{ "color": "#c8d7d4" }]
-        },
-        {
-            "featureType": "water",
-            "elementType": "labels.text.fill",
-            "stylers": [{ "color": "#070707" }]
-        },
-        {
-            "featureType": "water",
-            "elementType": "labels.text.stroke",
-            "stylers": [{ "color": "#ffffff" }]
+            "stylers": [{ "visibility": "simplified" }]
         }
     ]
 };
@@ -121,21 +43,30 @@ export default function HotelMap({ hotels }: { hotels: (Hotel & { minPrice: numb
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+        language: 'en', // FORCE ENGLISH
     });
 
     const [map, setMap] = useState<google.maps.Map | null>(null);
     const [selectedHotel, setSelectedHotel] = useState<(Hotel & { minPrice: number }) | null>(null);
+    const [showVenueInfo, setShowVenueInfo] = useState(false);
 
     const onLoad = useCallback(function callback(map: google.maps.Map) {
         setMap(map);
+        const bounds = new window.google.maps.LatLngBounds();
+
+        // Always include Venue in bounds
+        bounds.extend({ lat: COP17_VENUE.latitude, lng: COP17_VENUE.longitude });
+
         if (hotels.length > 0) {
-            const bounds = new window.google.maps.LatLngBounds();
             hotels.forEach(hotel => {
                 if (hotel.latitude && hotel.longitude) {
                     bounds.extend({ lat: hotel.latitude, lng: hotel.longitude });
                 }
             });
             map.fitBounds(bounds);
+        } else {
+            map.setCenter(defaultCenter);
+            map.setZoom(14);
         }
     }, [hotels]);
 
@@ -145,16 +76,19 @@ export default function HotelMap({ hotels }: { hotels: (Hotel & { minPrice: numb
 
     // Re-fit bounds when hotels change
     useEffect(() => {
-        if (map && hotels.length > 0) {
+        if (map) {
             const bounds = new window.google.maps.LatLngBounds();
-            let hasValidCoords = false;
+            bounds.extend({ lat: COP17_VENUE.latitude, lng: COP17_VENUE.longitude });
+
+            let hasHotels = false;
             hotels.forEach(hotel => {
                 if (hotel.latitude && hotel.longitude) {
                     bounds.extend({ lat: hotel.latitude, lng: hotel.longitude });
-                    hasValidCoords = true;
+                    hasHotels = true;
                 }
             });
-            if (hasValidCoords) {
+
+            if (hasHotels) {
                 map.fitBounds(bounds);
             }
         }
@@ -168,12 +102,47 @@ export default function HotelMap({ hotels }: { hotels: (Hotel & { minPrice: numb
             <GoogleMap
                 mapContainerStyle={containerStyle}
                 center={defaultCenter}
-                zoom={13}
+                zoom={14}
                 onLoad={onLoad}
                 onUnmount={onUnmount}
                 options={mapOptions}
-                onClick={() => setSelectedHotel(null)}
+                onClick={() => {
+                    setSelectedHotel(null);
+                    setShowVenueInfo(false);
+                }}
             >
+                {/* 1. COP17 Venue Marker */}
+                <OverlayView
+                    position={{ lat: COP17_VENUE.latitude, lng: COP17_VENUE.longitude }}
+                    mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+                >
+                    <div className="relative -translate-x-1/2 -translate-y-full mb-1">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setShowVenueInfo(!showVenueInfo);
+                                setSelectedHotel(null);
+                            }}
+                            className="bg-red-600 text-white p-2 rounded-full shadow-2xl border-2 border-white animate-bounce-subtle"
+                        >
+                            <MapPin className="h-6 w-6 fill-white text-red-600" />
+                        </button>
+
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full mb-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded whitespace-nowrap uppercase tracking-tighter shadow-lg">
+                            COP17 VENUE
+                        </div>
+
+                        {showVenueInfo && (
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-48 bg-zinc-900 text-white rounded-lg shadow-2xl p-3 z-[110]">
+                                <p className="font-bold text-xs uppercase tracking-wider text-red-400 mb-1">Event Center</p>
+                                <p className="text-sm font-semibold leading-tight">{COP17_VENUE.name}</p>
+                                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-zinc-900 rotate-45"></div>
+                            </div>
+                        )}
+                    </div>
+                </OverlayView>
+
+                {/* 2. Hotel Markers */}
                 {hotels.map((hotel) => (
                     hotel.latitude && hotel.longitude && (
                         <OverlayView
@@ -186,6 +155,7 @@ export default function HotelMap({ hotels }: { hotels: (Hotel & { minPrice: numb
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setSelectedHotel(hotel);
+                                        setShowVenueInfo(false);
                                     }}
                                     className={`
                                         bg-white text-zinc-900 font-bold px-3 py-1.5 rounded-full shadow-md border-2 
@@ -229,27 +199,37 @@ export default function HotelMap({ hotels }: { hotels: (Hotel & { minPrice: numb
                                                     <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
                                                 ))}
                                             </div>
-                                            <p className="text-sm text-zinc-500 line-clamp-2 mb-3">
-                                                {hotel.address || "Ulaanbaatar, Mongolia"}
-                                            </p>
 
-                                            <div className="flex items-center justify-between pt-2 border-t border-zinc-100">
-                                                <div className="text-left">
-                                                    <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider">Starting at</p>
-                                                    <p className="font-bold text-blue-600">${hotel.minPrice}/night</p>
-                                                </div>
-                                                <Button asChild size="sm" className="h-8">
+                                            <div className="flex flex-col gap-2 mb-3">
+                                                <p className="text-xs text-zinc-500 line-clamp-1">
+                                                    {hotel.address || "Ulaanbaatar, Mongolia"}
+                                                </p>
+
+                                                {hotel.distanceToVenue != null && (
+                                                    <div className="flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-100 w-fit">
+                                                        <Navigation className="h-3 w-3" />
+                                                        {hotel.distanceToVenue} km to Venue
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="flex items-center justify-between pt-2 border-t border-zinc-100 gap-2">
+                                                <Button asChild variant="outline" size="sm" className="h-9 flex-1 text-xs">
+                                                    <a
+                                                        href={`https://www.google.com/maps/dir/?api=1&destination=${hotel.latitude},${hotel.longitude}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center justify-center gap-1"
+                                                    >
+                                                        Directions
+                                                    </a>
+                                                </Button>
+                                                <Button asChild size="sm" className="h-9 flex-1 text-xs">
                                                     <Link href={`/hotels/${hotel.id}`}>
-                                                        View Details
+                                                        Book Now
                                                     </Link>
                                                 </Button>
                                             </div>
-
-                                            {hotel.distanceToVenue != null && (
-                                                <div className="mt-2 text-xs text-center bg-blue-50 text-blue-700 py-1 rounded font-medium border border-blue-100">
-                                                    {hotel.distanceToVenue} km to Venue
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -258,6 +238,20 @@ export default function HotelMap({ hotels }: { hotels: (Hotel & { minPrice: numb
                     )
                 ))}
             </GoogleMap>
+
+            {/* Legend / Key */}
+            <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm p-3 rounded-lg shadow-md z-20 border border-zinc-200 pointer-events-none">
+                <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red-600 border border-white"></div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Event Venue</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-white border-2 border-zinc-300"></div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Hotel (Price)</span>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
