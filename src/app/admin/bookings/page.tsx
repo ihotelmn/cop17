@@ -12,6 +12,7 @@ import { Search } from "lucide-react";
 import { getAllBookings } from "@/app/actions/booking-admin";
 import { BookingStatusBadge } from "@/components/admin/booking-status-badge";
 import { BookingActions } from "@/components/admin/booking-actions";
+import { ExportButton } from "@/components/admin/export-button";
 
 export default async function BookingsPage() {
     const { data: bookings, success, error } = await getAllBookings();
@@ -26,7 +27,7 @@ export default async function BookingsPage() {
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline">Export CSV</Button>
+                    <ExportButton />
                     {/* <Button variant="premium">New Booking</Button> */}
                 </div>
             </div>
