@@ -9,7 +9,7 @@ export function OrganizersSection() {
                 <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-300 mb-12">
                     Organized By
                 </h3>
-                <div className="flex flex-wrap justify-center items-center gap-12 md:gap-20">
+                <div className="flex flex-nowrap justify-center items-center gap-4 md:gap-20 overflow-x-auto md:overflow-visible pb-4 md:pb-0 scrollbar-hide px-4 md:px-0">
                     <OrganizerLogo
                         src="/images/partner logos/gov-mongolia.png"
                         alt="Government of Mongolia"
@@ -42,13 +42,13 @@ export function OrganizersSection() {
 
 function OrganizerLogo({ src, alt, width, height }: { src: string, alt: string, width: number, height: number }) {
     return (
-        <div className="relative transition-transform duration-300 hover:scale-110 flex items-center justify-center">
+        <div className="relative transition-transform duration-300 hover:scale-110 flex items-center justify-center shrink-0">
             <Image
                 src={src}
                 alt={alt}
                 width={width}
                 height={height}
-                className="h-20 w-auto object-contain drop-shadow-lg"
+                className="h-8 md:h-20 w-auto object-contain drop-shadow-lg"
             />
         </div>
     )
