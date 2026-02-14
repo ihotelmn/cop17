@@ -13,9 +13,15 @@ import { getAllBookings } from "@/app/actions/booking-admin";
 import { BookingStatusBadge } from "@/components/admin/booking-status-badge";
 import { BookingActions } from "@/components/admin/booking-actions";
 import { ExportButton } from "@/components/admin/export-button";
+import { BookingsFilter } from "@/components/admin/bookings-filter";
 
-export default async function BookingsPage() {
-    const { data: bookings, success, error } = await getAllBookings();
+export default async function BookingsPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
+    const filters = {
+        status: typeof searchParams?.status === 'string' ? searchParams.status : undefined,
+        search: typeof searchParams?.search === 'string' ? searchParams.search : undefined,
+    };
+
+    const { data: bookings, success, error } = await getAllBookings(filters);
 
     return (
         <div className="space-y-6">
@@ -33,20 +39,7 @@ export default async function BookingsPage() {
             </div>
 
             {/* Filters */}
-            <div className="flex items-center gap-4">
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        type="search"
-                        placeholder="Search guests, IDs..."
-                        className="pl-9 bg-white dark:bg-zinc-900"
-                    />
-                </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" className="text-muted-foreground">Status</Button>
-                    <Button variant="outline" className="text-muted-foreground">Hotel</Button>
-                </div>
-            </div>
+            <BookingsFilter />
 
             {/* Table */}
             <div className="rounded-md border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">

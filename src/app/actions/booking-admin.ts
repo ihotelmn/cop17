@@ -41,7 +41,13 @@ async function getOwnerRoomIds(adminClient: any, userId: string): Promise<string
     return rooms.map((r: any) => r.id);
 }
 
-export async function getAllBookings(): Promise<{ success: boolean; data?: BookingAdmin[]; error?: string }> {
+export type BookingFilters = {
+    status?: string;
+    hotelId?: string;
+    search?: string;
+};
+
+export async function getAllBookings(filters?: BookingFilters): Promise<{ success: boolean; data?: BookingAdmin[]; error?: string }> {
     const supabase = await createClient();
     const adminClient = getSupabaseAdmin();
 
@@ -85,6 +91,28 @@ export async function getAllBookings(): Promise<{ success: boolean; data?: Booki
             query = query.in("room_id", allowedRoomIds);
         }
 
+        // --- FILTERS ---
+        if (filters?.status && filters.status !== "all") {
+            query = query.eq("status", filters.status);
+        }
+
+        if (filters?.hotelId && filters.hotelId !== "all") {
+            // Find rooms for this hotel first
+            const { data: hotelRooms } = await adminClient.from("rooms").select("id").eq("hotel_id", filters.hotelId);
+            if (hotelRooms && hotelRooms.length > 0) {
+                const ids = hotelRooms.map((r: any) => r.id);
+                query = query.in("room_id", ids);
+            } else {
+                return { success: true, data: [] }; // Hotel has no rooms, or invalid hotel ID
+            }
+        }
+
+        // Exact ID search optimization (if search looks like UUID)
+        if (filters?.search && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(filters.search)) {
+            query = query.eq("id", filters.search);
+        }
+        // ---------------
+
         const { data: bookings, error } = await query;
 
         if (error) {
@@ -111,7 +139,7 @@ export async function getAllBookings(): Promise<{ success: boolean; data?: Booki
         }
 
         // Transform data
-        const formattedBookings: BookingAdmin[] = bookings.map((b: any) => {
+        let formattedBookings: BookingAdmin[] = bookings.map((b: any) => {
             let guestName = "Guest";
 
             // Try to get name from profile
@@ -137,6 +165,17 @@ export async function getAllBookings(): Promise<{ success: boolean; data?: Booki
                 amount: b.total_price,
             };
         });
+
+        // In-memory Filter for Search (Name, Hotel, etc.) if not UUID
+        if (filters?.search && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(filters.search)) {
+            const lowerSearch = filters.search.toLowerCase();
+            formattedBookings = formattedBookings.filter(b =>
+                b.guestName.toLowerCase().includes(lowerSearch) ||
+                b.hotelName.toLowerCase().includes(lowerSearch) ||
+                b.roomName.toLowerCase().includes(lowerSearch) ||
+                b.id.toLowerCase().includes(lowerSearch)
+            );
+        }
 
         return { success: true, data: formattedBookings };
 
