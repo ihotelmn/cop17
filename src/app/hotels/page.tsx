@@ -2,10 +2,11 @@ import { getPublishedHotels } from "@/app/actions/public";
 import { HotelList } from "@/components/hotel-list";
 import { HotelSearch } from "@/components/hotel-search";
 import { HotelMapWrapper as HotelMap } from "@/components/hotel-map-wrapper";
+import { FilterSidebar } from "@/components/hotels/filter-sidebar";
 import { Suspense } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Map as MapIcon, List as ListIcon } from 'lucide-react';
 import Link from 'next/link';
-
+import { Button } from "@/components/ui/button";
 
 type Props = {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -38,62 +39,88 @@ export default async function HotelsPage(props: Props) {
     });
 
     return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-20 pt-20">
+        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-20 pt-24">
             <div className="container mx-auto px-4 max-w-7xl">
-                <div className="mt-8 mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <div className="max-w-2xl">
-                        <h1 className="text-5xl font-black tracking-tight text-zinc-900 dark:text-white leading-[1.1]">
-                            Find Your Stay
-                        </h1>
-                        <p className="text-zinc-500 dark:text-zinc-400 mt-4 text-xl font-medium leading-relaxed">
-                            Premium accommodations carefully selected for COP17 Mongolia delegates.
-                        </p>
-                    </div>
+                {/* Header Section */}
+                <div className="mb-10">
+                    <h1 className="text-4xl md:text-5xl font-black tracking-tight text-zinc-900 dark:text-white mb-4">
+                        Find Your Stay
+                    </h1>
+                    <p className="text-lg text-zinc-500 dark:text-zinc-400 max-w-2xl">
+                        Official premium accommodations for COP17 Mongolia delegates.
+                        Secure, comfortable, and close to the venue.
+                    </p>
                 </div>
 
-                <HotelSearch />
+                {/* Main Content Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
 
-                <div className="mt-12">
-                    <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-2xl font-bold tracking-tight">
-                            {hotels.length} {hotels.length === 1 ? 'Hotel' : 'Hotels'} Available
-                        </h2>
+                    {/* Sidebar Filters (Desktop) */}
+                    <div className="hidden lg:block lg:col-span-1 space-y-8 sticky top-24 h-fit">
+                        <FilterSidebar />
                     </div>
 
-                    {hotels.length > 0 ? (
-                        view === "map" ? (
-                            <div className="space-y-12">
-                                <Suspense fallback={<div className="h-[600px] bg-zinc-100 animate-pulse rounded-2xl" />}>
-                                    <HotelMap hotels={hotels} />
-                                </Suspense>
+                    {/* Hotel List */}
+                    <div className="lg:col-span-3">
+                        {/* Mobile Filter & Controls */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                            <h2 className="text-xl font-bold tracking-tight">
+                                {hotels.length} Properties Found
+                            </h2>
 
-                                <div className="pt-16 border-t border-zinc-200 dark:border-zinc-800">
-                                    <h3 className="text-2xl font-black mb-8 tracking-tight">Quick List</h3>
-                                    <HotelList hotels={hotels} />
+                            <div className="flex items-center gap-2">
+                                {/* Toggle View (Mock for now, can implement real toggle via URL) */}
+                                <div className="flex items-center bg-white dark:bg-zinc-900 p-1 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                                    <Button variant={view === "list" ? "secondary" : "ghost"} size="sm" asChild>
+                                        <Link href={`/hotels?view=list`} scroll={false}>
+                                            <ListIcon className="h-4 w-4 mr-2" /> List
+                                        </Link>
+                                    </Button>
+                                    <Button variant={view === "map" ? "secondary" : "ghost"} size="sm" asChild>
+                                        <Link href={`/hotels?view=map`} scroll={false}>
+                                            <MapIcon className="h-4 w-4 mr-2" /> Map
+                                        </Link>
+                                    </Button>
                                 </div>
-                            </div>
-                        ) : (
-                            <HotelList hotels={hotels} />
-                        )
-                    ) : (
-                        <div className="text-center py-32 bg-white dark:bg-zinc-900 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 shadow-sm">
-                            <div className="w-24 h-24 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
-                                <Search className="h-10 w-10 text-zinc-400" />
-                            </div>
-                            <h3 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">No Results Found</h3>
-                            <p className="text-zinc-500 dark:text-zinc-400 mt-3 max-w-sm mx-auto text-lg">
-                                Try adjusting your filters or search terms to find your ideal accommodation.
-                            </p>
-                            <div className="mt-10">
-                                <Link
-                                    href="/hotels"
-                                    className="text-blue-600 font-bold hover:underline inline-block"
-                                >
-                                    Reset all filters
-                                </Link>
+                                {/* Sort Dropdown can go here */}
                             </div>
                         </div>
-                    )}
+
+                        {/* Results */}
+                        {hotels.length > 0 ? (
+                            view === "map" ? (
+                                <div className="space-y-8">
+                                    <div className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm h-[600px]">
+                                        <Suspense fallback={<div className="h-full bg-zinc-100 animate-pulse" />}>
+                                            <HotelMap hotels={hotels} />
+                                        </Suspense>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* Show a subset or list below map */}
+                                        {hotels.map(hotel => (
+                                            /* We will use a smaller card variant here if needed, or normal */
+                                            <div key={hotel.id} className="bg-white dark:bg-zinc-900 p-4 rounded-xl border">
+                                                <h3 className="font-bold">{hotel.name}</h3>
+                                                <p className="text-sm text-zinc-500">${hotel.minPrice}/night</p>
+                                                <Link href={`/hotels/${hotel.id}`} className="text-sm text-blue-600 hover:underline">View</Link>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <HotelList hotels={hotels} />
+                            )
+                        ) : (
+                            <div className="text-center py-20 bg-white dark:bg-zinc-900 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800">
+                                <Search className="h-10 w-10 text-zinc-300 mx-auto mb-4" />
+                                <h3 className="text-lg font-semibold">No properties found</h3>
+                                <p className="text-zinc-500 mb-6">Try adjusting your filters.</p>
+                                <Button variant="outline" onClick={() => { /* Filters reset via sidebar or link */ }}>
+                                    <Link href="/hotels">Clear Filters</Link>
+                                </Button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
