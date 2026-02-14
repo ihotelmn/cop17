@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { GoogleMap, useJsApiLoader, OverlayView } from "@react-google-maps/api";
 import { Hotel } from "@/app/actions/public";
 import Link from "next/link";
-import { Star, X, MapPin, Navigation } from "lucide-react";
+import { Star, X, MapPin, Navigation, Hotel as HotelIcon, Building2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { COP17_VENUE } from "@/lib/venue";
 
@@ -150,7 +150,7 @@ export default function HotelMap({ hotels }: { hotels: (Hotel & { minPrice: numb
                             position={{ lat: hotel.latitude, lng: hotel.longitude }}
                             mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
                         >
-                            <div className="relative">
+                            <div className="relative -translate-x-1/2 -translate-y-1/2">
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
@@ -158,76 +158,96 @@ export default function HotelMap({ hotels }: { hotels: (Hotel & { minPrice: numb
                                         setShowVenueInfo(false);
                                     }}
                                     className={`
-                                        bg-white text-zinc-900 font-bold px-3 py-1.5 rounded-full shadow-md border-2 
-                                        transition-all text-sm whitespace-nowrap flex items-center gap-1 hover:scale-110 hover:z-50
-                                        ${selectedHotel?.id === hotel.id ? "border-zinc-900 z-50 scale-110" : "border-white"}
+                                        relative flex items-center gap-1.5 px-3 py-2 rounded-xl shadow-xl border-2 transition-all duration-300
+                                        ${selectedHotel?.id === hotel.id
+                                            ? "bg-zinc-900 border-amber-400 text-white scale-125 z-50 ring-4 ring-amber-400/20"
+                                            : "bg-blue-600 border-white text-white hover:bg-blue-700 hover:scale-110 z-10"
+                                        }
                                     `}
                                 >
-                                    ${hotel.minPrice}
+                                    <Building2 className={`h-3.5 w-3.5 ${selectedHotel?.id === hotel.id ? "text-amber-400" : "text-white/90"}`} />
+                                    <span className="text-sm font-black tracking-tight">${hotel.minPrice}</span>
+
+                                    {/* Small arrow/beak at bottom */}
+                                    <div className={`
+                                        absolute top-full left-1/2 -translate-x-1/2 -mt-1 w-2 h-2 rotate-45 border-r-2 border-b-2
+                                        ${selectedHotel?.id === hotel.id ? "bg-zinc-900 border-amber-400" : "bg-blue-600 border-white"}
+                                    `}></div>
                                 </button>
 
                                 {/* Info Window / Popup */}
                                 {selectedHotel?.id === hotel.id && (
-                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 bg-white rounded-lg shadow-xl p-3 z-[100] animate-in fade-in zoom-in-95 duration-200">
-                                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white rotate-45 shadow-sm"></div>
-
-                                        <div className="relative z-10">
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-5 w-72 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-bottom-2 duration-300 border border-zinc-200 dark:border-zinc-800">
+                                        <div className="relative">
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     setSelectedHotel(null);
                                                 }}
-                                                className="absolute -top-1 -right-1 p-1 hover:bg-zinc-100 rounded-full"
+                                                className="absolute top-2 right-2 p-1.5 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full z-20 transition-colors"
                                             >
-                                                <X className="h-4 w-4 text-zinc-400" />
+                                                <X className="h-4 w-4 text-white" />
                                             </button>
 
                                             {hotel.images?.[0] && (
-                                                <div className="h-32 w-full mb-3 rounded-md overflow-hidden bg-zinc-100 relative">
+                                                <div className="h-40 w-full bg-zinc-100 relative">
                                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                                     <img
                                                         src={hotel.images[0]}
                                                         alt={hotel.name}
                                                         className="w-full h-full object-cover"
                                                     />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                                                    <div className="absolute bottom-3 left-4">
+                                                        <div className="flex items-center gap-0.5 mb-1">
+                                                            {Array.from({ length: hotel.stars }).map((_, i) => (
+                                                                <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
+                                                            ))}
+                                                        </div>
+                                                        <h3 className="font-bold text-lg text-white leading-tight">{hotel.name}</h3>
+                                                    </div>
                                                 </div>
                                             )}
 
-                                            <h3 className="font-bold text-base leading-tight pr-4">{hotel.name}</h3>
-                                            <div className="flex items-center gap-1 mt-1 mb-2">
-                                                {Array.from({ length: hotel.stars }).map((_, i) => (
-                                                    <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
-                                                ))}
-                                            </div>
-
-                                            <div className="flex flex-col gap-2 mb-3">
-                                                <p className="text-xs text-zinc-500 line-clamp-1">
-                                                    {hotel.address || "Ulaanbaatar, Mongolia"}
-                                                </p>
-
-                                                {hotel.distanceToVenue != null && (
-                                                    <div className="flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-100 w-fit">
-                                                        <Navigation className="h-3 w-3" />
-                                                        {hotel.distanceToVenue} km to Venue
+                                            <div className="p-4">
+                                                <div className="flex flex-col gap-3">
+                                                    <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 text-xs">
+                                                        <MapPin className="h-3 w-3 shrink-0" />
+                                                        <p className="line-clamp-1">{hotel.address || "Ulaanbaatar, Mongolia"}</p>
                                                     </div>
-                                                )}
-                                            </div>
 
-                                            <div className="flex items-center justify-between pt-2 border-t border-zinc-100 gap-2">
-                                                <Button asChild variant="outline" size="sm" className="h-9 flex-1 text-xs">
+                                                    {hotel.distanceToVenue != null && (
+                                                        <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-xl border border-blue-100 dark:border-blue-800/50">
+                                                            <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
+                                                                <Navigation className="h-4 w-4" />
+                                                                <span className="text-xs font-bold uppercase tracking-wider">To Venue</span>
+                                                            </div>
+                                                            <span className="text-sm font-black text-blue-700 dark:text-blue-300">{hotel.distanceToVenue} km</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex items-center justify-between mt-5 pt-4 border-t border-zinc-100 dark:border-zinc-800 gap-3">
+                                                    <div>
+                                                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none mb-1">From</p>
+                                                        <p className="text-xl font-black text-zinc-900 dark:text-white">${hotel.minPrice}<span className="text-xs font-medium text-zinc-500">/nt</span></p>
+                                                    </div>
+                                                    <Button asChild size="lg" className="h-11 rounded-xl px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-500/20">
+                                                        <Link href={`/hotels/${hotel.id}`}>
+                                                            Details
+                                                        </Link>
+                                                    </Button>
+                                                </div>
+
+                                                <Button asChild variant="ghost" size="sm" className="w-full mt-2 h-8 text-zinc-400 hover:text-blue-600 transition-colors">
                                                     <a
                                                         href={`https://www.google.com/maps/dir/?api=1&destination=${hotel.latitude},${hotel.longitude}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="flex items-center justify-center gap-1"
+                                                        className="text-[10px] font-bold uppercase tracking-widest"
                                                     >
-                                                        Directions
+                                                        Get Directions in Google Maps
                                                     </a>
-                                                </Button>
-                                                <Button asChild size="sm" className="h-9 flex-1 text-xs">
-                                                    <Link href={`/hotels/${hotel.id}`}>
-                                                        Book Now
-                                                    </Link>
                                                 </Button>
                                             </div>
                                         </div>

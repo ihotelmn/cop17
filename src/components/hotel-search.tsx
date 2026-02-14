@@ -27,6 +27,10 @@ export function HotelSearch() {
     const pathname = usePathname();
     const router = useRouter();
 
+    // State for Popovers
+    const [isDatePopoverOpen, setIsDatePopoverOpen] = useState(false);
+    const [isGuestsPopoverOpen, setIsGuestsPopoverOpen] = useState(false);
+
     // -- State --
     const [query, setQuery] = useState(searchParams.get("query")?.toString() || "");
 
@@ -54,6 +58,8 @@ export function HotelSearch() {
         else params.delete("guests"); // Default implies 1 or 2, maybe keep clean or explicit? 
 
         router.replace(`${pathname}?${params.toString()}`);
+        setIsDatePopoverOpen(false);
+        setIsGuestsPopoverOpen(false);
     };
 
     const handleClear = () => {
@@ -66,6 +72,15 @@ export function HotelSearch() {
     const updateGuests = (delta: number) => {
         setGuests(prev => Math.max(1, Math.min(10, prev + delta)));
     }
+
+    // Smart Date Selection: Close popover when range is complete
+    const handleDateSelect = (selectedRange: DateRange | undefined) => {
+        setDate(selectedRange);
+        if (selectedRange?.from && selectedRange?.to) {
+            // Give a tiny delay for visual confirmation before closing
+            setTimeout(() => setIsDatePopoverOpen(false), 300);
+        }
+    };
 
     return (
         <div className="w-full max-w-5xl mx-auto mb-10">
@@ -86,18 +101,18 @@ export function HotelSearch() {
                 </div>
 
                 {/* Dates (Functional) */}
-                <Popover>
+                <Popover open={isDatePopoverOpen} onOpenChange={setIsDatePopoverOpen}>
                     <PopoverTrigger asChild>
                         <div className="flex-1 flex flex-col justify-center border-r border-zinc-100 dark:border-zinc-800 px-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-lg transition-colors py-1 group">
                             <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-0.5 group-hover:text-zinc-700 dark:group-hover:text-zinc-300">Check in - Check out</label>
-                            <div className={cn("text-sm font-semibold truncate", !date ? "text-zinc-400 font-normal" : "text-zinc-900 dark:text-white")}>
+                            <div className={cn("text-sm font-semibold truncate", !date?.from ? "text-zinc-400 font-normal" : "text-zinc-950 dark:text-blue-400 font-bold")}>
                                 {date?.from ? (
                                     date.to ? (
                                         <>
-                                            {format(date.from, "LLL dd")} - {format(date.to, "LLL dd")}
+                                            {format(date.from, "MMM dd")} - {format(date.to, "MMM dd")}
                                         </>
                                     ) : (
-                                        format(date.from, "LLL dd")
+                                        `${format(date.from, "MMM dd")} - Add date`
                                     )
                                 ) : (
                                     "Add dates"
@@ -105,14 +120,19 @@ export function HotelSearch() {
                             </div>
                         </div>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0 shadow-2xl border-zinc-200 dark:border-zinc-800" align="start">
+                        <div className="p-4 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                            <span className="text-xs font-bold uppercase tracking-widest text-zinc-500">Select Date Range</span>
+                            <Button variant="ghost" size="sm" onClick={() => setDate(undefined)} className="h-7 text-[10px] uppercase font-bold text-red-500 hover:text-red-600 hover:bg-red-50">Clear</Button>
+                        </div>
                         <Calendar
                             initialFocus
                             mode="range"
-                            defaultMonth={date?.from}
+                            defaultMonth={date?.from || new Date()}
                             selected={date}
-                            onSelect={setDate}
+                            onSelect={handleDateSelect}
                             numberOfMonths={2}
+                            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                         />
                     </PopoverContent>
                 </Popover>
