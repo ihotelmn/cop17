@@ -25,9 +25,26 @@ export type UserProfile = {
 
 // Log Audit Event Helper
 async function logAction(userId: string, action: string, details: any) {
-    // In a real implementation, we'd insert into audit_logs table
-    // For now, console log
-    console.log(`[AUDIT] User ${userId} performed ${action}:`, details);
+    try {
+        const adminClient = getSupabaseAdmin();
+
+        // Extract some common fields from details if available
+        const tableName = details.table || details.tableName || "unknown";
+        const recordId = details.targetUserId || details.recordId || details.id || null;
+
+        // Remove redundant fields from details to save space
+        const { table, tableName: _, ...cleanDetails } = details;
+
+        await adminClient.from("audit_logs").insert({
+            action,
+            changed_by: userId,
+            table_name: tableName,
+            record_id: recordId,
+            new_data: cleanDetails
+        });
+    } catch (error) {
+        console.error("Failed to log audit action:", error);
+    }
 }
 
 export async function getUsers() {
