@@ -111,13 +111,41 @@ export async function createBookingAction(prevState: BookingState, formData: For
                 guest_phone_encrypted: encryptedPhone,
                 special_requests_encrypted: encryptedRequests,
             })
-            .select("id")
+            .select("id, room:rooms(hotel:hotels(owner_id, name))") // Select nested relation for owner_id
             .single();
 
         if (bookingError) {
             console.error("Booking Creation Error:", bookingError);
             return { error: "Failed to create booking record." };
         }
+
+        // --- NOTIFICATION LOGIC ---
+        // Notify Hotel Owner
+        // @ts-ignore
+        const ownerId = booking.room?.hotel?.owner_id;
+        // @ts-ignore
+        const hotelName = booking.room?.hotel?.name;
+
+        if (ownerId) {
+            const adminClient = await createClient(); // Use service role if available or standard client. 
+            // Note: createClient() uses standard cookies. We need admin rights to insert for *another* user if RLS blocks it.
+            // However, our policy is "Users can view own". Insert policy is missing for authenticated users to insert for others?
+            // Actually, the server action runs as the logged-in user (customer).
+            // Customer cannot insert into 'notifications' for 'ownerId' unless we have an RLS policy for it OR use service role.
+
+            // WE NEED SERVICE ROLE HERE.
+            const { getSupabaseAdmin } = await import("@/lib/supabase/admin"); // Dynamic import to avoid circular deps if any
+            const adminSupabase = getSupabaseAdmin();
+
+            await adminSupabase.from("notifications").insert({
+                user_id: ownerId,
+                title: "New Booking Received!",
+                message: `New booking at ${hotelName} for ${nights} nights.`,
+                type: "booking_new",
+                link: `/admin/bookings/${booking.id}`
+            });
+        }
+        // --------------------------
 
         // 4. Initiate Payment (Golomt Bank)
         try {
