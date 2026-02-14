@@ -1,6 +1,7 @@
 "use server";
 
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { calculateDistance, COP17_VENUE } from "@/lib/venue";
 
 export type Hotel = {
     id: string;
@@ -20,13 +21,15 @@ export type Hotel = {
     website?: string | null;
     check_in_time?: string | null;
     check_out_time?: string | null;
+    // Calculated
+    distanceToVenue?: number | null;
 };
 
 export type HotelSearchParams = {
     query?: string;
     stars?: string;
     amenities?: string;
-    sortBy?: string; // price-asc, price-desc, stars-desc, newest
+    sortBy?: string; // price-asc, price-desc, stars-desc, newest, distance-asc
     minPrice?: string;
     maxPrice?: string;
 };
@@ -71,18 +74,28 @@ export async function getPublishedHotels(searchParams?: HotelSearchParams) {
     }
 
     // Process and Filter/Sort in JS
-    let results = hotels.map((h: any) => ({
-        ...h,
-        // Ensure amenities is strictly a string array
-        amenities: Array.isArray(h.amenities)
-            ? h.amenities.map((a: any) => typeof a === 'string' ? a : JSON.stringify(a))
-            : [], // Fallback to empty array if not an array (e.g. null, object, string)
-        // Ensure coordinates are numbers
-        latitude: h.latitude ? Number(h.latitude) : null,
-        longitude: h.longitude ? Number(h.longitude) : null,
-        // serialize safe minPrice: avoid Infinity
-        minPrice: h.rooms?.length > 0 ? Math.min(...h.rooms.map((r: any) => Number(r.price_per_night))) : null
-    }));
+    let results = hotels.map((h: any) => {
+        const lat = h.latitude ? Number(h.latitude) : null;
+        const lng = h.longitude ? Number(h.longitude) : null;
+
+        const distance = (lat && lng)
+            ? calculateDistance(lat, lng, COP17_VENUE.latitude, COP17_VENUE.longitude)
+            : null;
+
+        return {
+            ...h,
+            // Ensure amenities is strictly a string array
+            amenities: Array.isArray(h.amenities)
+                ? h.amenities.map((a: any) => typeof a === 'string' ? a : JSON.stringify(a))
+                : [], // Fallback to empty array if not an array (e.g. null, object, string)
+            // Ensure coordinates are numbers
+            latitude: lat,
+            longitude: lng,
+            distanceToVenue: distance,
+            // serialize safe minPrice: avoid Infinity
+            minPrice: h.rooms?.length > 0 ? Math.min(...h.rooms.map((r: any) => Number(r.price_per_night))) : null
+        };
+    });
 
     // Filter by Price
     if (searchParams?.minPrice) {
@@ -112,6 +125,8 @@ export async function getPublishedHotels(searchParams?: HotelSearchParams) {
                 return (b.minPrice ?? 0) - (a.minPrice ?? 0);
             case 'stars-desc':
                 return b.stars - a.stars;
+            case 'distance-asc':
+                return (a.distanceToVenue ?? 9999) - (b.distanceToVenue ?? 9999);
             case 'newest':
             default:
                 return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -143,11 +158,17 @@ export async function getPublicHotel(id: string) {
         return null;
     }
 
+    const lat = hotel.latitude ? Number(hotel.latitude) : null;
+    const lng = hotel.longitude ? Number(hotel.longitude) : null;
+
     // Cast properties to match UI expectations
     return {
         ...hotel,
-        latitude: hotel.latitude ? Number(hotel.latitude) : null,
-        longitude: hotel.longitude ? Number(hotel.longitude) : null,
+        latitude: lat,
+        longitude: lng,
+        distanceToVenue: (lat && lng)
+            ? calculateDistance(lat, lng, COP17_VENUE.latitude, COP17_VENUE.longitude)
+            : null
     } as Hotel;
 }
 

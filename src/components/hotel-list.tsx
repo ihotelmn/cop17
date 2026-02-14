@@ -145,7 +145,19 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
                                 {hotel.minPrice ? `$${hotel.minPrice}` : "N/A"}
                             </span>
                         </div>
-                        <span className="text-xs text-green-600 font-bold mt-1">Includes taxes & fees</span>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className="text-xs text-green-600 font-bold">Includes taxes & fees</span>
+                            {hotel.distanceToVenue != null && (
+                                <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100 font-medium whitespace-nowrap">
+                                    {hotel.distanceToVenue} km to Venue
+                                </span>
+                            )}
+                            {hasShuttle && (
+                                <span className="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-100 font-medium whitespace-nowrap">
+                                    Free Shuttle
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     <div className="flex-shrink-0">
