@@ -22,6 +22,7 @@ import { SiteHeader } from "@/components/site-header";
 import { Toaster } from "sonner";
 
 import { createClient } from "@/lib/supabase/server";
+import PageTransition from "@/components/page-transition";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,8 @@ export default async function RootLayout({
       >
         <AuthProvider initialUser={user}>
           <SiteHeader />
-          {children}
+
+          <PageTransition>{children}</PageTransition>
           <Toaster />
         </AuthProvider>
       </body>
