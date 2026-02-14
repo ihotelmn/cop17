@@ -7,7 +7,6 @@ import { DashboardRealtime } from "@/components/admin/dashboard-realtime";
 export default function AdminDashboardPage() {
     return (
         <Suspense fallback={<DashboardSkeleton />}>
-            {/* @ts-expect-error Async Server Component */}
             <DashboardContent />
         </Suspense>
     );
