@@ -4,7 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Search, X, Calendar as CalendarIcon, Users, Minus, Plus } from "lucide-react";
-import { MobileFilter } from "@/components/hotels/mobile-filter";
+import { MobileFilter } from "./hotels/mobile-filter";
 import { cn } from "@/lib/utils";
 import {
     Select,

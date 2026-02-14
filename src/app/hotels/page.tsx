@@ -1,6 +1,6 @@
 import { getPublishedHotels } from "@/app/actions/public";
 import { HotelList } from "@/components/hotel-list";
-import { HotelSearch } from "@/components/hotel-search";
+import { HotelSearch, SortDropdown } from "@/components/hotel-search";
 import { HotelMapWrapper as HotelMap } from "@/components/hotel-map-wrapper";
 import { FilterSidebar } from "@/components/hotels/filter-sidebar";
 import { Suspense } from 'react';
@@ -52,6 +52,9 @@ export default async function HotelsPage(props: Props) {
                     </p>
                 </div>
 
+                {/* Search Bar - World Class */}
+                <HotelSearch />
+
                 {/* Main Content Layout */}
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
 
@@ -62,15 +65,17 @@ export default async function HotelsPage(props: Props) {
 
                     {/* Hotel List */}
                     <div className="lg:col-span-3">
-                        {/* Mobile Filter & Controls */}
+                        {/* Controls: Count, View Toggle, Sort */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                             <h2 className="text-xl font-bold tracking-tight">
                                 {hotels.length} Properties Found
                             </h2>
 
-                            <div className="flex items-center gap-2">
-                                {/* Toggle View (Mock for now, can implement real toggle via URL) */}
-                                <div className="flex items-center bg-white dark:bg-zinc-900 p-1 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                            <div className="flex items-center gap-3">
+                                <SortDropdown />
+
+                                {/* Toggle View */}
+                                <div className="flex items-center bg-white dark:bg-zinc-900 p-1 rounded-lg border border-zinc-200 dark:border-zinc-800 hidden sm:flex">
                                     <Button variant={view === "list" ? "secondary" : "ghost"} size="sm" asChild>
                                         <Link href={`/hotels?view=list`} scroll={false}>
                                             <ListIcon className="h-4 w-4 mr-2" /> List
@@ -82,7 +87,6 @@ export default async function HotelsPage(props: Props) {
                                         </Link>
                                     </Button>
                                 </div>
-                                {/* Sort Dropdown can go here */}
                             </div>
                         </div>
 
