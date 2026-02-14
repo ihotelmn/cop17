@@ -15,7 +15,10 @@ export default async function AuditLogsPage() {
         redirect("/login");
     }
 
-    const { data: profile } = await supabase
+    // Verify Role - Use Admin Client to bypass RLS issues
+    const supabaseAdmin = getSupabaseAdmin();
+
+    const { data: profile } = await supabaseAdmin
         .from("profiles")
         .select("role")
         .eq("id", user.id)
