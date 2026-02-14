@@ -6,21 +6,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "images.unsplash.com",
-        port: "",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "upload.wikimedia.org",
-        port: "",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "ybwylibmckofuvktvihs.supabase.co",
-        port: "",
-        pathname: "/storage/v1/object/public/**",
+        hostname: "**",
       },
     ],
   },

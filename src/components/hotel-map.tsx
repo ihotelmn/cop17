@@ -8,12 +8,16 @@ import { Hotel } from "@/app/actions/public";
 import Link from "next/link";
 import { Star, MapPin, Building2 } from "lucide-react";
 
-// Fix Leaflet icons
-const icon = L.icon({
-    iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-    shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-    iconSize: [25, 41],
-    iconAnchor: [12, 41]
+// Fix for missing marker icons
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconUrl: markerIcon.src,
+    iconRetinaUrl: markerIcon2x.src,
+    shadowUrl: markerShadow.src,
 });
 
 // Helper to auto-fit map to markers
@@ -41,13 +45,6 @@ export default function HotelMap({ hotels }: { hotels: (Hotel & { minPrice: numb
 
     useEffect(() => {
         setMounted(true);
-        // Fix icon prototype issue
-        delete (L.Icon.Default.prototype as any)._getIconUrl;
-        L.Icon.Default.mergeOptions({
-            iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-            iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-            shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-        });
     }, []);
 
     if (!mounted) return <div className="h-[600px] w-full bg-zinc-100 animate-pulse rounded-xl" />;
@@ -63,16 +60,24 @@ export default function HotelMap({ hotels }: { hotels: (Hotel & { minPrice: numb
                 className="h-full w-full"
             >
                 <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
                 />
 
                 {hotelsWithCoords.map((hotel) => (
                     <Marker
                         key={hotel.id}
                         position={[hotel.latitude!, hotel.longitude!]}
+                        icon={L.divIcon({
+                            className: "bg-transparent",
+                            html: `<div class="bg-white text-zinc-900 font-bold px-3 py-1.5 rounded-full shadow-md border-2 border-white hover:border-zinc-900 hover:z-50 transition-all text-sm whitespace-nowrap flex items-center gap-1">
+                                      $${hotel.minPrice}
+                                   </div>`,
+                            iconSize: [60, 30], // Approximate size
+                            iconAnchor: [30, 15] // Center
+                        })}
                     >
-                        <Popup className="hotel-popup">
+                        <Popup className="hotel-popup" offset={[0, -10]}>
                             <div className="w-64 p-1">
                                 {hotel.images?.[0] && (
                                     <div className="h-32 w-full mb-3 rounded-md overflow-hidden bg-zinc-100">
@@ -104,6 +109,11 @@ export default function HotelMap({ hotels }: { hotels: (Hotel & { minPrice: numb
                                         View Details
                                     </Link>
                                 </div>
+                                {hotel.distanceToVenue != null && (
+                                    <div className="mt-2 text-xs text-center bg-blue-50 text-blue-700 py-1 rounded font-medium border border-blue-100">
+                                        {hotel.distanceToVenue} km to Venue
+                                    </div>
+                                )}
                             </div>
                         </Popup>
                     </Marker>
