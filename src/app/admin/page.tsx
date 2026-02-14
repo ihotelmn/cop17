@@ -1,7 +1,19 @@
+
 import { Users, CreditCard, Activity, CalendarCheck, Clock } from "lucide-react";
 import { getDashboardStats } from "@/app/actions/booking-admin"; // Fetch real stats
+import { DashboardSkeleton } from "@/components/skeletons";
+import { Suspense } from "react";
 
-export default async function AdminDashboardPage() {
+export default function AdminDashboardPage() {
+    return (
+        <Suspense fallback={<DashboardSkeleton />}>
+            {/* @ts-expect-error Async Server Component */}
+            <DashboardContent />
+        </Suspense>
+    );
+}
+
+async function DashboardContent() {
     const { data: stats } = await getDashboardStats();
 
     // Default values if fetch fails
@@ -118,4 +130,3 @@ export default async function AdminDashboardPage() {
         </div>
     );
 }
-

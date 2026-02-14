@@ -5,6 +5,7 @@ import { ArrowRight, Hotel, ShieldCheck, Star, Users, Bus, Clock, CreditCard } f
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import ScrollReveal from "@/components/scroll-reveal";
 
 export default function Home() {
   return (
@@ -27,39 +28,20 @@ export default function Home() {
       <div className="relative z-10 max-w-5xl w-full text-center space-y-16 pt-24 pb-20">
 
         {/* Hero Section */}
-        <div className="space-y-8">
-          <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white shadow-xl">
-            <Image
-              src="/images/cop17-logo-horizontal.png"
-              alt="COP17 Logo"
-              width={120}
-              height={40}
-              className="h-8 w-auto object-contain"
-            />
-            <div className="h-5 w-px bg-zinc-300" />
-            <span className="text-sm font-bold text-zinc-900 tracking-wide">
-              OFFICIAL ACCOMMODATION BOOKING PLATFORM
-            </span>
-          </div>
+        <div className="relative z-10 container mx-auto px-4 text-center text-white">
+          <ScrollReveal width="100%">
+            <h1 className="text-5xl font-bold mb-6 drop-shadow-lg">
+              Welcome to COP17 Mongolia
+            </h1>
+            <p className="text-xl mb-8 max-w-2xl mx-auto drop-shadow-md">
+              Official accommodation booking platform for the 17th Conference of the Parties.
+              Experience world-class hospitality in the heart of the steppes.
+            </p>
+          </ScrollReveal>
 
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-white uppercase drop-shadow-lg">
-            UNCCD COP17 <br />
-            <span className="text-blue-300">Ulaanbaatar</span>
-          </h1>
-
-          <p className="text-xl md:text-2xl text-zinc-100 font-medium max-w-3xl mx-auto leading-relaxed drop-shadow-md">
-            Welcome to the official accommodation booking portal for the 17th Session of the Conference of the Parties (COP17) to the UNCCD, taking place in Ulaanbaatar, Mongolia.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-8">
-            <Link href="/hotels" className="group relative inline-flex h-14 items-center justify-center overflow-hidden rounded-full bg-blue-600 px-10 font-bold text-white transition-all duration-300 hover:bg-blue-700 hover:scale-105 shadow-xl hover:shadow-2xl">
-              <span className="mr-2 text-lg">Book Accommodation</span>
-              <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-            </Link>
-            <a href="https://unccdcop17.org" target="_blank" rel="noopener noreferrer" className="inline-flex h-14 items-center justify-center rounded-full bg-white/10 border border-white/30 backdrop-blur-md px-10 font-bold text-white shadow-lg transition-all hover:bg-white/20 hover:scale-105">
-              Official Site
-            </a>
-          </div>
+          <ScrollReveal delay={0.2} width="100%">
+            <SearchForm />
+          </ScrollReveal>
         </div>
 
         {/* Stats / Highlights - REPLACED WITH BOOKING STATS */}
@@ -73,26 +55,34 @@ export default function Home() {
         {/* Focused Content - REPLACED WITH DELEGATE BENEFITS */}
         <div className="text-left space-y-12">
           <div className="text-center space-y-4">
-            <h2 className="text-3xl font-bold tracking-tight text-white drop-shadow-md">Delegate Benefits</h2>
-            <p className="text-zinc-200 text-lg">Why book through the official platform?</p>
+            <ScrollReveal>
+              <h2 className="text-3xl font-bold tracking-tight text-white drop-shadow-md">Delegate Benefits</h2>
+              <p className="text-zinc-200 text-lg">Why book through the official platform?</p>
+            </ScrollReveal>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            <FeatureCard
-              icon={<ShieldCheck className="h-8 w-8 text-green-400" />}
-              title="Official & Secure"
-              description="All listed properties are vetted and certified by the COP17 Organizing Committee to ensure safety, hygiene, and comfort."
-            />
-            <FeatureCard
-              icon={<Bus className="h-8 w-8 text-blue-400" />}
-              title="Transport Logistics"
-              description="Guests at official hotels enjoy complimentary express shuttle services to and from the conference venue."
-            />
-            <FeatureCard
-              icon={<CreditCard className="h-8 w-8 text-amber-400" />}
-              title="Best Rate Guarantee"
-              description="Access exclusive negotiated rates and flexible cancellation policies tailored specifically for international delegates."
-            />
+            <ScrollReveal delay={0.1}>
+              <FeatureCard
+                icon={<ShieldCheck className="h-8 w-8 text-green-400" />}
+                title="Official & Secure"
+                description="All listed properties are vetted and certified by the COP17 Organizing Committee to ensure safety, hygiene, and comfort."
+              />
+            </ScrollReveal>
+            <ScrollReveal delay={0.2}>
+              <FeatureCard
+                icon={<Bus className="h-8 w-8 text-blue-400" />}
+                title="Transport Logistics"
+                description="Guests at official hotels enjoy complimentary express shuttle services to and from the conference venue."
+              />
+            </ScrollReveal>
+            <ScrollReveal delay={0.3}>
+              <FeatureCard
+                icon={<CreditCard className="h-8 w-8 text-amber-400" />}
+                title="Best Rate Guarantee"
+                description="Access exclusive negotiated rates and flexible cancellation policies tailored specifically for international delegates."
+              />
+            </ScrollReveal>
           </div>
         </div>
 
