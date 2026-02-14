@@ -31,17 +31,19 @@ export default function Home() {
         {/* Hero Section */}
         <div className="relative z-10 container mx-auto px-4 text-center text-white">
           <ScrollReveal width="100%">
-            <div className="flex justify-center mb-8">
-              <div className="inline-flex items-center gap-3 rounded-full bg-white px-5 py-2 shadow-xl ring-1 ring-zinc-900/5 transition-transform hover:scale-105">
+            <div className="flex justify-center mb-10">
+              <div className="inline-flex items-center gap-4 rounded-full bg-white/95 backdrop-blur-sm px-6 py-2.5 shadow-xl shadow-black/5 ring-1 ring-zinc-900/5 transition-transform hover:scale-105 hover:bg-white">
                 <Image
-                  src="/images/cop17-logo.png"
+                  src="/images/cop17-logo-horizontal.png"
                   alt="COP17 Logo"
-                  width={24}
-                  height={24}
-                  className="h-6 w-auto object-contain"
+                  width={110}
+                  height={32}
+                  className="h-7 w-auto object-contain"
+                  priority
                 />
-                <span className="text-sm font-bold text-zinc-900 tracking-tight">
-                  Official Accommodation Booking Platform
+                <div className="h-5 w-px bg-zinc-200"></div>
+                <span className="text-xs font-bold text-zinc-800 tracking-wide uppercase leading-tight text-left">
+                  Official Accommodation <br /> Booking Platform
                 </span>
               </div>
             </div>
