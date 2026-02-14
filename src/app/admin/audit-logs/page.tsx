@@ -30,7 +30,8 @@ export default async function AuditLogsPage() {
 
     // 2. Use Service Role to bypass RLS and fetch logs
     // 2. Use Service Role to bypass RLS and fetch logs
-    const supabaseAdmin = getSupabaseAdmin();
+    // 2. Use Service Role to bypass RLS and fetch logs
+    // supabaseAdmin is already declared above
 
     const { data: logs, error } = await supabaseAdmin
         .from("audit_logs")
