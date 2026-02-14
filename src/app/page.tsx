@@ -31,17 +31,25 @@ export default function Home() {
         {/* Hero Section */}
         <div className="relative z-10 container mx-auto px-4 text-center text-white">
           <ScrollReveal width="100%">
-            <h1 className="text-5xl font-bold mb-6 drop-shadow-lg">
-              Welcome to COP17 Mongolia
+            <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 drop-shadow-lg">
+              UNCCD COP17 <br />
+              <span className="text-blue-300">Ulaanbaatar</span>
             </h1>
-            <p className="text-xl mb-8 max-w-2xl mx-auto drop-shadow-md">
-              Official accommodation booking platform for the 17th Conference of the Parties.
-              Experience world-class hospitality in the heart of the steppes.
+            <p className="text-xl md:text-2xl text-zinc-100 font-medium max-w-3xl mx-auto leading-relaxed drop-shadow-md">
+              Welcome to the official accommodation booking portal for the 17th Session of the Conference of the Parties (COP17) to the UNCCD, taking place in Ulaanbaatar, Mongolia.
             </p>
           </ScrollReveal>
 
           <ScrollReveal delay={0.2} width="100%">
-            <SearchForm />
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-10">
+              <Link href="/hotels" className="group relative inline-flex h-14 items-center justify-center overflow-hidden rounded-full bg-blue-600 px-10 font-bold text-white transition-all duration-300 hover:bg-blue-700 hover:scale-105 shadow-xl hover:shadow-2xl">
+                <span className="mr-2 text-lg">Book Accommodation</span>
+                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+              </Link>
+              <a href="https://unccdcop17.org" target="_blank" rel="noopener noreferrer" className="inline-flex h-14 items-center justify-center rounded-full bg-white/10 border border-white/30 backdrop-blur-md px-10 font-bold text-white shadow-lg transition-all hover:bg-white/20 hover:scale-105">
+                Official Site
+              </a>
+            </div>
           </ScrollReveal>
         </div>
 
