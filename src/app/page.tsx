@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import ScrollReveal from "@/components/scroll-reveal";
+import { SearchForm } from "@/components/search-form";
 
 export default function Home() {
   return (
