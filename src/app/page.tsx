@@ -112,43 +112,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Organizers */}
-        <div className="pb-12 pt-12">
-          <h3 className="text-center text-sm font-bold uppercase tracking-widest text-zinc-300 mb-10">Organized By</h3>
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-14">
-            <OrganizerLogo
-              src="/images/partner logos/gov-mongolia.png"
-              alt="Government of Mongolia"
-              width={100}
-              height={100}
-            />
-            <OrganizerLogo
-              src="/images/partner logos/ministry-environment.png"
-              alt="Ministry of Environment"
-              width={100}
-              height={100}
-            />
-            <OrganizerLogo
-              src="/images/partner logos/ministry-foreign.png"
-              alt="Ministry of Foreign Affairs"
-              width={159}
-              height={100}
-            />
-            <OrganizerLogo
-              src="/images/partner logos/ulaanbaatar-city.png"
-              alt="Governor's Office of Ulaanbaatar"
-              width={130}
-              height={100}
-            />
-          </div>
-        </div>
-
-        {/* Powered By */}
-        <div className="pt-8 border-t border-white/10">
-          <p className="text-zinc-400 text-sm font-medium">
-            Powered by <span className="text-white font-bold">iHotel</span>
-          </p>
-        </div>
       </div>
     </main>
   );
@@ -171,20 +134,6 @@ function StatItem({ value, label }: { value: string, label: string }) {
     <div className="flex flex-col items-center space-y-2">
       <span className="text-4xl font-extrabold text-white drop-shadow-md">{value}</span>
       <span className="text-xs uppercase tracking-widest text-zinc-300 font-bold">{label}</span>
-    </div>
-  )
-}
-
-function OrganizerLogo({ src, alt, width, height }: { src: string, alt: string, width: number, height: number }) {
-  return (
-    <div className="relative transition-transform duration-300 hover:scale-110 flex items-center justify-center">
-      <Image
-        src={src}
-        alt={alt}
-        width={width}
-        height={height}
-        className="h-20 w-auto md:h-24 object-contain drop-shadow-lg"
-      />
     </div>
   )
 }

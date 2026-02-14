@@ -20,6 +20,8 @@ export const metadata: Metadata = {
 
 import { AuthProvider } from "@/lib/auth-context";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import { OrganizersSection } from "@/components/organizers-section";
 import { Toaster } from "sonner";
 
 import { createClient } from "@/lib/supabase/server";
@@ -46,6 +48,8 @@ export default async function RootLayout({
           <SiteHeader />
 
           <PageTransition>{children}</PageTransition>
+          <OrganizersSection />
+          <SiteFooter />
           <Toaster />
         </AuthProvider>
       </body>

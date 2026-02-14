@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { NotificationBell } from "@/components/admin/notification-bell";
+import { UserNav } from "@/components/user-nav";
 
 export function SiteHeader() {
     const pathname = usePathname();
@@ -32,6 +33,9 @@ export function SiteHeader() {
                 <nav className="hidden md:flex items-center gap-6">
                     <NavLink href="/" active={pathname === "/"}>Home</NavLink>
                     <NavLink href="/hotels" active={pathname.startsWith("/hotels")}>Hotels</NavLink>
+                    <NavLink href="#">Tours & Experiences</NavLink>
+                    <NavLink href="#">Airport Shuttle</NavLink>
+                    <NavLink href="#">Support</NavLink>
                     <NavLink href="https://unccdcop17.org" external>About COP17</NavLink>
                 </nav>
 
@@ -39,21 +43,19 @@ export function SiteHeader() {
                 <div className="flex items-center gap-4">
                     {user ? (
                         <>
-                            <span className="text-sm text-white/80 hidden sm:inline-block">
-                                {user.email}
-                            </span>
-                            <NavLink href="/my-bookings" active={pathname === "/my-bookings"}>My Bookings</NavLink>
-                            {(user.role === 'admin' || user.role === 'super_admin') && (
-                                <>
+                            <div className="hidden md:flex items-center gap-4">
+                                <NavLink href="/my-bookings" active={pathname === "/my-bookings"}>My Bookings</NavLink>
+                                {(user.role === 'admin' || user.role === 'super_admin') && (
                                     <Button asChild variant="ghost" className="text-white hover:text-white hover:bg-white/10">
                                         <Link href="/admin">Dashboard</Link>
                                     </Button>
-                                    <NotificationBell userId={user.id} />
-                                </>
+                                )}
+                            </div>
+
+                            {(user.role === 'admin' || user.role === 'super_admin') && (
+                                <NotificationBell userId={user.id} />
                             )}
-                            <Button onClick={() => logout()} variant="outline" className="text-black border-white/20 hover:bg-white/10 hover:text-white bg-white/90">
-                                Sign Out
-                            </Button>
+                            <UserNav />
                         </>
                     ) : (
                         <>
