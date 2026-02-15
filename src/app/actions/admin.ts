@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
@@ -283,7 +283,8 @@ export async function createHotel(prevState: any, formData: FormData) {
         return { error: error.message || "Failed to create hotel" };
     }
 
-    revalidatePath("/admin/hotels");
+    revalidatePath("/admin/hotels", "page");
+    (revalidateTag as any)("hotels");
     redirect("/admin/hotels");
 }
 
@@ -317,7 +318,8 @@ export async function deleteHotel(id: string) {
         return { error: "Failed to delete hotel (or access denied)" };
     }
 
-    revalidatePath("/admin/hotels");
+    revalidatePath("/admin/hotels", "page");
+    (revalidateTag as any)("hotels");
 }
 
 export async function getHotel(id: string) {
@@ -474,7 +476,8 @@ export async function updateHotel(id: string, prevState: any, formData: FormData
         return { error: `Failed to update hotel: ${error.message} (Code: ${error.code})` };
     }
 
-    revalidatePath("/admin/hotels");
+    revalidatePath("/admin/hotels", "page");
+    (revalidateTag as any)("hotels");
     redirect("/admin/hotels");
 }
 

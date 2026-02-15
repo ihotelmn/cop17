@@ -44,120 +44,122 @@ export type HotelSearchParams = {
     maxPrice?: string;
 };
 
-export async function getPublishedHotels(searchParams?: HotelSearchParams) {
-    const supabase = getSupabaseAdmin();
-    let queryBuilder = supabase
-        .from("hotels")
-        .select(`
-            *,
-            rooms (
-                price_per_night
-            )
-        `)
-        .order("created_at", { ascending: false });
+import { unstable_cache } from "next/cache";
 
-    // Apply Basic DB Filters
-    if (searchParams?.query) {
-        const q = `%${searchParams.query}%`;
-        queryBuilder = queryBuilder.or(`name.ilike.${q},address.ilike.${q}`);
-    }
+export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
+    return unstable_cache(
+        async (params?: HotelSearchParams) => {
+            const supabase = getSupabaseAdmin();
+            let queryBuilder = supabase
+                .from("hotels")
+                .select(`
+                    *,
+                    rooms (
+                        price_per_night
+                    )
+                `)
+                .order("created_at", { ascending: false });
 
-    if (searchParams?.stars) {
-        const stars = parseInt(searchParams.stars);
-        if (!isNaN(stars)) {
-            queryBuilder = queryBuilder.gte("stars", stars);
+            // Apply Basic DB Filters
+            if (params?.query) {
+                const q = `%${params.query}%`;
+                queryBuilder = queryBuilder.or(`name.ilike.${q},address.ilike.${q}`);
+            }
+
+            if (params?.stars) {
+                const stars = parseInt(params.stars);
+                if (!isNaN(stars)) {
+                    queryBuilder = queryBuilder.gte("stars", stars);
+                }
+            }
+
+            if (params?.amenities) {
+                const amenitiesList = params.amenities.split(",").filter(Boolean);
+                if (amenitiesList.length > 0) {
+                    queryBuilder = queryBuilder.contains("amenities", amenitiesList);
+                }
+            }
+
+            const { data: hotels, error } = await queryBuilder;
+
+            if (error) {
+                console.error("Error fetching hotels:", error);
+                return [];
+            }
+
+            // Process and Filter/Sort in JS
+            let results = hotels.map((h: any) => {
+                const lat = h.latitude ? Number(h.latitude) : null;
+                const lng = h.longitude ? Number(h.longitude) : null;
+
+                // STRATEGY: Use DB-cached distance first, fallback to math only if missing
+                const distance = h.cached_distance_km ?? (
+                    (lat && lng)
+                        ? calculateDistance(lat, lng, COP17_VENUE.latitude, COP17_VENUE.longitude)
+                        : null
+                );
+
+                return {
+                    ...h,
+                    amenities: Array.isArray(h.amenities)
+                        ? h.amenities.map((a: any) => typeof a === 'string' ? a : JSON.stringify(a))
+                        : [],
+                    latitude: lat,
+                    longitude: lng,
+                    distanceToVenue: distance,
+                    cached_distance_km: h.cached_distance_km,
+                    cached_drive_time_text: h.cached_drive_time_text,
+                    cached_drive_time_value: h.cached_drive_time_value,
+                    google_place_id: h.google_place_id,
+                    cached_rating: h.cached_rating,
+                    cached_review_count: h.cached_review_count,
+                    minPrice: h.rooms?.length > 0 ? Math.min(...h.rooms.map((r: any) => Number(r.price_per_night))) : null
+                };
+            });
+
+            // Filter by Price
+            if (params?.minPrice) {
+                const min = parseFloat(params.minPrice);
+                if (!isNaN(min)) {
+                    results = results.filter((h: any) => h.minPrice !== null && h.minPrice >= min);
+                }
+            }
+            if (params?.maxPrice) {
+                const max = parseFloat(params.maxPrice);
+                if (!isNaN(max)) {
+                    results = results.filter((h: any) => h.minPrice !== null && h.minPrice <= max);
+                }
+            }
+
+            // Sorting
+            const sortBy = params?.sortBy || 'newest';
+            results.sort((a: any, b: any) => {
+                const priceA = a.minPrice ?? 99999999;
+                const priceB = b.minPrice ?? 99999999;
+
+                switch (sortBy) {
+                    case 'price-asc':
+                        return priceA - priceB;
+                    case 'price-desc':
+                        return priceB - priceA;
+                    case 'stars-desc':
+                        return b.stars - a.stars;
+                    case 'distance-asc':
+                        return (a.distanceToVenue ?? 9999) - (b.distanceToVenue ?? 9999);
+                    case 'newest':
+                    default:
+                        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                }
+            });
+
+            return results as (Hotel & { minPrice: number })[];
+        },
+        ['published-hotels', JSON.stringify(searchParams || {})],
+        {
+            revalidate: 300, // 5 minutes
+            tags: ['hotels']
         }
-    }
-
-    if (searchParams?.amenities) {
-        const amenitiesList = searchParams.amenities.split(",").filter(Boolean);
-        if (amenitiesList.length > 0) {
-            queryBuilder = queryBuilder.contains("amenities", amenitiesList);
-        }
-    }
-
-    const { data: hotels, error } = await queryBuilder;
-
-    if (error) {
-        console.error("Error fetching hotels:", error);
-        return [];
-    }
-
-    // Process and Filter/Sort in JS
-    let results = hotels.map((h: any) => {
-        const lat = h.latitude ? Number(h.latitude) : null;
-        const lng = h.longitude ? Number(h.longitude) : null;
-
-        const distance = (lat && lng)
-            ? calculateDistance(lat, lng, COP17_VENUE.latitude, COP17_VENUE.longitude)
-            : null;
-
-        return {
-            ...h,
-            // Ensure amenities is strictly a string array
-            amenities: Array.isArray(h.amenities)
-                ? h.amenities.map((a: any) => typeof a === 'string' ? a : JSON.stringify(a))
-                : [], // Fallback to empty array if not an array (e.g. null, object, string)
-            // Ensure coordinates are numbers
-            latitude: lat,
-            longitude: lng,
-            distanceToVenue: distance,
-            cached_distance_km: h.cached_distance_km,
-            cached_drive_time_text: h.cached_drive_time_text,
-            cached_drive_time_value: h.cached_drive_time_value,
-            // Google Reviews
-            google_place_id: h.google_place_id,
-            cached_rating: h.cached_rating,
-            cached_review_count: h.cached_review_count,
-            // serialize safe minPrice: avoid Infinity
-            minPrice: h.rooms?.length > 0 ? Math.min(...h.rooms.map((r: any) => Number(r.price_per_night))) : null
-        };
-    });
-
-    // Filter by Price
-    if (searchParams?.minPrice) {
-        const min = parseFloat(searchParams.minPrice);
-        if (!isNaN(min)) {
-            results = results.filter((h: any) => h.minPrice !== null && h.minPrice >= min);
-        }
-    }
-    if (searchParams?.maxPrice) {
-        const max = parseFloat(searchParams.maxPrice);
-        if (!isNaN(max)) {
-            results = results.filter((h: any) => h.minPrice !== null && h.minPrice <= max);
-        }
-    }
-
-    // Sorting
-    const sortBy = searchParams?.sortBy || 'newest';
-    results.sort((a: any, b: any) => {
-        // Handle nulls in sort - push to end usually
-        const priceA = a.minPrice ?? 99999999;
-        const priceB = b.minPrice ?? 99999999;
-
-        switch (sortBy) {
-            case 'price-asc':
-                return priceA - priceB;
-            case 'price-desc':
-                return (b.minPrice ?? 0) - (a.minPrice ?? 0);
-            case 'stars-desc':
-                return b.stars - a.stars;
-            case 'distance-asc':
-                return (a.distanceToVenue ?? 9999) - (b.distanceToVenue ?? 9999);
-            case 'newest':
-            default:
-                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        }
-    });
-
-    // Cast the result to expect minPrice as number | null, but for the client prop compatibility we might need to be careful
-    // The current Hotel definition for client components might expect minPrice as number.
-    // Let's coerce null to 0 or a high number if essential, OR update the type.
-    // For safety with existing components, let's keep it as number but 0 if null, 
-    // OR better: use 0 for "Contact for price" behavior if that's acceptable, but user wants booking.
-    // Actually, serializing `null` is fine. `Infinity` was the problem.
-    // I will cast it as any to bypass strict type check for now or update type if possible.
-    return results as unknown as (Hotel & { minPrice: number })[];
+    )(searchParams);
 }
 
 export async function getPublicHotel(id: string) {
@@ -183,9 +185,11 @@ export async function getPublicHotel(id: string) {
         ...hotel,
         latitude: lat,
         longitude: lng,
-        distanceToVenue: (lat && lng)
-            ? calculateDistance(lat, lng, COP17_VENUE.latitude, COP17_VENUE.longitude)
-            : null,
+        distanceToVenue: hotel.cached_distance_km ?? (
+            (lat && lng)
+                ? calculateDistance(lat, lng, COP17_VENUE.latitude, COP17_VENUE.longitude)
+                : null
+        ),
         // Cached fields usually come automatically if they exist in DB and we select *, but let's be explicit if needed
         cached_rating: hotel.cached_rating,
         cached_review_count: hotel.cached_review_count,
