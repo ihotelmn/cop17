@@ -7,7 +7,8 @@ import {
     ShieldCheck,
     Clock,
     FileText,
-    ArrowRight
+    ArrowRight,
+    XCircle
 } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
