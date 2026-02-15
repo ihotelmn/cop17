@@ -18,6 +18,7 @@ export type BookingAdmin = {
     checkIn: string;
     checkOut: string;
     rawStatus: string;
+    createdAt: string;
 };
 
 // Helper: Get room IDs belonging to hotels owned by the user (Admin Client recommended)
@@ -69,6 +70,7 @@ export async function getAllBookings(filters?: BookingFilters): Promise<{ succes
             .from("bookings")
             .select(`
                 id,
+                created_at,
                 check_in_date,
                 check_out_date,
                 status,
@@ -165,6 +167,7 @@ export async function getAllBookings(filters?: BookingFilters): Promise<{ succes
                 status: b.status,
                 rawStatus: b.status,
                 amount: b.total_price,
+                createdAt: b.created_at,
             };
         });
 

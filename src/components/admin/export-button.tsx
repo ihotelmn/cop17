@@ -28,13 +28,13 @@ export function ExportButton({ data, filename }: ExportButtonProps) {
         // 2. Map data to rows
         const rows = data.map(b => [
             b.id,
-            b.created_at,
-            b.rooms?.hotels?.name || "Unknown Hotel",
-            b.rooms?.name || "Unknown Room",
-            b.total_price,
+            b.createdAt,
+            b.hotelName,
+            b.roomName,
+            b.amount,
             b.status,
-            b.check_in_date,
-            b.check_out_date,
+            b.checkIn,
+            b.checkOut,
             "USD"
         ]);
 

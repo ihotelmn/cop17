@@ -33,7 +33,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: { [
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <ExportButton />
+                    <ExportButton data={bookings || []} filename="bookings" />
                     {/* <Button variant="premium">New Booking</Button> */}
                 </div>
             </div>
