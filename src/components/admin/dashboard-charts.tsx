@@ -39,7 +39,7 @@ export function RevenueTrendChart({ data }: { data: any[] }) {
                     />
                     <Tooltip
                         contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
-                        formatter={(value: number) => [`$${value.toLocaleString()}`, "Revenue"]}
+                        formatter={(value: any) => [`$${Number(value || 0).toLocaleString()}`, "Revenue"]}
                     />
                     <Line
                         type="monotone"
