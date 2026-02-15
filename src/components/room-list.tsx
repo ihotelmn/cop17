@@ -6,14 +6,11 @@ import { RoomCard } from "./room-card";
 interface RoomListProps {
     hotelId: string;
     rooms: Room[];
+    checkIn: Date;
+    checkOut: Date;
 }
 
-export function RoomList({ hotelId, rooms }: RoomListProps) {
-    // Determine check-in/out dates (Mock for now, should come from context/props)
-    const checkIn = new Date();
-    const checkOut = new Date();
-    checkOut.setDate(checkOut.getDate() + 1);
-
+export function RoomList({ hotelId, rooms, checkIn, checkOut }: RoomListProps) {
     if (rooms.length === 0) {
         return (
             <div className="text-center py-10 text-zinc-500">

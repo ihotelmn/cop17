@@ -12,6 +12,8 @@ import { UserNav } from "@/components/user-nav";
 export function SiteHeader() {
     const pathname = usePathname();
     const isHome = pathname === "/";
+
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { user, logout } = useAuth();
 

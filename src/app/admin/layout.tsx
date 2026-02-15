@@ -1,7 +1,7 @@
 import React from "react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Hotel, BookOpen, LogOut, Settings, Users, Activity } from "lucide-react";
+import { LayoutDashboard, Hotel, BookOpen, LogOut, Settings, Users, Activity, Calendar, Users2 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
@@ -43,11 +43,12 @@ export default async function AdminLayout({
         }
     }
 
-    if (!profile || (profile.role !== "admin" && profile.role !== "super_admin")) {
+    if (!profile || (profile.role !== "admin" && profile.role !== "super_admin" && profile.role !== "liaison")) {
         redirect("/"); // unauthorized
     }
 
     const isSuperAdmin = profile.role === "super_admin";
+    const isLiaison = profile.role === "liaison";
 
     return (
         <div className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950 pt-20">
@@ -71,6 +72,13 @@ export default async function AdminLayout({
                         Overview
                     </Link>
                     <Link
+                        href="/admin/inventory"
+                        className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                    >
+                        <Calendar className="h-4 w-4" />
+                        Inventory
+                    </Link>
+                    <Link
                         href="/admin/bookings"
                         className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                     >
@@ -84,6 +92,16 @@ export default async function AdminLayout({
                         <Hotel className="h-4 w-4" />
                         Hotels
                     </Link>
+
+                    {(isSuperAdmin || profile.role === "admin" || isLiaison) && (
+                        <Link
+                            href="/admin/group-requests"
+                            className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                        >
+                            <Users2 className="h-4 w-4" />
+                            Group Requests
+                        </Link>
+                    )}
 
                     {isSuperAdmin && (
                         <>

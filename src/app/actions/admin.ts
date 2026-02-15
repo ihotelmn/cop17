@@ -49,6 +49,16 @@ export type Hotel = {
     check_out_time: string | null;
     latitude: number | null;
     longitude: number | null;
+    // Cached Distance
+    cached_distance_km: number | null;
+    cached_drive_time_text: string | null;
+    cached_drive_time_value: number | null;
+    cached_walk_time_text: string | null;
+    cached_walk_time_value: number | null;
+    // Google Reviews
+    google_place_id: string | null;
+    cached_rating: number | null;
+    cached_review_count: number | null;
 };
 
 export async function getHotels() {
@@ -85,6 +95,87 @@ export async function getHotels() {
 
     console.log(`[getHotels] Found ${hotels?.length || 0} hotels for user ${user.id} (${profile.role})`);
     return hotels as Hotel[];
+}
+
+import { COP17_VENUE } from "@/lib/venue";
+
+async function fetchGoogleDistance(lat: number, lng: number) {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) return null;
+
+    try {
+        const origin = `${COP17_VENUE.latitude},${COP17_VENUE.longitude}`;
+        const destination = `${lat},${lng}`;
+
+        // Use Google Maps Distance Matrix API (REST)
+        // Note: Server-side calls need the API key to be unrestricted or restricted to IP (not referrer)
+        const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&mode=driving&key=${apiKey}`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.status === 'OK' && data.rows[0]?.elements[0]?.status === 'OK') {
+            const result = data.rows[0].elements[0];
+            return {
+                distance_km: result.distance?.value ? result.distance.value / 1000 : null,
+                drive_time_text: result.duration?.text || null,
+                drive_time_value: result.duration?.value || null,
+                // For walking, we could make another call, but let's just stick to driving for now or mock walking based on speed
+            };
+        }
+    } catch (error) {
+        console.error("Error fetching Google Distance:", error);
+    }
+    return null;
+}
+
+async function fetchGooglePlaceDetails(name: string, lat: number, lng: number) {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) return null;
+
+    // Skip for test hotels
+    if (name.toLowerCase().includes('test')) {
+        return {
+            google_place_id: null,
+            cached_rating: null,
+            cached_review_count: null
+        };
+    }
+
+    try {
+        // Find Place ID using Find Place API with location bias AND explicit city to restrict results
+        const searchQuery = `${name}, Ulaanbaatar, Mongolia`;
+        // Added 'name' field to verify matching
+        const findUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(searchQuery)}&inputtype=textquery&fields=place_id,rating,user_ratings_total,name&locationbias=circle:2000@${lat},${lng}&key=${apiKey}`;
+
+        const response = await fetch(findUrl);
+        const data = await response.json();
+
+        if (data.status === 'OK' && data.candidates && data.candidates.length > 0) {
+            const candidate = data.candidates[0];
+
+            // verify the name is somewhat similar (basic check)
+            // If we searched for "Shangri-La" and got "Test Shop", skip it.
+            const candidateName = candidate.name.toLowerCase();
+            const inputName = name.toLowerCase();
+
+            // Simple check: candidate name should contain part of our name or vice versa
+            // This prevents "Test hotel" from matching unrelated nearby businesses
+            if (!candidateName.includes(inputName) && !inputName.includes(candidateName)) {
+                console.warn(`[GooglePlaces] Match rejected: expected "${name}", found "${candidate.name}"`);
+                return null;
+            }
+
+            return {
+                google_place_id: candidate.place_id,
+                cached_rating: candidate.rating || null,
+                cached_review_count: candidate.user_ratings_total || null
+            };
+        }
+    } catch (error) {
+        console.error("Error fetching Google Place Details:", error);
+    }
+    return null;
 }
 
 export async function createHotel(prevState: any, formData: FormData) {
@@ -140,6 +231,33 @@ export async function createHotel(prevState: any, formData: FormData) {
     const amenitiesArray = parseArray(data.amenities);
     const imagesArray = parseArray(data.images);
 
+    // Calculate Distance if location is provided
+    let cachedData = {};
+    if (data.latitude && data.longitude) {
+        const googleData = await fetchGoogleDistance(data.latitude, data.longitude);
+        if (googleData) {
+            cachedData = {
+                ...cachedData,
+                cached_distance_km: googleData.distance_km,
+                cached_drive_time_text: googleData.drive_time_text,
+                cached_drive_time_value: googleData.drive_time_value,
+            };
+        }
+    }
+
+    // Fetch Google Reviews if location and name provided
+    if (data.name && data.latitude && data.longitude) {
+        const placeData = await fetchGooglePlaceDetails(data.name, data.latitude, data.longitude);
+        if (placeData) {
+            cachedData = {
+                ...cachedData,
+                google_place_id: placeData.google_place_id,
+                cached_rating: placeData.cached_rating,
+                cached_review_count: placeData.cached_review_count
+            };
+        }
+    }
+
     const { error } = await supabase.from("hotels").insert({
         owner_id: user.id,
         name: data.name,
@@ -157,6 +275,7 @@ export async function createHotel(prevState: any, formData: FormData) {
         check_out_time: data.check_out_time,
         latitude: data.latitude,
         longitude: data.longitude,
+        ...cachedData
     });
 
     if (error) {
@@ -291,6 +410,36 @@ export async function updateHotel(id: string, prevState: any, formData: FormData
     const amenitiesArray = parseArray(data.amenities);
     const imagesArray = parseArray(data.images);
 
+    // Retrieve old hotel data to see if location changed
+    // OR just always update if location is provided (simplest)
+    let cachedData = {};
+    if (data.latitude && data.longitude) {
+        // Optimization: We could check if lat/rest didn't change, but for now recalculating on edit is safe enough
+        // to ensure accuracy.
+        const googleData = await fetchGoogleDistance(data.latitude, data.longitude);
+        if (googleData) {
+            cachedData = {
+                ...cachedData,
+                cached_distance_km: googleData.distance_km,
+                cached_drive_time_text: googleData.drive_time_text,
+                cached_drive_time_value: googleData.drive_time_value,
+            };
+        }
+
+        // Fetch new Reviews Data on update
+        if (data.name) {
+            const placeData = await fetchGooglePlaceDetails(data.name, data.latitude, data.longitude);
+            if (placeData) {
+                cachedData = {
+                    ...cachedData,
+                    google_place_id: placeData.google_place_id,
+                    cached_rating: placeData.cached_rating,
+                    cached_review_count: placeData.cached_review_count
+                };
+            }
+        }
+    }
+
     // Check Role
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
 
@@ -310,6 +459,7 @@ export async function updateHotel(id: string, prevState: any, formData: FormData
         check_out_time: data.check_out_time,
         latitude: data.latitude,
         longitude: data.longitude,
+        ...cachedData
     }).eq("id", id);
 
     // Enforce ownership for non-super admins
@@ -321,7 +471,7 @@ export async function updateHotel(id: string, prevState: any, formData: FormData
 
     if (error) {
         console.error("Error updating hotel:", error);
-        return { error: "Failed to update hotel" };
+        return { error: `Failed to update hotel: ${error.message} (Code: ${error.code})` };
     }
 
     revalidatePath("/admin/hotels");

@@ -23,6 +23,16 @@ export type Hotel = {
     check_out_time?: string | null;
     // Calculated
     distanceToVenue?: number | null;
+    // Cached Distance
+    cached_distance_km?: number | null;
+    cached_drive_time_text?: string | null;
+    cached_drive_time_value?: number | null;
+    cached_walk_time_text?: string | null;
+    cached_walk_time_value?: number | null;
+    // Google Reviews
+    google_place_id?: string | null;
+    cached_rating?: number | null;
+    cached_review_count?: number | null;
 };
 
 export type HotelSearchParams = {
@@ -92,6 +102,13 @@ export async function getPublishedHotels(searchParams?: HotelSearchParams) {
             latitude: lat,
             longitude: lng,
             distanceToVenue: distance,
+            cached_distance_km: h.cached_distance_km,
+            cached_drive_time_text: h.cached_drive_time_text,
+            cached_drive_time_value: h.cached_drive_time_value,
+            // Google Reviews
+            google_place_id: h.google_place_id,
+            cached_rating: h.cached_rating,
+            cached_review_count: h.cached_review_count,
             // serialize safe minPrice: avoid Infinity
             minPrice: h.rooms?.length > 0 ? Math.min(...h.rooms.map((r: any) => Number(r.price_per_night))) : null
         };
@@ -168,7 +185,11 @@ export async function getPublicHotel(id: string) {
         longitude: lng,
         distanceToVenue: (lat && lng)
             ? calculateDistance(lat, lng, COP17_VENUE.latitude, COP17_VENUE.longitude)
-            : null
+            : null,
+        // Cached fields usually come automatically if they exist in DB and we select *, but let's be explicit if needed
+        cached_rating: hotel.cached_rating,
+        cached_review_count: hotel.cached_review_count,
+        google_place_id: hotel.google_place_id
     } as Hotel;
 }
 
@@ -187,4 +208,66 @@ export async function getPublicRooms(hotelId: string) {
     }
 
     return rooms;
+}
+
+export async function getPublicRoom(roomId: string) {
+    const supabase = getSupabaseAdmin();
+
+    const { data: room, error } = await supabase
+        .from("rooms")
+        .select(`
+            *,
+            hotel:hotels (*)
+        `)
+        .eq("id", roomId)
+        .single();
+
+    if (error) {
+        console.error(`Error fetching public room (ID: ${roomId}):`, error);
+        return null;
+    }
+
+    return room;
+}
+
+export async function getSearchSuggestions(query: string) {
+    if (!query || query.length < 2) return [];
+
+    const supabase = getSupabaseAdmin();
+    const q = `%${query}%`;
+
+    try {
+        // Fetch hotels that match by name or address
+        const { data: hotels, error } = await supabase
+            .from("hotels")
+            .select("name, address")
+            .or(`name.ilike.${q},address.ilike.${q}`)
+            .limit(10);
+
+        if (error) throw error;
+
+        // Extract unique locations (suburbs/cities from address) and hotel names
+        const suggestions = new Set<string>();
+
+        hotels.forEach(h => {
+            if (h.name.toLowerCase().includes(query.toLowerCase())) {
+                suggestions.add(h.name);
+            }
+
+            if (h.address) {
+                // Try to extract the neighborhood or city (usually after the first comma or the last word)
+                const parts = h.address.split(',').map((p: string) => p.trim());
+                parts.forEach((p: string) => {
+                    if (p.toLowerCase().includes(query.toLowerCase()) && p.length > 2) {
+                        suggestions.add(p);
+                    }
+                });
+            }
+        });
+
+        return Array.from(suggestions).slice(0, 6);
+    } catch (error) {
+        console.error("Error fetching suggestions:", error);
+        return [];
+    }
 }

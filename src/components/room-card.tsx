@@ -1,19 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { ImageGallery } from "@/components/image-gallery";
 import { Check, User, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
-import { BookingForm } from "./booking-form";
+import Link from "next/link";
+import { format } from "date-fns";
 
 interface Room {
     id: string;
@@ -23,7 +14,7 @@ interface Room {
     capacity: number;
     size: number; // in sqm
     amenities: string[];
-    images: string[]; // Changed from image: string
+    images: string[];
 }
 
 interface RoomCardProps {
@@ -34,8 +25,6 @@ interface RoomCardProps {
 }
 
 export function RoomCard({ room, hotelId, checkIn, checkOut }: RoomCardProps) {
-    const [open, setOpen] = useState(false);
-
     return (
         <div className="group relative overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900 flex flex-col md:flex-row">
             <div className="relative aspect-video md:w-1/3 md:aspect-auto overflow-hidden">
@@ -82,28 +71,11 @@ export function RoomCard({ room, hotelId, checkIn, checkOut }: RoomCardProps) {
                 </div>
 
                 <div className="mt-6 flex justify-end">
-                    <Dialog open={open} onOpenChange={setOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="w-full md:w-auto">Book This Room</Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[500px]">
-                            <DialogHeader>
-                                <DialogTitle>Complete Your Booking</DialogTitle>
-                                <DialogDescription>
-                                    Enter your details to secure this room.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <BookingForm
-                                hotelId={hotelId}
-                                roomId={room.id}
-                                roomName={room.name}
-                                price={room.price}
-                                checkIn={checkIn}
-                                checkOut={checkOut}
-                                onSuccess={() => setOpen(false)}
-                            />
-                        </DialogContent>
-                    </Dialog>
+                    <Button asChild className="w-full md:w-auto px-8 h-11 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/10">
+                        <Link href={`/hotels/${hotelId}/checkout/${room.id}?from=${format(checkIn, "yyyy-MM-dd")}&to=${format(checkOut, "yyyy-MM-dd")}`}>
+                            Book This Room
+                        </Link>
+                    </Button>
                 </div>
             </div>
         </div>

@@ -2,11 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Star, MapPin, Wifi, Car, Coffee, ArrowRight } from "lucide-react";
+import { Star, MapPin, Wifi, Car, Coffee, ArrowRight, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Hotel } from "@/app/actions/public";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { estimateTravelTime } from "@/lib/venue";
 import {
     Carousel,
     CarouselContent,
@@ -17,7 +18,7 @@ import {
 
 export function HotelList({ hotels }: { hotels: (Hotel & { minPrice: number })[] }) {
     if (!hotels || hotels.length === 0) {
-        return null; // Handled by parent
+        return null;
     }
 
     return (
@@ -31,13 +32,18 @@ export function HotelList({ hotels }: { hotels: (Hotel & { minPrice: number })[]
 
 function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
     // Determine badges
-    const isOfficial = true; // Logic to determine if official partner
+    const isOfficial = true;
     const hasShuttle = hotel.amenities?.includes("Shuttle");
 
     // Images fallback
     const images = hotel.images && hotel.images.length > 0
         ? hotel.images
         : ["https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2940"];
+
+    // Use cached real distance if available, otherwise fallback to calculated logic
+    const displayDistance = hotel.cached_distance_km || hotel.distanceToVenue;
+    const displayTime = hotel.cached_drive_time_text || (hotel.distanceToVenue ? `~${estimateTravelTime(hotel.distanceToVenue, 'driving')}` : null);
+    const isRealData = !!hotel.cached_drive_time_text;
 
     return (
         <div className="group relative flex flex-col md:flex-row overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all hover:shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
@@ -102,27 +108,44 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
                                 {hotel.name}
                             </h3>
                         </div>
-                        {/* Rating Box - Placeholder for Review System */}
-                        <div className="hidden md:flex flex-col items-end">
-                            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-blue-600 text-white font-bold text-sm shadow-md">
-                                9.2
+                        {/* Rating Box - Google Reviews */}
+                        {hotel.cached_rating && (
+                            <div className="hidden md:flex flex-col items-end">
+                                <div className="flex items-center justify-center h-10 min-w-10 px-1 rounded-lg bg-blue-600 text-white font-bold text-sm shadow-md">
+                                    {hotel.cached_rating}
+                                </div>
+                                <span className="text-xs text-zinc-500 mt-1">
+                                    {hotel.cached_rating >= 4.5 ? "Exceptional" :
+                                        hotel.cached_rating >= 4.0 ? "Very Good" :
+                                            hotel.cached_rating >= 3.5 ? "Good" : "Average"}
+                                </span>
+                                {hotel.cached_review_count && (
+                                    <span className="text-[10px] text-zinc-400">
+                                        {hotel.cached_review_count} reviews
+                                    </span>
+                                )}
                             </div>
-                            <span className="text-xs text-zinc-500 mt-1">Exceptional</span>
-                        </div>
+                        )}
                     </div>
 
                     <div className="mt-2 flex items-center text-sm text-zinc-500 dark:text-zinc-400">
                         <MapPin className="mr-1.5 h-4 w-4 shrink-0 text-zinc-400" />
                         <span className="line-clamp-1">{hotel.address || "Ulaanbaatar, Mongolia"}</span>
                         <span className="mx-2 text-zinc-300">•</span>
-                        <span className="text-blue-600 font-medium hover:underline cursor-pointer">Show on map</span>
+                        <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${hotel.latitude || hotel.address},${hotel.longitude || ''}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 font-medium hover:underline cursor-pointer"
+                        >
+                            Show on map
+                        </a>
                     </div>
 
                     {/* Amenities Badges */}
                     <div className="mt-5 flex flex-wrap gap-3">
                         {hotel.amenities?.slice(0, 4).map((a, i) => (
                             <div key={i} className="flex items-center text-xs font-medium text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md">
-                                {/* Icons mapping could go here */}
                                 {a === "WiFi" && <Wifi className="h-3 w-3 mr-1.5" />}
                                 {a === "Shuttle" && <Car className="h-3 w-3 mr-1.5" />}
                                 {a === "Breakfast" && <Coffee className="h-3 w-3 mr-1.5" />}
@@ -147,10 +170,16 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
                         </div>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
                             <span className="text-xs text-green-600 font-bold">Includes taxes & fees</span>
-                            {hotel.distanceToVenue != null && (
-                                <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100 font-medium whitespace-nowrap">
-                                    {hotel.distanceToVenue} km to Venue
-                                </span>
+                            {displayDistance != null && (
+                                <>
+                                    <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100 font-medium whitespace-nowrap flex items-center gap-1" title="Distance to UG Arena">
+                                        <Navigation className="h-2 w-2" />
+                                        {typeof displayDistance === 'number' ? displayDistance.toFixed(1) : displayDistance} km to Venue
+                                    </span>
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium whitespace-nowrap ${isRealData ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-zinc-50 text-zinc-600 border-zinc-100"}`}>
+                                        {displayTime}
+                                    </span>
+                                </>
                             )}
                             {hasShuttle && (
                                 <span className="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-100 font-medium whitespace-nowrap">

@@ -48,21 +48,22 @@ export default function LoginPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="space-y-6"
+            className="w-full max-w-[400px] mx-auto"
         >
-            <div className="flex flex-col space-y-2 text-center">
-                <h1 className="text-2xl font-semibold tracking-tight">
-                    Sign In
+            <div className="flex flex-col space-y-2 text-center mb-8">
+                <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                    Welcome Back
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                    Enter your credentials to access the dashboard
+                    Sign in to access the COP17 administration portal
                 </p>
             </div>
-            <div className={cn("grid gap-6")}>
+
+            <div className={cn("grid gap-6 bg-white dark:bg-zinc-900 p-8 rounded-3xl shadow-xl border border-zinc-100 dark:border-zinc-800")}>
                 <form action={handleSubmit}>
                     <div className="grid gap-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="email">Email</Label>
+                            <Label htmlFor="email" className="font-semibold text-zinc-700 dark:text-zinc-300">Email</Label>
                             <Input
                                 id="email"
                                 name="email"
@@ -73,10 +74,11 @@ export default function LoginPage() {
                                 autoCorrect="off"
                                 disabled={isLoading}
                                 required
+                                className="h-11 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700 focus:ring-blue-500"
                             />
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="password">Password</Label>
+                            <Label htmlFor="password" className="font-semibold text-zinc-700 dark:text-zinc-300">Password</Label>
                             <Input
                                 id="password"
                                 name="password"
@@ -85,52 +87,57 @@ export default function LoginPage() {
                                 autoCapitalize="none"
                                 disabled={isLoading}
                                 required
+                                className="h-11 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700 focus:ring-blue-500"
                             />
                         </div>
 
                         {state?.error && (
-                            <p className="text-sm text-red-500 font-medium">
-                                {state.error}
-                            </p>
+                            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900">
+                                <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                                    {state.error}
+                                </p>
+                            </div>
                         )}
 
-                        <Button disabled={isLoading} variant={"premium" as any}>
+                        <Button disabled={isLoading} variant={"premium" as any} className="h-12 rounded-xl text-base font-bold shadow-lg shadow-blue-500/20 mt-2">
                             {isLoading && (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             )}
-                            Sign In to Dashboard
+                            Sign In
                         </Button>
                     </div>
                 </form>
+
                 <div className="relative">
                     <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
+                        <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">
-                            Or continue with
+                        <span className="bg-white dark:bg-zinc-900 px-2 text-muted-foreground font-medium">
+                            Or
                         </span>
                     </div>
                 </div>
-                <Button variant={"outline" as any} asChild>
+
+                <Button variant={"outline" as any} asChild className="h-12 rounded-xl border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-semibold">
                     <Link href="/signup">
                         Create Guest Account
                     </Link>
                 </Button>
             </div>
 
-            <p className="px-8 text-center text-sm text-muted-foreground">
-                By clicking continue, you agree to our{" "}
+            <p className="px-8 text-center text-xs text-muted-foreground mt-8">
+                By signing in, you agree to our{" "}
                 <Link
                     href="/terms"
-                    className="underline underline-offset-4 hover:text-primary"
+                    className="underline underline-offset-4 hover:text-blue-500 transition-colors"
                 >
-                    Terms of Service
+                    Terms
                 </Link>{" "}
                 and{" "}
                 <Link
                     href="/privacy"
-                    className="underline underline-offset-4 hover:text-primary"
+                    className="underline underline-offset-4 hover:text-blue-500 transition-colors"
                 >
                     Privacy Policy
                 </Link>

@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
-import { DollarSign, Users, Calendar, TrendingUp } from "lucide-react";
+import { DollarSign, Users, Calendar, TrendingUp, Download } from "lucide-react";
+import { ExportButton } from "@/components/admin/export-button";
 
 export default async function ReportsPage() {
     const supabase = await createClient();
@@ -42,8 +43,14 @@ export default async function ReportsPage() {
     const recentBookings = bookings.slice(0, 10);
 
     return (
-        <div className="space-y-8">
-            <h2 className="text-3xl font-bold tracking-tight text-white">Reports & Analytics</h2>
+        <div className="space-y-8 text-zinc-50">
+            <div className="flex justify-between items-center">
+                <div>
+                    <h2 className="text-3xl font-bold tracking-tight text-white">Reports & Analytics</h2>
+                    <p className="text-zinc-500 mt-1">Detailed overview of booking performance and financial metrics.</p>
+                </div>
+                <ExportButton data={bookings || []} filename="COP17_Bookings_Report" />
+            </div>
 
             {/* KPI Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

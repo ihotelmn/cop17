@@ -1,7 +1,5 @@
 @import "tailwindcss";
 
-@import "tailwindcss";
-
 :root {
   /* Premium Light Mode */
   --background: #fafafa;
@@ -97,13 +95,25 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 2px);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
 }
 
 body {
@@ -141,4 +151,68 @@ body {
 
 .animate-bounce-subtle {
   animation: bounce-subtle 2s ease-in-out infinite;
+}
+
+/* Premium Date Picker Range Styles (react-day-picker v9) */
+.range-middle {
+  background-color: #eff6ff !important;
+  color: #2563eb !important;
+  border-radius: 0 !important;
+  width: 100% !important;
+}
+
+.range-start:not(.range-end) {
+  position: relative;
+  z-index: 10;
+}
+
+.range-start:not(.range-end)::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -50%;
+  bottom: 0;
+  left: 50%;
+  background-color: #eff6ff;
+  /* blue-50 */
+  z-index: -1;
+}
+
+.range-end:not(.range-start) {
+  position: relative;
+  z-index: 10;
+}
+
+.range-end:not(.range-start)::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 50%;
+  bottom: 0;
+  left: -50%;
+  background-color: #eff6ff;
+  /* blue-50 */
+  z-index: -1;
+}
+
+.dark .range-middle,
+.dark .range-start:not(.range-end)::after,
+.dark .range-end:not(.range-start)::after {
+  background-color: rgba(37, 99, 235, 0.15) !important;
+}
+
+.dark .range-middle {
+  color: #60a5fa !important;
+}
+
+.range-start,
+.range-end {
+  background-color: #2563eb !important;
+  color: white !important;
+  border-radius: 9999px !important;
+}
+
+.dark .range-start,
+.dark .range-end {
+  background-color: #3b82f6 !important;
 }

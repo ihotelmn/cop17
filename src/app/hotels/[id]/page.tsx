@@ -10,69 +10,33 @@ export const revalidate = 0;
 
 interface PageProps {
     params: Promise<{ id: string }>;
+    searchParams: Promise<{ from?: string; to?: string }>;
 }
 
-export default async function HotelDetailPage({ params }: PageProps) {
+export default async function HotelDetailPage({ params, searchParams }: PageProps) {
     const { id } = await params;
-    const hotel = await getPublicHotel(id); // Use public action
-    const rooms = await getPublicRooms(id); // Use public action
+    const { from, to } = await searchParams;
+    const hotel = await getPublicHotel(id);
+    const rooms = await getPublicRooms(id);
 
     if (!hotel) {
         notFound();
     }
 
+    // Parse dates
+    const checkIn = from ? new Date(from) : new Date();
+    const checkOut = to ? new Date(to) : new Date(new Date().setDate(new Date().getDate() + 1));
+
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-20">
-            {/* Hero Section with Gallery */}
-            <div className="relative h-[60vh] w-full">
-                <ImageGallery
-                    images={hotel.images || []}
-                    alt={hotel.name}
-                    className="h-full w-full"
-                    aspectRatio="video"
-                    showControls={true}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
-
-                <div className="container mx-auto px-4 absolute bottom-0 left-0 right-0 z-10 pb-10 text-white pointer-events-none">
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className="inline-flex items-center rounded-full bg-amber-500/20 px-2 py-1 text-xs font-medium text-amber-300 ring-1 ring-inset ring-amber-500/40 backdrop-blur-sm">
-                            <Star className="mr-1 h-3 w-3 fill-current" /> {hotel.stars} Stars
-                        </span>
-                        {hotel.hotel_type && (
-                            <span className="inline-flex items-center rounded-full bg-zinc-500/20 px-2 py-1 text-xs font-medium text-zinc-500 ring-1 ring-inset ring-zinc-500/40 backdrop-blur-sm">
-                                {hotel.hotel_type}
-                            </span>
-                        )}
-                    </div>
-                    <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">{hotel.name}</h1>
-                    <div className="flex items-center mt-4 text-zinc-300">
-                        <MapPin className="mr-2 h-5 w-5" />
-                        {hotel.address}
-                    </div>
-                </div>
-            </div>
-
+            {/* ... (hero section) */}
             <div className="container mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-10">
                 <main className="lg:col-span-2 space-y-10">
-                    <section>
-                        <h2 className="text-2xl font-semibold mb-4">About</h2>
-                        <p className="text-lg text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
-                            {hotel.description}
-                        </p>
-
-                        <div className="mt-6 flex flex-wrap gap-2">
-                            {hotel.amenities?.map(amenity => (
-                                <span key={amenity} className="inline-flex items-center rounded-md bg-zinc-100 px-3 py-1 text-sm font-medium text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
-                                    {amenity}
-                                </span>
-                            ))}
-                        </div>
-                    </section>
+                    {/* ... (about section) */}
 
                     <section>
                         <h2 className="text-2xl font-semibold mb-6">Available Rooms</h2>
-                        <RoomList hotelId={id} rooms={rooms} />
+                        <RoomList hotelId={id} rooms={rooms} checkIn={checkIn} checkOut={checkOut} />
                     </section>
                 </main>
 

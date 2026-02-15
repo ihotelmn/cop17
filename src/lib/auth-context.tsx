@@ -41,6 +41,7 @@ export function AuthProvider({
 
     // Server-side hydration means we know the state immediately
     const [isLoading, setIsLoading] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const router = useRouter();
     // Use useMemo to ensure single instance of supabase client per session
@@ -49,7 +50,7 @@ export function AuthProvider({
     // Listen for changes (Login, Logout, Refresh)
     // Sync state if server passes a new user (e.g. after login redirect)
     useEffect(() => {
-        if (initialUser) {
+        if (initialUser && !isLoggingOut) {
             console.log("Hydrating user from server prop update:", initialUser.email);
             const role = (initialUser.user_metadata?.role as any) || "guest";
             setUser({
@@ -60,7 +61,7 @@ export function AuthProvider({
             });
             setIsLoading(false);
         }
-    }, [initialUser]);
+    }, [initialUser, isLoggingOut]);
 
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -166,6 +167,7 @@ export function AuthProvider({
 
     const logout = async () => {
         setIsLoading(true);
+        setIsLoggingOut(true);
         // Clear local state immediately
         setUser(null);
 
@@ -174,9 +176,13 @@ export function AuthProvider({
         } catch (error) {
             console.error("Logout error:", error);
         } finally {
-            setIsLoading(false);
-            router.push("/login");
             router.refresh();
+            router.push("/login");
+            // We verify logout by checking if user is truly null after a delay/refresh
+            // But fundamentally, setting user null + refreshing router should work.
+            setIsLoading(false);
+            // We keep isLoggingOut true for a bit to prevent race conditions with hydration
+            setTimeout(() => setIsLoggingOut(false), 2000);
         }
     };
 

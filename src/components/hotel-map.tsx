@@ -6,7 +6,7 @@ import { Hotel } from "@/app/actions/public";
 import Link from "next/link";
 import { Star, X, MapPin, Navigation, Hotel as HotelIcon, Building2 } from "lucide-react";
 import { Button } from "./ui/button";
-import { COP17_VENUE } from "@/lib/venue";
+import { COP17_VENUE, estimateTravelTime } from "@/lib/venue";
 
 const containerStyle = {
     width: "100%",
@@ -30,7 +30,6 @@ const mapOptions: google.maps.MapOptions = {
             "elementType": "labels.text",
             "stylers": [{ "visibility": "on" }]
         },
-        // ... (Keep existing styles or simplify to allow POIs in English)
         {
             "featureType": "transit",
             "elementType": "all",
@@ -133,10 +132,11 @@ export default function HotelMap({ hotels }: { hotels: (Hotel & { minPrice: numb
                         </div>
 
                         {showVenueInfo && (
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-48 bg-zinc-900 text-white rounded-lg shadow-2xl p-3 z-[110]">
-                                <p className="font-bold text-xs uppercase tracking-wider text-red-400 mb-1">Event Center</p>
-                                <p className="text-sm font-semibold leading-tight">{COP17_VENUE.name}</p>
-                                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-zinc-900 rotate-45"></div>
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-56 bg-zinc-900 text-white rounded-lg shadow-2xl p-4 z-[110] border border-red-500/30">
+                                <p className="font-bold text-[10px] uppercase tracking-wider text-red-500 mb-1">Official Convention Center</p>
+                                <p className="text-sm font-bold leading-tight mb-2">{COP17_VENUE.name}</p>
+                                <p className="text-[10px] text-zinc-400 leading-tight">{COP17_VENUE.address}</p>
+                                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-zinc-900 rotate-45 border-r border-b border-red-500/30"></div>
                             </div>
                         )}
                     </div>
@@ -217,12 +217,21 @@ export default function HotelMap({ hotels }: { hotels: (Hotel & { minPrice: numb
                                                     </div>
 
                                                     {hotel.distanceToVenue != null && (
-                                                        <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-xl border border-blue-100 dark:border-blue-800/50">
-                                                            <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
-                                                                <Navigation className="h-4 w-4" />
-                                                                <span className="text-xs font-bold uppercase tracking-wider">To Venue</span>
+                                                        <div className="flex flex-col gap-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-2.5 rounded-xl border border-blue-100 dark:border-blue-800/50">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
+                                                                    <Navigation className="h-3 w-3" />
+                                                                    <span className="text-[10px] font-bold uppercase tracking-wider">Distance to Venue</span>
+                                                                </div>
+                                                                <span className="text-xs font-black text-blue-700 dark:text-blue-300">{hotel.distanceToVenue} km</span>
                                                             </div>
-                                                            <span className="text-sm font-black text-blue-700 dark:text-blue-300">{hotel.distanceToVenue} km</span>
+                                                            <div className="flex items-center justify-between text-[10px] text-blue-600/80 dark:text-blue-400/80 font-medium">
+                                                                <span>Est. Travel Time:</span>
+                                                                <div className="flex gap-2">
+                                                                    <span className="bg-white/50 dark:bg-zinc-800/50 px-1.5 py-0.5 rounded">{estimateTravelTime(hotel.distanceToVenue, 'driving')}</span>
+                                                                    <span className="bg-white/50 dark:bg-zinc-800/50 px-1.5 py-0.5 rounded">{estimateTravelTime(hotel.distanceToVenue, 'walking')}</span>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>

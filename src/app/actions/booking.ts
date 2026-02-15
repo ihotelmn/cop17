@@ -149,7 +149,7 @@ export async function createBookingAction(prevState: BookingState, formData: For
 
         // 4. Initiate Payment (Golomt Bank)
         try {
-            const transactionId = booking.id; // Use Booking ID as Transaction ID for simplicity
+            const transactionId = booking.id;
             const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/booking/success?bookingId=${booking.id}`;
 
             const paymentResponse = await GolomtService.createInvoice({
@@ -166,7 +166,6 @@ export async function createBookingAction(prevState: BookingState, formData: For
                 };
             } else {
                 console.error("Golomt Initiation Failed:", paymentResponse.error);
-                // Optional: Cancel the prediction booking or keep it as 'pending_payment'
                 return { error: "Payment gateway validation failed. Please try again." };
             }
 
@@ -181,7 +180,100 @@ export async function createBookingAction(prevState: BookingState, formData: For
     }
 }
 
+export async function confirmBookingAction(bookingId: string) {
+    const supabase = await createClient();
+
+    try {
+        // 1. Update Booking Status
+        const { data: booking, error: updateError } = await supabase
+            .from("bookings")
+            .update({ status: "confirmed" })
+            .eq("id", bookingId)
+            .select(`
+                id,
+                check_in_date,
+                check_out_date,
+                room:rooms (
+                    name,
+                    hotel:hotels (
+                        name,
+                        contact_email
+                    )
+                ),
+                user_id
+            `)
+            .single();
+
+        if (updateError || !booking) {
+            console.error("Confirm Booking Error:", updateError);
+            return { success: false, error: "Failed to confirm booking." };
+        }
+
+        // 2. Fetch User Email (either from encrypted PII or Supabase Auth if logged in)
+        // For simplicity in this phase, we'll try to get it from auth if available
+        // In a real scenario, we'd decrypt the email from the booking record if we saved it
+        const { data: { user } } = await supabase.auth.getUser();
+        const userEmail = user?.email;
+
+        if (userEmail) {
+            const datesStr = `${format(new Date(booking.check_in_date), "MMM d")} - ${format(new Date(booking.check_out_date), "MMM d, yyyy")}`;
+
+            // @ts-ignore
+            const hotelName = booking.room?.hotel?.name || "COP17 Hotel";
+
+            // 3. Send Confirmation Email
+            await sendBookingConfirmation(
+                userEmail,
+                user?.user_metadata?.full_name || "Guest",
+                booking.id,
+                hotelName,
+                datesStr
+            );
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error("Confirm Booking Logic Error:", error);
+        return { success: false, error: "An unexpected error occurred." };
+    }
+}
+
+export async function getBookingDetail(bookingId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return null;
+
+    const { data: booking, error } = await supabase
+        .from("bookings")
+        .select(`
+            *,
+            room:rooms (
+                name,
+                price_per_night,
+                hotel:hotels (
+                    name,
+                    address,
+                    images,
+                    contact_phone,
+                    contact_email
+                )
+            )
+        `)
+        .eq("id", bookingId)
+        .eq("user_id", user.id)
+        .single();
+
+    if (error) {
+        console.error("Error fetching booking detail:", error);
+        return null;
+    }
+
+    return booking;
+}
+
 export async function getMyBookings() {
+    // ... existing getMyBookings implementation
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -201,7 +293,10 @@ export async function getMyBookings() {
                 name,
                 hotel:hotels (
                     name,
-                    images
+                    images,
+                    address,
+                    latitude,
+                    longitude
                 )
             )
         `)
@@ -220,4 +315,109 @@ export async function getMyBookings() {
     }
 
     return bookings;
+}
+
+export async function cancelBookingAction(bookingId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    try {
+        // 1. Fetch booking to check ownership and status
+        const { data: booking, error: fetchError } = await supabase
+            .from("bookings")
+            .select("status, check_in_date, user_id, room:rooms(hotel:hotels(owner_id, name))")
+            .eq("id", bookingId)
+            .eq("user_id", user.id)
+            .single();
+
+        if (fetchError || !booking) {
+            return { success: false, error: "Booking not found or access denied." };
+        }
+
+        if (booking.status === "cancelled") {
+            return { success: false, error: "Booking is already cancelled." };
+        }
+
+        // 2. Update status
+        const { error: updateError } = await supabase
+            .from("bookings")
+            .update({ status: "cancelled" })
+            .eq("id", bookingId);
+
+        if (updateError) throw updateError;
+
+        // 3. Notify Hotel Owner
+        // @ts-ignore
+        const ownerId = booking.room?.hotel?.owner_id;
+        // @ts-ignore
+        const hotelName = booking.room?.hotel?.name;
+
+        if (ownerId) {
+            const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
+            const adminSupabase = getSupabaseAdmin();
+
+            await adminSupabase.from("notifications").insert({
+                user_id: ownerId,
+                title: "Booking Cancelled",
+                message: `A booking for ${hotelName} has been cancelled by the guest.`,
+                type: "booking_cancelled",
+                link: `/admin/bookings/${bookingId}`
+            });
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error("Cancel Booking Error:", error);
+        return { success: false, error: "Failed to cancel booking." };
+    }
+}
+
+export async function requestModificationAction(bookingId: string, message: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    try {
+        // 1. Verify ownership
+        const { data: booking, error: fetchError } = await supabase
+            .from("bookings")
+            .select("id, room:rooms(hotel:hotels(owner_id, name))")
+            .eq("id", bookingId)
+            .eq("user_id", user.id)
+            .single();
+
+        if (fetchError || !booking) {
+            return { success: false, error: "Booking not found or access denied." };
+        }
+
+        // 2. Notify Hotel Owner about modification request
+        // @ts-ignore
+        const ownerId = booking.room?.hotel?.owner_id;
+        // @ts-ignore
+        const hotelName = booking.room?.hotel?.name;
+
+        if (ownerId) {
+            const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
+            const adminSupabase = getSupabaseAdmin();
+
+            await adminSupabase.from("notifications").insert({
+                user_id: ownerId,
+                title: "Modification Request",
+                message: `Guest requested changes for booking at ${hotelName}: ${message}`,
+                type: "booking_modification",
+                link: `/admin/bookings/${bookingId}`
+            });
+
+            // Also maybe log this in a separate 'audit' or 'requests' table if needed, 
+            // but for Prototype notifications are enough.
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error("Modification Request Error:", error);
+        return { success: false, error: "Failed to send modification request." };
+    }
 }

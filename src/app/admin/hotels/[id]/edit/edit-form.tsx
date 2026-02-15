@@ -87,6 +87,7 @@ export default function EditHotelForm({ hotel }: { hotel: Hotel }) {
                         defaultValue={hotel.description || ""}
                         className="bg-zinc-800 border-zinc-700 text-white min-h-[100px]"
                     />
+                    {state?.fieldErrors?.description && <p className="text-red-500 text-sm">{state.fieldErrors.description}</p>}
                 </div>
 
                 {/* Contact & Times */}
@@ -100,6 +101,7 @@ export default function EditHotelForm({ hotel }: { hotel: Hotel }) {
                             placeholder="+976..."
                             className="bg-zinc-800 border-zinc-700 text-white"
                         />
+                        {state?.fieldErrors?.contact_phone && <p className="text-red-500 text-sm">{state.fieldErrors.contact_phone}</p>}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="contact_email" className="text-zinc-300">Contact Email</Label>
@@ -111,6 +113,19 @@ export default function EditHotelForm({ hotel }: { hotel: Hotel }) {
                             placeholder="info@hotel.mn"
                             className="bg-zinc-800 border-zinc-700 text-white"
                         />
+                        {state?.fieldErrors?.contact_email && <p className="text-red-500 text-sm">{state.fieldErrors.contact_email}</p>}
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="website" className="text-zinc-300">Website</Label>
+                        <Input
+                            id="website"
+                            name="website"
+                            type="url"
+                            defaultValue={hotel.website || ""}
+                            placeholder="https://test.mn"
+                            className="bg-zinc-800 border-zinc-700 text-white"
+                        />
+                        {state?.fieldErrors?.website && <p className="text-red-500 text-sm">{state.fieldErrors.website}</p>}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="check_in_time" className="text-zinc-300">Check-in Time</Label>
@@ -121,6 +136,7 @@ export default function EditHotelForm({ hotel }: { hotel: Hotel }) {
                             defaultValue={hotel.check_in_time || "14:00"}
                             className="bg-zinc-800 border-zinc-700 text-white"
                         />
+                        {state?.fieldErrors?.check_in_time && <p className="text-red-500 text-sm">{state.fieldErrors.check_in_time}</p>}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="check_out_time" className="text-zinc-300">Check-out Time</Label>
@@ -131,6 +147,7 @@ export default function EditHotelForm({ hotel }: { hotel: Hotel }) {
                             defaultValue={hotel.check_out_time || "12:00"}
                             className="bg-zinc-800 border-zinc-700 text-white"
                         />
+                        {state?.fieldErrors?.check_out_time && <p className="text-red-500 text-sm">{state.fieldErrors.check_out_time}</p>}
                     </div>
                 </div>
 
@@ -144,6 +161,7 @@ export default function EditHotelForm({ hotel }: { hotel: Hotel }) {
                             defaultValue={hotel.address || ""}
                             className="bg-zinc-800 border-zinc-700 text-white"
                         />
+                        {state?.fieldErrors?.address && <p className="text-red-500 text-sm">{state.fieldErrors.address}</p>}
                     </div>
 
                     <div className="space-y-2">
@@ -151,6 +169,8 @@ export default function EditHotelForm({ hotel }: { hotel: Hotel }) {
                         <LocationPicker value={location} onChange={setLocation} />
                         <input type="hidden" name="latitude" value={location?.lat || ""} />
                         <input type="hidden" name="longitude" value={location?.lng || ""} />
+                        {state?.fieldErrors?.latitude && <p className="text-red-500 text-sm">{state.fieldErrors.latitude}</p>}
+                        {state?.fieldErrors?.longitude && <p className="text-red-500 text-sm">{state.fieldErrors.longitude}</p>}
                     </div>
                 </div>
 
@@ -167,6 +187,7 @@ export default function EditHotelForm({ hotel }: { hotel: Hotel }) {
                             defaultValue={hotel.stars}
                             className="bg-zinc-800 border-zinc-700 text-white w-24"
                         />
+                        {state?.fieldErrors?.stars && <p className="text-red-500 text-sm">{state.fieldErrors.stars}</p>}
                     </div>
 
                     <div className="space-y-2">

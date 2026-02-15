@@ -1,79 +1,68 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
-import { getAllBookings } from "@/app/actions/booking-admin";
-import { toast } from "sonner";
 
-export function ExportButton() {
-    const [isLoading, setIsLoading] = useState(false);
+interface ExportButtonProps {
+    data: any[];
+    filename: string;
+}
 
-    const handleExport = async () => {
-        setIsLoading(true);
-        try {
-            const result = await getAllBookings();
+export function ExportButton({ data, filename }: ExportButtonProps) {
+    const handleExport = () => {
+        if (!data || data.length === 0) return;
 
-            if (!result.success || !result.data) {
-                toast.error("Failed to fetch data for export");
-                return;
-            }
+        // 1. Define CSV headers
+        const headers = [
+            "ID",
+            "Created At",
+            "Hotel",
+            "Room",
+            "Total Price",
+            "Status",
+            "Check In",
+            "Check Out",
+            "Currency"
+        ];
 
-            const bookings = result.data;
-            if (bookings.length === 0) {
-                toast.info("No bookings to export");
-                return;
-            }
+        // 2. Map data to rows
+        const rows = data.map(b => [
+            b.id,
+            b.created_at,
+            b.rooms?.hotels?.name || "Unknown Hotel",
+            b.rooms?.name || "Unknown Room",
+            b.total_price,
+            b.status,
+            b.check_in_date,
+            b.check_out_date,
+            "USD"
+        ]);
 
-            // Convert to CSV
-            const headers = ["ID", "Guest Name", "Hotel", "Room", "Check In", "Check Out", "Status", "Amount", "Dates"];
-            const rows = bookings.map(b => [
-                b.id,
-                `"${b.guestName.replace(/"/g, '""')}"`, // Escape quotes
-                `"${b.hotelName.replace(/"/g, '""')}"`,
-                `"${b.roomName.replace(/"/g, '""')}"`,
-                b.checkIn,
-                b.checkOut,
-                b.status,
-                b.amount,
-                `"${b.dates}"`
-            ]);
+        // 3. Create CSV string
+        const csvContent = [
+            headers.join(","),
+            ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+        ].join("\n");
 
-            const csvContent = [
-                headers.join(","),
-                ...rows.map(r => r.join(","))
-            ].join("\n");
-
-            // Trigger Download
-            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", `bookings-${new Date().toISOString().split('T')[0]}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            toast.success("Export successful");
-
-        } catch (error) {
-            console.error("Export error:", error);
-            toast.error("An unexpected error occurred during export");
-        } finally {
-            setIsLoading(false);
-        }
+        // 4. Trigger download
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     return (
         <Button
-            variant="outline"
-            size="sm"
             onClick={handleExport}
-            disabled={isLoading}
-            className="gap-2"
+            variant="outline"
+            className="bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700"
         >
-            <Download className="h-4 w-4" />
-            {isLoading ? "Exporting..." : "Export CSV"}
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
         </Button>
     );
 }

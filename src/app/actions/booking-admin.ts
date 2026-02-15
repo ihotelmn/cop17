@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { decrypt } from "@/lib/encryption";
 import { z } from "zod";
+import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export type BookingAdmin = {
     id: string;
@@ -221,10 +223,7 @@ export async function updateBookingStatus(bookingId: string, status: string) {
     }
 }
 
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
-
 export async function getDashboardStats() {
-    // 1. Authenticate with regular client
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -232,91 +231,72 @@ export async function getDashboardStats() {
         return {
             success: false,
             error: "Unauthorized",
-            data: { totalBookings: 0, revenue: 0, activeGuests: 0, pendingBookings: 0, occupancyRate: 0 }
+            data: { totalBookings: 0, revenue: 0, activeGuests: 0, pendingBookings: 0, occupancyRate: 0, revenueTrends: [], statusDistribution: [], topHotels: [] }
         };
     }
 
-    // 2. Use Admin client for all subsequent data fetching to bypass RLS issues
     const adminClient = getSupabaseAdmin();
 
     try {
-        // Fetch profile using admin client to avoid potential RLS recursion on 'profiles'
         const { data: profile } = await adminClient.from("profiles").select("role").eq("id", user.id).single();
-
-        console.log("getDashboardStats (Admin Client) debug:", {
-            userId: user.id,
-            role: profile?.role,
-            email: user.email
-        });
 
         let roomFilter: string[] | null = null;
         let hotelFilter: string[] | null = null;
 
-        // RBAC: Non-superadmins only see their own hotels/rooms
         if (profile?.role !== "super_admin") {
             const { data: hotels } = await adminClient.from("hotels").select("id").eq("owner_id", user.id);
-            hotelFilter = hotels?.map((h: any) => h.id) || [];
+            const hFilter = hotels?.map((h: any) => h.id) || [];
+            hotelFilter = hFilter;
 
-            if (!hotelFilter.length) {
-                // User owns nothing - return empty stats immediately
+            if (hFilter.length === 0) {
                 return {
                     success: true,
-                    data: { totalBookings: 0, revenue: 0, activeGuests: 0, pendingBookings: 0, occupancyRate: 0 }
+                    data: { totalBookings: 0, revenue: 0, activeGuests: 0, pendingBookings: 0, occupancyRate: 0, revenueTrends: [], statusDistribution: [], topHotels: [] }
                 };
             }
 
-            const { data: rooms } = await adminClient.from("rooms").select("id").in("hotel_id", hotelFilter);
-            roomFilter = rooms?.map((r: any) => r.id) || [];
+            const { data: rooms } = await adminClient.from("rooms").select("id").in("hotel_id", hFilter);
+            const rFilter = rooms?.map((r: any) => r.id) || [];
+            roomFilter = rFilter;
 
-            if (!roomFilter.length) {
+            if (rFilter.length === 0) {
                 return {
                     success: true,
-                    data: { totalBookings: 0, revenue: 0, activeGuests: 0, pendingBookings: 0, occupancyRate: 0 }
+                    data: { totalBookings: 0, revenue: 0, activeGuests: 0, pendingBookings: 0, occupancyRate: 0, revenueTrends: [], statusDistribution: [], topHotels: [] }
                 };
             }
         }
 
-        // Helper to apply filter
         const applyFilter = (query: any) => {
-            if (roomFilter) {
-                return query.in("room_id", roomFilter);
-            }
+            if (roomFilter && roomFilter.length > 0) return query.in("room_id", roomFilter);
             return query;
         };
 
-        // 1. Total Bookings Count
+        // 1. Basic Stats
         let bookingsQuery = adminClient.from("bookings").select("*", { count: "exact", head: true });
         bookingsQuery = applyFilter(bookingsQuery);
         const { count: totalBookings } = await bookingsQuery;
 
-        // 2. Revenue (Sum total_price for non-cancelled)
-        let revenueQuery = adminClient.from("bookings").select("total_price").neq("status", "cancelled");
+        let revenueQuery = adminClient.from("bookings").select("total_price, status, created_at, room:rooms(hotel:hotels(name))").neq("status", "cancelled");
         revenueQuery = applyFilter(revenueQuery);
-        const { data: revenueData } = await revenueQuery;
+        const { data: allBookingsData } = await revenueQuery;
 
-        const totalRevenue = revenueData?.reduce((sum: number, b: any) => sum + (b.total_price || 0), 0) || 0;
+        const totalRevenue = allBookingsData?.reduce((sum: number, b: any) => sum + (b.total_price || 0), 0) || 0;
 
-        // 3. Active/Checked-In Guests
         let activeGuestsQuery = adminClient.from("bookings").select("*", { count: "exact", head: true }).eq("status", "checked-in");
         activeGuestsQuery = applyFilter(activeGuestsQuery);
         const { count: activeGuests } = await activeGuestsQuery;
 
-        // 4. Pending Bookings
         let pendingBookingsQuery = adminClient.from("bookings").select("*", { count: "exact", head: true }).eq("status", "pending");
         pendingBookingsQuery = applyFilter(pendingBookingsQuery);
         const { count: pendingBookings } = await pendingBookingsQuery;
 
-        // 5. Occupancy Rate (Approximate)
-        // Get total rooms inventory
+        // 2. Occupancy Rate
         let roomsQuery = adminClient.from("rooms").select("total_inventory");
-        if (hotelFilter) {
-            roomsQuery = roomsQuery.in("hotel_id", hotelFilter);
-        }
-        const { data: rooms } = await roomsQuery;
+        if (hotelFilter) roomsQuery = roomsQuery.in("hotel_id", hotelFilter);
+        const { data: roomsInventory } = await roomsQuery;
+        const totalInventory = roomsInventory?.reduce((sum: number, r: any) => sum + (r.total_inventory || 0), 0) || 0;
 
-        const totalInventory = rooms?.reduce((sum: number, r: any) => sum + (r.total_inventory || 0), 0) || 0;
-
-        // Count confirmed/checked-in bookings for TODAY
         const today = new Date().toISOString().split('T')[0];
         let occupancyQuery = adminClient
             .from("bookings")
@@ -324,20 +304,46 @@ export async function getDashboardStats() {
             .neq("status", "cancelled")
             .lte("check_in_date", today)
             .gte("check_out_date", today);
-
         occupancyQuery = applyFilter(occupancyQuery);
         const { count: occupiedRooms } = await occupancyQuery;
-
         const occupancyRate = totalInventory > 0 ? Math.round(((occupiedRooms || 0) / totalInventory) * 100) : 0;
 
-        console.log("Final Stats Result:", {
-            totalBookings,
-            totalRevenue,
-            activeGuests,
-            pendingBookings,
-            occupancyRate,
-            roomFilterCount: roomFilter?.length
+        // 3. Revenue Trends (Last 7 days)
+        const last7Days = eachDayOfInterval({
+            start: subDays(new Date(), 6),
+            end: new Date()
         });
+
+        const revenueTrends = last7Days.map(date => {
+            const dateStr = format(date, "MMM dd");
+            const dayStart = startOfDay(date);
+            const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+
+            const dayRevenue = allBookingsData?.filter((b: any) => {
+                const createdAt = new Date(b.created_at);
+                return createdAt >= dayStart && createdAt <= dayEnd;
+            }).reduce((sum: number, b: any) => sum + (b.total_price || 0), 0) || 0;
+
+            return { date: dateStr, amount: dayRevenue };
+        });
+
+        // 4. Status Distribution
+        const statusCounts: Record<string, number> = {};
+        allBookingsData?.forEach((b: any) => {
+            statusCounts[b.status] = (statusCounts[b.status] || 0) + 1;
+        });
+        const statusDistribution = Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
+
+        // 5. Top Hotels (Only for Super Admin or multiple hotels)
+        const hotelStats: Record<string, number> = {};
+        allBookingsData?.forEach((b: any) => {
+            const hName = b.room?.hotel?.name || "Unknown";
+            hotelStats[hName] = (hotelStats[hName] || 0) + 1;
+        });
+        const topHotels = Object.entries(hotelStats)
+            .map(([name, bookings]) => ({ name, bookings }))
+            .sort((a, b) => b.bookings - a.bookings)
+            .slice(0, 5);
 
         return {
             success: true,
@@ -346,7 +352,10 @@ export async function getDashboardStats() {
                 revenue: totalRevenue,
                 activeGuests: activeGuests || 0,
                 pendingBookings: pendingBookings || 0,
-                occupancyRate
+                occupancyRate,
+                revenueTrends,
+                statusDistribution,
+                topHotels
             }
         };
 
@@ -355,7 +364,7 @@ export async function getDashboardStats() {
         return {
             success: false,
             error: "Failed to fetch stats",
-            data: { totalBookings: 0, revenue: 0, activeGuests: 0, pendingBookings: 0, occupancyRate: 0 }
+            data: { totalBookings: 0, revenue: 0, activeGuests: 0, pendingBookings: 0, occupancyRate: 0, revenueTrends: [], statusDistribution: [], topHotels: [] }
         };
     }
 }

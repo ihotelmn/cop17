@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ShieldCheck } from "lucide-react";
 
+import { confirmBookingAction } from "@/app/actions/booking";
+
 function MockPaymentContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -19,8 +21,19 @@ function MockPaymentContent() {
 
     const handlePayment = async () => {
         setProcessing(true);
-        // Simulate bank processing time
-        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // 1. Confirm the booking on the server
+        if (txnId) {
+            try {
+                await confirmBookingAction(txnId);
+            } catch (error) {
+                console.error("Payment confirmation failed on server:", error);
+                // Optionally handle error UI here, but for mock we proceed
+            }
+        }
+
+        // 2. Simulate bank processing time
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
         if (returnUrl) {
             router.push(returnUrl);
