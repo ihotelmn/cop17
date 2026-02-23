@@ -40,7 +40,7 @@ export function RoomList({ hotelId, rooms, checkIn, checkOut }: RoomListProps) {
                     room={{
                         ...room,
                         price: room.price_per_night,
-                        size: 40,
+                        size: room.size || 0,
                         images: cleanImages(room.images), // Use the helper
                         amenities: room.amenities || []
                     }}

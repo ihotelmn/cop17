@@ -15,10 +15,11 @@ import { BookingActions } from "@/components/admin/booking-actions";
 import { ExportButton } from "@/components/admin/export-button";
 import { BookingsFilter } from "@/components/admin/bookings-filter";
 
-export default async function BookingsPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
+export default async function BookingsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+    const resolvedParams = await searchParams;
     const filters = {
-        status: typeof searchParams?.status === 'string' ? searchParams.status : undefined,
-        search: typeof searchParams?.search === 'string' ? searchParams.search : undefined,
+        status: typeof resolvedParams?.status === 'string' ? resolvedParams.status : undefined,
+        search: typeof resolvedParams?.search === 'string' ? resolvedParams.search : undefined,
     };
 
     const { data: bookings, success, error } = await getAllBookings(filters);

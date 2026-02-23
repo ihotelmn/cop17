@@ -5,6 +5,7 @@ import { LayoutDashboard, Hotel, BookOpen, LogOut, Settings, Users, Activity, Ca
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
+import { signOutAction } from "@/app/actions/auth";
 
 export default async function AdminLayout({
     children,
@@ -137,12 +138,7 @@ export default async function AdminLayout({
                     )}
                 </nav>
                 <div className="absolute bottom-4 left-4 right-4">
-                    <form action={async () => {
-                        "use server";
-                        const sb = await createClient();
-                        await sb.auth.signOut();
-                        redirect("/login");
-                    }}>
+                    <form action={signOutAction}>
                         <Button variant="outline" className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20">
                             <LogOut className="mr-2 h-4 w-4" />
                             Sign Out

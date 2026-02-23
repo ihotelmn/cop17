@@ -65,7 +65,7 @@ export function ImageGallery({
         // Remove trailing/leading quotes or brackets that might have leaked
         let cleaned = str.replace(/^["'\[]+|["'\]]+$/g, '').trim();
 
-        if (cleaned.startsWith('http') || cleaned.startsWith('/')) {
+        if (cleaned.startsWith('http') || cleaned.startsWith('/') || cleaned.includes('/')) {
             return [cleaned];
         }
 
@@ -116,12 +116,12 @@ export function ImageGallery({
     if (validImages.length === 0) {
         return (
             <div className={cn("relative bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden", aspectRatioClass, className)}>
-                <Image
-                    src="/images/placeholder-hotel.jpg"
+                <img
+                    src="https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=800&auto=format&fit=crop"
                     alt={alt}
-                    fill
-                    className="object-cover"
+                    className="absolute inset-0 w-full h-full object-cover opacity-50 grayscale"
                 />
+                <div className="relative z-10 text-zinc-400 text-sm font-medium">No Image Available</div>
             </div>
         );
     }
@@ -200,7 +200,7 @@ function GalleryImage({ src, alt, priority }: { src: string, alt: string, priori
 
     return (
         <Image
-            src={src}
+            src={src.startsWith('http') ? src : `https://api.myhotel.mn/image?path=${src}`}
             alt={alt}
             fill
             className={cn(
@@ -209,6 +209,9 @@ function GalleryImage({ src, alt, priority }: { src: string, alt: string, priori
             )}
             priority={priority}
             onLoad={() => setIsLoaded(true)}
+            onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=800&auto=format&fit=crop';
+            }}
         />
     );
 }

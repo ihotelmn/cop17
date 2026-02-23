@@ -33,6 +33,25 @@ export type Hotel = {
     google_place_id?: string | null;
     cached_rating?: number | null;
     cached_review_count?: number | null;
+    // Delegate features
+    is_official_partner?: boolean;
+    is_recommended?: boolean;
+    has_shuttle_service?: boolean;
+};
+
+export type Room = {
+    id: string;
+    hotel_id: string;
+    name: string;
+    description: string | null;
+    type: string;
+    price_per_night: number;
+    capacity: number;
+    total_inventory: number;
+    amenities: string[] | null;
+    images: string[] | null;
+    size: number | null;
+    created_at: string;
 };
 
 export type HotelSearchParams = {
@@ -113,6 +132,9 @@ export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
                     google_place_id: h.google_place_id,
                     cached_rating: h.cached_rating,
                     cached_review_count: h.cached_review_count,
+                    is_official_partner: !!h.is_official_partner,
+                    is_recommended: !!h.is_recommended,
+                    has_shuttle_service: !!h.has_shuttle_service,
                     minPrice: h.rooms?.length > 0 ? Math.min(...h.rooms.map((r: any) => Number(r.price_per_night))) : null
                 };
             });
@@ -211,7 +233,7 @@ export async function getPublicRooms(hotelId: string) {
         return [];
     }
 
-    return rooms;
+    return rooms as Room[];
 }
 
 export async function getPublicRoom(roomId: string) {

@@ -121,3 +121,11 @@ export async function signupAction(prevState: AuthState, formData: FormData): Pr
         message: "Account created! Please check your email to verify your account."
     };
 }
+
+export async function signOutAction() {
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+    revalidatePath("/", "layout");
+    redirect("/login");
+}
+

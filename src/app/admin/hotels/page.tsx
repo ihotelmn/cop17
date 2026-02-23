@@ -53,7 +53,7 @@ export default async function HotelsAdminPage() {
                                             {hotel.images && hotel.images[0] && (
                                                 <div className="relative h-10 w-16 overflow-hidden rounded">
                                                     <Image
-                                                        src={hotel.images[0]}
+                                                        src={hotel.images[0].startsWith('http') ? hotel.images[0] : `https://api.myhotel.mn/image?path=${hotel.images[0]}`}
                                                         alt={hotel.name}
                                                         fill
                                                         className="object-cover"
@@ -93,10 +93,7 @@ export default async function HotelsAdminPage() {
                                                         <span className="sr-only">Manage Rooms</span>
                                                     </Link>
                                                 </Button>
-                                                <form action={async () => {
-                                                    "use server";
-                                                    await deleteHotel(hotel.id);
-                                                }}>
+                                                <form action={deleteHotel.bind(null, hotel.id)}>
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"

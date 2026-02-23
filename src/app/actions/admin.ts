@@ -492,6 +492,7 @@ export type Room = {
     total_inventory: number;
     amenities: string[] | null;
     images: string[] | null;
+    size: number | null;
     created_at: string;
 };
 

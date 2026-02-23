@@ -32,8 +32,9 @@ export function HotelList({ hotels }: { hotels: (Hotel & { minPrice: number })[]
 
 function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
     // Determine badges
-    const isOfficial = true;
-    const hasShuttle = hotel.amenities?.includes("Shuttle");
+    const isOfficial = hotel.is_official_partner;
+    const isRecommended = hotel.is_recommended;
+    const hasShuttle = hotel.has_shuttle_service || hotel.amenities?.includes("Shuttle") || hotel.amenities?.includes("Airport shuttle");
 
     // Images fallback
     const images = hotel.images && hotel.images.length > 0
@@ -55,7 +56,7 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
                             <CarouselItem key={index} className="h-full">
                                 <div className="relative w-full h-full">
                                     <Image
-                                        src={img}
+                                        src={img.startsWith('http') ? img : `https://api.myhotel.mn/image?path=${img}`}
                                         alt={`${hotel.name} - view ${index + 1}`}
                                         fill
                                         className="object-cover"
@@ -75,12 +76,17 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
                 {/* Overlay Badges */}
                 <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
                     {isOfficial && (
-                        <span className="inline-flex items-center rounded-md bg-amber-100 px-2 py-1 text-xs font-bold text-amber-800 shadow-sm border border-amber-200/50 backdrop-blur-md">
+                        <span className="inline-flex items-center rounded-md bg-blue-600 px-2 py-1 text-[10px] font-bold text-white shadow-lg border border-blue-500/50 backdrop-blur-md uppercase tracking-wider">
                             Official Partner
                         </span>
                     )}
+                    {isRecommended && (
+                        <span className="inline-flex items-center rounded-md bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-800 shadow-sm border border-amber-200/50 backdrop-blur-md uppercase tracking-wider">
+                            COP17 Recommended
+                        </span>
+                    )}
                     {hotel.stars >= 5 && (
-                        <span className="inline-flex items-center rounded-md bg-zinc-900/80 px-2 py-1 text-xs font-bold text-white shadow-sm backdrop-blur-md">
+                        <span className="inline-flex items-center rounded-md bg-zinc-900/80 px-2 py-1 text-[10px] font-bold text-white shadow-sm backdrop-blur-md uppercase tracking-wider">
                             Luxury
                         </span>
                     )}
@@ -143,18 +149,29 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
                     </div>
 
                     {/* Amenities Badges */}
-                    <div className="mt-5 flex flex-wrap gap-3">
-                        {hotel.amenities?.slice(0, 4).map((a, i) => (
-                            <div key={i} className="flex items-center text-xs font-medium text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md">
-                                {a === "WiFi" && <Wifi className="h-3 w-3 mr-1.5" />}
-                                {a === "Shuttle" && <Car className="h-3 w-3 mr-1.5" />}
-                                {a === "Breakfast" && <Coffee className="h-3 w-3 mr-1.5" />}
-                                {a}
-                            </div>
-                        ))}
-                        {(hotel.amenities?.length || 0) > 4 && (
-                            <span className="text-xs font-medium text-zinc-400 self-center">
-                                +{hotel.amenities!.length - 4} more
+                    <div className="mt-5 flex flex-wrap gap-2.5">
+                        {hotel.amenities?.slice(0, 5).map((a, i) => {
+                            const isDelegateFavorite = ["WiFi", "Wireless", "Business", "Meeting", "Conference", "Security", "Safe", "Air condition", "AC"].some(term => a.toLowerCase().includes(term.toLowerCase()));
+
+                            return (
+                                <div key={i} className={cn(
+                                    "flex items-center text-[11px] font-bold px-2.5 py-1.5 rounded-lg border transition-all",
+                                    isDelegateFavorite
+                                        ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-100 dark:border-blue-800/40"
+                                        : "bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 border-zinc-100 dark:border-zinc-700/50"
+                                )}>
+                                    {a.toLowerCase().includes("wifi") && <Wifi className="h-3.5 w-3.5 mr-1.5 text-blue-500" />}
+                                    {a.toLowerCase().includes("shuttle") && <Car className="h-3.5 w-3.5 mr-1.5 text-green-500" />}
+                                    {a.toLowerCase().includes("breakfast") && <Coffee className="h-3.5 w-3.5 mr-1.5 text-amber-500" />}
+                                    {a.toLowerCase().includes("air condit") && <span className="mr-1.5 text-sky-500">❄️</span>}
+                                    {a.toLowerCase().includes("meeting") && <span className="mr-1.5 text-indigo-500">🤝</span>}
+                                    {a}
+                                </div>
+                            );
+                        })}
+                        {(hotel.amenities?.length || 0) > 5 && (
+                            <span className="text-[10px] font-bold text-zinc-400 self-center uppercase tracking-tighter">
+                                +{hotel.amenities!.length - 5} others
                             </span>
                         )}
                     </div>
@@ -171,19 +188,20 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
                             <span className="text-xs text-green-600 font-bold">Includes taxes & fees</span>
                             {displayDistance != null && (
-                                <>
-                                    <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100 font-medium whitespace-nowrap flex items-center gap-1" title="Distance to UG Arena">
-                                        <Navigation className="h-2 w-2" />
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded border border-blue-100 dark:border-blue-800/50 font-bold whitespace-nowrap flex items-center gap-1 shadow-sm" title="Distance to UG Arena">
+                                        <Navigation className="h-2.5 w-2.5" />
                                         {typeof displayDistance === 'number' ? displayDistance.toFixed(1) : displayDistance} km to Venue
                                     </span>
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium whitespace-nowrap ${isRealData ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-zinc-50 text-zinc-600 border-zinc-100"}`}>
+                                    <span className={`text-[10px] px-2 py-1 rounded border font-bold whitespace-nowrap shadow-sm ${isRealData ? "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-100 dark:border-amber-800/50" : "bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-100 dark:border-zinc-700"}`}>
                                         {displayTime}
                                     </span>
-                                </>
+                                </div>
                             )}
                             {hasShuttle && (
-                                <span className="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-100 font-medium whitespace-nowrap">
-                                    Free Shuttle
+                                <span className="text-[10px] bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded border border-green-100 dark:border-green-800/50 font-bold whitespace-nowrap flex items-center gap-1 shadow-sm">
+                                    <Car className="h-2.5 w-2.5" />
+                                    Official Shuttle Service
                                 </span>
                             )}
                         </div>

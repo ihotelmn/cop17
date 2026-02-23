@@ -45,19 +45,22 @@ export function RoomCard({ room, hotelId, checkIn, checkOut }: RoomCardProps) {
                             <span className="text-sm text-zinc-500 dark:text-zinc-400">/night</span>
                         </div>
                     </div>
-                    <p className="mt-2 text-zinc-500 dark:text-zinc-400 line-clamp-2">
-                        {room.description}
-                    </p>
+                    <div
+                        className="mt-2 text-zinc-500 dark:text-zinc-400 line-clamp-2"
+                        dangerouslySetInnerHTML={{ __html: room.description }}
+                    />
 
                     <div className="mt-4 flex flex-wrap gap-4 text-sm text-zinc-600 dark:text-zinc-300">
                         <div className="flex items-center gap-1">
                             <User className="h-4 w-4" />
                             {room.capacity} Guests
                         </div>
-                        <div className="flex items-center gap-1">
-                            <Square className="h-4 w-4" />
-                            {room.size} m²
-                        </div>
+                        {room.size > 0 && (
+                            <div className="flex items-center gap-1">
+                                <Square className="h-4 w-4" />
+                                {room.size} m²
+                            </div>
+                        )}
                     </div>
 
                     <div className="mt-4 grid grid-cols-2 gap-2">
