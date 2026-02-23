@@ -69,7 +69,10 @@ export default async function UsersPage() {
                                             {format(new Date(user.created_at), "MMM d, yyyy")}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <form action={deleteUser.bind(null, user.id)}>
+                                            <form action={async () => {
+                                                "use server";
+                                                await deleteUser(user.id);
+                                            }}>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"

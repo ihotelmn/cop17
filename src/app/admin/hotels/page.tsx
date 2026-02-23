@@ -93,7 +93,10 @@ export default async function HotelsAdminPage() {
                                                         <span className="sr-only">Manage Rooms</span>
                                                     </Link>
                                                 </Button>
-                                                <form action={deleteHotel.bind(null, hotel.id)}>
+                                                <form action={async () => {
+                                                    "use server";
+                                                    await deleteHotel(hotel.id);
+                                                }}>
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
