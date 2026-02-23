@@ -26,6 +26,7 @@ import { Toaster } from "sonner";
 
 import { createClient } from "@/lib/supabase/server";
 import PageTransition from "@/components/page-transition";
+import { Analytics } from "@vercel/analytics/react";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,7 @@ export default async function RootLayout({
           <OrganizersSection />
           <SiteFooter />
           <Toaster />
+          <Analytics />
         </AuthProvider>
       </body>
     </html>
