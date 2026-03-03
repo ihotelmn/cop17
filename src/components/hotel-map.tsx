@@ -13,10 +13,17 @@ const containerStyle = {
     height: "100%",
 };
 
-const defaultCenter = {
-    lat: COP17_VENUE.latitude,
-    lng: COP17_VENUE.longitude, // Center on Venue initially
+const UB_CENTER = {
+    lat: 47.9189,
+    lng: 106.9176,
 };
+
+const TERELJ_CENTER = {
+    lat: 47.9333,
+    lng: 107.4500,
+};
+
+const defaultCenter = UB_CENTER;
 
 const mapOptions: google.maps.MapOptions = {
     disableDefaultUI: true,
@@ -38,7 +45,7 @@ const mapOptions: google.maps.MapOptions = {
     ]
 };
 
-export default function HotelMap({ hotels }: { hotels: (Hotel & { minPrice: number })[] }) {
+export default function HotelMap({ hotels, query }: { hotels: (Hotel & { minPrice: number })[], query?: string }) {
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
@@ -51,9 +58,22 @@ export default function HotelMap({ hotels }: { hotels: (Hotel & { minPrice: numb
 
     const onLoad = useCallback(function callback(map: google.maps.Map) {
         setMap(map);
-        const bounds = new window.google.maps.LatLngBounds();
+        const q = (query || "").toLowerCase();
 
-        // Always include Venue in bounds
+        if (q.includes("terelj") || q.includes("тэрэлж")) {
+            map.setCenter(TERELJ_CENTER);
+            map.setZoom(12);
+            return;
+        }
+
+        if (!q || q.includes("ulaanbaatar") || q.includes("улаанбаатар") || q.includes("хот")) {
+            map.setCenter(UB_CENTER);
+            map.setZoom(14);
+            return;
+        }
+
+        // Default behavior for other searches
+        const bounds = new window.google.maps.LatLngBounds();
         bounds.extend({ lat: COP17_VENUE.latitude, lng: COP17_VENUE.longitude });
 
         if (hotels.length > 0) {
@@ -67,15 +87,29 @@ export default function HotelMap({ hotels }: { hotels: (Hotel & { minPrice: numb
             map.setCenter(defaultCenter);
             map.setZoom(14);
         }
-    }, [hotels]);
+    }, [hotels, query]);
 
     const onUnmount = useCallback(function callback(map: google.maps.Map) {
         setMap(null);
     }, []);
 
-    // Re-fit bounds when hotels change
+    // Re-fit bounds or center when hotels/query change
     useEffect(() => {
         if (map) {
+            const q = (query || "").toLowerCase();
+
+            if (q.includes("terelj") || q.includes("тэрэлж")) {
+                map.setCenter(TERELJ_CENTER);
+                map.setZoom(12);
+                return;
+            }
+
+            if (!q || q.includes("ulaanbaatar") || q.includes("улаанбаатар") || q.includes("хот")) {
+                map.setCenter(UB_CENTER);
+                map.setZoom(14);
+                return;
+            }
+
             const bounds = new window.google.maps.LatLngBounds();
             bounds.extend({ lat: COP17_VENUE.latitude, lng: COP17_VENUE.longitude });
 
@@ -91,7 +125,7 @@ export default function HotelMap({ hotels }: { hotels: (Hotel & { minPrice: numb
                 map.fitBounds(bounds);
             }
         }
-    }, [map, hotels]);
+    }, [map, hotels, query]);
 
 
     if (!isLoaded) return <div className="h-[600px] w-full bg-zinc-100 animate-pulse rounded-xl" />;

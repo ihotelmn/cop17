@@ -56,7 +56,9 @@ export default async function HotelsAdminPage() {
                                                         src={hotel.images[0].startsWith('http') ? hotel.images[0] : `https://api.myhotel.mn/image?path=${hotel.images[0]}`}
                                                         alt={hotel.name}
                                                         fill
+                                                        sizes="64px"
                                                         className="object-cover"
+                                                        unoptimized
                                                     />
                                                 </div>
                                             )}

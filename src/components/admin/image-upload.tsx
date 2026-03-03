@@ -141,6 +141,7 @@ export function ImageUpload({ value, onChange, maxFiles = 5, disabled }: ImageUp
                             alt="Hotel Image"
                             className="object-cover"
                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            unoptimized
                         />
                     </div>
                 ))}

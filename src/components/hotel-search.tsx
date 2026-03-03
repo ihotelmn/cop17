@@ -3,7 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Search, Calendar as CalendarIcon, Users, Minus, Plus } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Users, Minus, Plus, MapPin } from "lucide-react";
 import { MobileFilter } from "./hotels/mobile-filter";
 import { cn } from "@/lib/utils";
 import {
@@ -59,7 +59,7 @@ export function HotelSearch() {
         if (guests > 1) params.set("guests", guests.toString());
         else params.delete("guests");
 
-        router.replace(`${pathname}?${params.toString()}`);
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
         setIsDatePopoverOpen(false);
         setIsGuestsPopoverOpen(false);
     };
@@ -97,75 +97,78 @@ export function HotelSearch() {
     return (
         <div className="w-full max-w-5xl mx-auto mb-10 px-4 md:px-0">
             {/* Desktop / Tablet Bar */}
-            <div className="hidden md:flex items-center bg-white/70 dark:bg-zinc-900/80 backdrop-blur-xl rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-white/20 dark:border-zinc-800 p-2 pl-6 gap-2">
+            <div className="hidden md:flex items-center bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-zinc-200 dark:border-zinc-800 p-2.5 pl-10 gap-2 relative z-40 transition-all hover:shadow-[0_25px_60px_rgba(0,0,0,0.15)] group/bar">
 
                 {/* Location with Autocomplete */}
-                <div className="flex-[1.5] flex flex-col justify-center pr-4">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1 ml-1">Destination or Hotel</label>
-                    <AutocompleteSearch
-                        value={query}
-                        onChange={setQuery}
-                        onSearch={handleSearch}
-                        placeholder="Where are you going?"
-                    />
+                <div className="flex-[1.5] flex flex-col justify-center pr-4 border-r border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-[1.5rem] px-8 py-3 transition-all cursor-text group relative">
+                    <label className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 mb-1 uppercase tracking-widest">Where</label>
+                    <div className="relative z-50">
+                        <AutocompleteSearch
+                            value={query}
+                            onChange={setQuery}
+                            onSearch={handleSearch}
+                            placeholder="Find destinations..."
+                        />
+                    </div>
                 </div>
 
-                <div className="h-10 w-px bg-zinc-200 dark:bg-zinc-800 mx-2" />
+                <div className="h-12 w-px bg-zinc-100 dark:bg-zinc-800 mx-1 flex-shrink-0" />
 
-                {/* Dates Selector */}
-                {/* Dates Selector - Single Unified Trigger */}
+                {/* Dates Selector - Split Check-in / Check-out */}
                 <Popover open={isDatePopoverOpen} onOpenChange={setIsDatePopoverOpen}>
                     <PopoverTrigger asChild>
                         <button
                             type="button"
-                            className="flex-[1.5] group flex flex-col justify-center px-6 cursor-pointer hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50 rounded-2xl transition-all h-full outline-none text-left"
+                            className="flex-[2] flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-[1.5rem] transition-all outline-none cursor-pointer group/dates px-2"
                             onClick={() => setIsDatePopoverOpen(true)}
                         >
-                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1 pointer-events-none group-hover:text-blue-500 transition-colors">Select Dates</label>
-                            <div className={cn("text-sm font-bold truncate pointer-events-none", date?.from ? "text-zinc-900 dark:text-white" : "text-zinc-400")}>
-                                {date?.from ? (
-                                    date.to ? (
-                                        <div className="flex items-center gap-2">
-                                            <span>{format(date.from, "MMM dd")} - {format(date.to, "MMM dd")}</span>
-                                            <span className="text-[10px] bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full font-black ml-1">{nights}N</span>
-                                        </div>
-                                    ) : (
-                                        `${format(date.from, "MMM dd")} - Check-out`
-                                    )
-                                ) : (
-                                    "Check-in - Check-out"
-                                )}
+                            {/* Check-in */}
+                            <div className="flex-1 flex flex-col justify-center px-6 py-3 border-r border-transparent text-left relative">
+                                <label className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 mb-1 uppercase tracking-widest pointer-events-none">Check in</label>
+                                <div className={cn("text-sm truncate pointer-events-none font-bold", date?.from ? "text-zinc-900 dark:text-white" : "text-zinc-400")}>
+                                    {date?.from ? format(date.from, "MMM dd, yyyy") : "Add dates"}
+                                </div>
+                            </div>
+
+                            <div className="h-10 w-px bg-zinc-100 dark:bg-zinc-800 mx-1 flex-shrink-0" />
+
+                            {/* Check-out */}
+                            <div className="flex-1 flex flex-col justify-center px-6 py-3 text-left">
+                                <label className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 mb-1 uppercase tracking-widest pointer-events-none">Check out</label>
+                                <div className={cn("text-sm truncate pointer-events-none font-bold", date?.to ? "text-zinc-900 dark:text-white" : "text-zinc-400")}>
+                                    {date?.to ? format(date.to, "MMM dd, yyyy") : "Add dates"}
+                                </div>
                             </div>
                         </button>
                     </PopoverTrigger>
 
-                    <PopoverContent className="w-auto p-0 shadow-[0_20px_60px_rgba(0,0,0,0.15)] border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden" align="center" sideOffset={16}>
+                    <PopoverContent className="w-auto p-0 shadow-[0_30px_70px_rgba(0,0,0,0.2)] border-zinc-200 dark:border-zinc-800 rounded-[2rem] overflow-hidden" align="center" sideOffset={16}>
                         {/* Header */}
-                        <div className="px-6 py-4 bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-                            <div className="space-y-0.5">
-                                <span className="text-xs font-black uppercase tracking-widest text-zinc-500">
+                        <div className="px-8 py-6 bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                            <div className="space-y-1">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">
                                     {!date?.from ? "Select Check-in" : !date?.to ? "Select Check-out" : `${nights} Nights`}
                                 </span>
-                                {date?.from && date?.to && (
-                                    <p className="text-zinc-900 dark:text-white text-sm font-bold">
-                                        {format(date.from, "MMM dd")} - {format(date.to, "MMM dd, yyyy")}
+                                {date?.from && date?.to ? (
+                                    <p className="text-zinc-900 dark:text-white text-lg font-black tracking-tight">
+                                        {format(date.from, "MMM dd")} — {format(date.to, "MMM dd, yyyy")}
                                     </p>
+                                ) : (
+                                    <p className="text-zinc-400 text-sm font-medium">Select your stay period</p>
                                 )}
                             </div>
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setDate(undefined)}
-                                    className="h-8 px-3 text-[10px] uppercase font-black text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-full transition-colors"
-                                >
-                                    Reset
-                                </Button>
-                            </div>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDate(undefined)}
+                                className="h-9 px-4 text-[10px] uppercase font-black text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
+                            >
+                                Reset
+                            </Button>
                         </div>
 
                         {/* Calendar */}
-                        <div className="p-4 bg-white dark:bg-zinc-900">
+                        <div className="px-6 py-4 bg-white dark:bg-zinc-900">
                             <Calendar
                                 initialFocus
                                 mode="range"
@@ -174,134 +177,211 @@ export function HotelSearch() {
                                 onSelect={handleSelect}
                                 numberOfMonths={2}
                                 disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                                className="rounded-xl border border-zinc-100 dark:border-zinc-800 p-3"
+                                className="rounded-xl"
                             />
                         </div>
 
                         {/* Footer */}
-                        <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 border-t border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
-                            <div className="text-xs text-zinc-400 font-medium px-2">
-                                * Prices may vary by dates
-                            </div>
+                        <div className="p-6 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-100 dark:border-zinc-800 flex justify-between items-center gap-8">
+                            <p className="text-[11px] text-zinc-400 font-bold uppercase tracking-tight leading-relaxed max-w-[200px]">
+                                Rates shown are exclusive to COP17 delegates.
+                            </p>
                             <Button
-                                className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 shadow-lg shadow-blue-500/20"
+                                className="rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-black uppercase tracking-widest text-[11px] px-10 h-14 shadow-2xl transition-all hover:scale-105 active:scale-95 px-8"
                                 onClick={() => setIsDatePopoverOpen(false)}
                             >
-                                Apply Dates
+                                Apply Period
                             </Button>
                         </div>
                     </PopoverContent>
                 </Popover>
 
-                <div className="h-10 w-px bg-zinc-200 dark:bg-zinc-800 mx-2" />
+                <div className="h-12 w-px bg-zinc-100 dark:bg-zinc-800 mx-1 flex-shrink-0" />
 
-                {/* Guests Selector */}
-                <Popover open={isGuestsPopoverOpen} onOpenChange={setIsGuestsPopoverOpen}>
-                    <PopoverTrigger asChild>
-                        <button
-                            type="button"
-                            className="flex-shrink-0 w-32 flex flex-col justify-center px-4 cursor-pointer hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50 rounded-2xl transition-all py-1.5 group text-left outline-none"
-                        >
-                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1 group-hover:text-blue-500 transition-colors pointer-events-none">Guests</label>
-                            <div className="text-sm font-bold text-zinc-900 dark:text-white truncate pointer-events-none">
-                                {guests} guest{guests > 1 ? "s" : ""}
-                            </div>
-                        </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-60 p-6 rounded-3xl shadow-2xl border-zinc-200 dark:border-zinc-800" align="end" sideOffset={12}>
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                                <span className="text-sm font-black text-zinc-900 dark:text-white">Adults</span>
-                                <p className="text-[10px] text-zinc-500 font-medium">Ages 13 or above</p>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-9 w-9 rounded-xl border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                                    onClick={() => updateGuests(-1)}
-                                    disabled={guests <= 1}
-                                >
-                                    <Minus className="h-4 w-4" />
-                                </Button>
-                                <span className="w-4 text-center text-sm font-black">{guests}</span>
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-9 w-9 rounded-xl border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                                    onClick={() => updateGuests(1)}
-                                    disabled={guests >= 10}
-                                >
-                                    <Plus className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-                        <Button
-                            className="w-full mt-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold h-10"
-                            onClick={() => setIsGuestsPopoverOpen(false)}
-                        >
-                            Apply
-                        </Button>
-                    </PopoverContent>
-                </Popover>
+                {/* Guests Selector & Search Button */}
+                <div className="flex-[1.2] flex items-center justify-between relative pl-2 h-full gap-4 pr-1">
+                    <Popover open={isGuestsPopoverOpen} onOpenChange={setIsGuestsPopoverOpen}>
+                        <PopoverTrigger asChild>
+                            <button
+                                type="button"
+                                className="flex flex-col justify-center flex-1 px-6 py-3 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-[1.5rem] transition-all text-left outline-none relative h-full"
+                            >
+                                <label className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 mb-1 uppercase tracking-widest pointer-events-none">Who</label>
+                                <div className={cn("text-sm truncate pointer-events-none font-bold", guests > 0 ? "text-zinc-900 dark:text-white" : "text-zinc-400")}>
+                                    {guests} guest{guests > 1 ? "s" : ""}
+                                </div>
+                            </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 p-8 rounded-[2rem] shadow-[0_30px_70px_rgba(0,0,0,0.2)] border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 mt-4" align="end" sideOffset={10}>
+                            <div className="space-y-8">
+                                {/* Rooms (Simulated) */}
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-1">
+                                        <span className="text-base font-black text-zinc-900 dark:text-white tracking-tight">Rooms</span>
+                                        <p className="text-xs text-zinc-500 font-medium">Standard assignment</p>
+                                    </div>
+                                    <div className="flex items-center gap-5">
+                                        <Button variant="outline" size="icon" className="h-10 w-10 rounded-full border-zinc-200 dark:border-zinc-800 opacity-20" disabled>
+                                            <Minus className="h-4 w-4" />
+                                        </Button>
+                                        <span className="w-4 text-center text-sm font-black">1</span>
+                                        <Button variant="outline" size="icon" className="h-10 w-10 rounded-full border-zinc-200 dark:border-zinc-800 opacity-20" disabled>
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
 
-                {/* Search Button */}
-                <Button
-                    onClick={handleSearch}
-                    className="rounded-full h-14 px-10 bg-blue-600 hover:bg-blue-700 text-white font-black shadow-[0_10px_30px_rgba(37,99,235,0.3)] transition-all hover:scale-105 active:scale-95 shrink-0 ml-2"
-                >
-                    <Search className="h-5 w-5 mr-3" />
-                    Search
-                </Button>
+                                {/* Guests */}
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-1">
+                                        <span className="text-base font-black text-zinc-900 dark:text-white tracking-tight">Guests</span>
+                                        <p className="text-xs text-zinc-500 font-medium">Delegates & partners</p>
+                                    </div>
+                                    <div className="flex items-center gap-5">
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-10 w-10 rounded-full border-zinc-200 dark:border-zinc-800 hover:border-zinc-900 dark:hover:border-white transition-all active:scale-90"
+                                            onClick={() => updateGuests(-1)}
+                                            disabled={guests <= 1}
+                                        >
+                                            <Minus className="h-4 w-4" />
+                                        </Button>
+                                        <span className="w-4 text-center text-sm font-black">{guests}</span>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-10 w-10 rounded-full border-zinc-200 dark:border-zinc-800 hover:border-zinc-900 dark:hover:border-white transition-all active:scale-90"
+                                            onClick={() => updateGuests(1)}
+                                            disabled={guests >= 10}
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+
+                    {/* Search Button */}
+                    <Button
+                        onClick={handleSearch}
+                        className="rounded-full h-16 w-16 md:h-16 md:w-auto md:px-10 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-[0_10px_30px_rgba(37,99,235,0.3)] transition-all hover:scale-105 active:scale-95 shrink-0"
+                    >
+                        <Search className="h-5 w-5 md:mr-3" />
+                        <span className="hidden md:inline">Search</span>
+                    </Button>
+                </div>
             </div>
 
-            {/* Mobile Bar */}
-            <div className="md:hidden space-y-4">
-                <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 dark:border-zinc-800 p-4 space-y-4">
-                    {/* Keyword Input with Autocomplete */}
-                    <div className="space-y-1">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Destination</label>
-                        <AutocompleteSearch
-                            value={query}
-                            onChange={setQuery}
-                            onSearch={handleSearch}
-                            placeholder="Where to?"
-                        />
+            {/* Mobile Bar - Redesigned Modal Trigger Style */}
+            <div className="md:hidden pt-4 pb-4">
+                <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-[0_30px_70px_rgba(0,0,0,0.15)] p-6 border border-zinc-100 dark:border-zinc-800 space-y-6 relative z-50">
+
+                    {/* Destination Input */}
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                            <MapPin className="h-3 w-3 text-blue-500" /> Destination
+                        </label>
+                        <div className="relative bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all border border-zinc-100/50 dark:border-zinc-700/30">
+                            <AutocompleteSearch
+                                value={query}
+                                onChange={setQuery}
+                                onSearch={handleSearch}
+                                placeholder="Find your stay..."
+                            />
+                        </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Dates</label>
-                            <Button
-                                variant="outline"
-                                className="w-full justify-start h-12 rounded-xl border-zinc-200 dark:border-zinc-800 text-xs font-bold"
-                                onClick={() => setIsDatePopoverOpen(true)}
-                            >
-                                <CalendarIcon className="h-4 w-4 mr-2 text-blue-500" />
-                                {date?.from ? (
-                                    date.to ? `${format(date.from, "MMM dd")} - ${format(date.to, "MMM dd")}` : `${format(date.from, "MMM dd")} - Check-out`
-                                ) : "Add dates"}
-                            </Button>
-                        </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        {/* Dates Button */}
+                        <Popover open={isDatePopoverOpen} onOpenChange={setIsDatePopoverOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className="flex flex-col items-start justify-center h-24 rounded-2xl border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/30 shadow-none px-6 group active:scale-95 transition-all text-left gap-1.5"
+                                    onClick={() => setIsDatePopoverOpen(true)}
+                                >
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5">
+                                        <CalendarIcon className="h-2.5 w-2.5 text-blue-500" /> Period
+                                    </span>
+                                    <span className={cn("text-xs font-black truncate w-full tracking-tight", date?.from ? "text-zinc-900 dark:text-white" : "text-zinc-400")}>
+                                        {date?.from ? (
+                                            date.to ? `${format(date.from, "MMM d")} - ${format(date.to, "MMM d")}` : `${format(date.from, "MMM d")}...`
+                                        ) : "Set dates"}
+                                    </span>
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[calc(100vw-32px)] p-0 shadow-[0_30px_70px_rgba(0,0,0,0.2)] border-zinc-200 dark:border-zinc-800 rounded-[2rem] overflow-hidden mt-2" align="center" sideOffset={10}>
+                                <div className="px-6 py-5 bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                                    <span className="text-sm font-black uppercase tracking-widest text-zinc-900 dark:text-white">Stay Dates</span>
+                                </div>
+                                <div className="p-3 bg-white dark:bg-zinc-900 flex justify-center">
+                                    <Calendar
+                                        initialFocus
+                                        mode="range"
+                                        defaultMonth={date?.from || new Date()}
+                                        selected={date}
+                                        onSelect={handleSelect}
+                                        numberOfMonths={1}
+                                        disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                        className="rounded-xl p-0"
+                                    />
+                                </div>
+                                <div className="p-6 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-100 dark:border-zinc-800">
+                                    <Button className="w-full rounded-2xl h-16 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest text-[11px] shadow-xl" onClick={() => setIsDatePopoverOpen(false)}>
+                                        Apply Dates
+                                    </Button>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
 
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Guests</label>
-                            <Button
-                                variant="outline"
-                                className="w-full justify-start h-12 rounded-xl border-zinc-200 dark:border-zinc-800 text-xs font-bold"
-                                onClick={() => setIsGuestsPopoverOpen(true)}
-                            >
-                                <Users className="h-4 w-4 mr-2 text-blue-500" />
-                                {guests} guest{guests > 1 ? "s" : ""}
-                            </Button>
-                        </div>
+                        {/* Guests Button */}
+                        <Popover open={isGuestsPopoverOpen} onOpenChange={setIsGuestsPopoverOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className="flex flex-col items-start justify-center h-24 rounded-2xl border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/30 shadow-none px-6 active:scale-95 transition-all text-left gap-1.5"
+                                    onClick={() => setIsGuestsPopoverOpen(true)}
+                                >
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5">
+                                        <Users className="h-2.5 w-2.5 text-blue-500" /> Guests
+                                    </span>
+                                    <span className={cn("text-xs font-black truncate w-full tracking-tight", guests > 0 ? "text-zinc-900 dark:text-white" : "text-zinc-400")}>
+                                        {guests} {guests > 1 ? "Adults" : "Adult"}
+                                    </span>
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[calc(100vw-32px)] p-8 rounded-[2rem] shadow-[0_30px_70px_rgba(0,0,0,0.2)] border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 mt-2" align="end" sideOffset={10}>
+                                <div className="space-y-8">
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-1">
+                                            <span className="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Travelers</span>
+                                            <p className="text-xs text-zinc-500 font-medium">Delegates & partners</p>
+                                        </div>
+                                        <div className="flex items-center gap-5">
+                                            <Button variant="outline" size="icon" className="h-11 w-11 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90" onClick={() => updateGuests(-1)} disabled={guests <= 1}>
+                                                <Minus className="h-4 w-4" />
+                                            </Button>
+                                            <span className="w-4 text-center text-sm font-black">{guests}</span>
+                                            <Button variant="outline" size="icon" className="h-11 w-11 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90" onClick={() => updateGuests(1)} disabled={guests >= 10}>
+                                                <Plus className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    <Button className="w-full h-16 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest text-[11px] shadow-xl" onClick={() => setIsGuestsPopoverOpen(false)}>
+                                        Complete Selection
+                                    </Button>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
                     </div>
 
                     <Button
                         onClick={handleSearch}
-                        className="w-full rounded-xl h-14 bg-blue-600 text-white font-black text-lg shadow-lg active:scale-95 transition-all"
+                        className="w-full rounded-2xl h-18 py-5 bg-zinc-900 dark:bg-white dark:text-zinc-950 text-white font-black uppercase tracking-[0.2em] text-xs shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3"
                     >
-                        Search Hotels
+                        <Search className="h-5 w-5" /> Search Availability
                     </Button>
                 </div>
             </div>

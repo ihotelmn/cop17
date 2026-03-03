@@ -13,61 +13,69 @@ export function SiteHeader() {
     const pathname = usePathname();
     const isHome = pathname === "/";
 
-
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { user, logout } = useAuth();
 
     return (
-        <header className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300", isHome ? "bg-transparent backdrop-blur-sm border-b border-white/10" : "bg-black/80 backdrop-blur-md border-b border-white/10")}>
-            <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        <header className={cn(
+            "fixed top-0 left-0 right-0 z-[100] transition-all duration-500",
+            isHome
+                ? "bg-black/20 backdrop-blur-md border-b border-white/5"
+                : "bg-zinc-950/90 backdrop-blur-xl border-b border-white/10 shadow-2xl"
+        )}>
+            <div className="container mx-auto px-4 h-20 flex items-center justify-between">
                 {/* Logo */}
-                <Link href="/" className="flex items-center gap-3">
-                    <Image
-                        src="/images/cop17-logo-horizontal.png"
-                        alt="COP17 Logo"
-                        width={40}
-                        height={40}
-                        className="h-8 w-auto object-contain brightness-0 invert"
-                    />
+                <Link href="/" className="flex items-center gap-3 group transition-transform hover:scale-105 active:scale-95">
+                    <div className="relative">
+                        <Image
+                            src="/images/cop17-logo-horizontal.png"
+                            alt="COP17 Logo"
+                            width={120}
+                            height={40}
+                            className="h-9 w-auto object-contain brightness-0 invert drop-shadow-md"
+                        />
+                    </div>
                 </Link>
 
                 {/* Navigation */}
-                <nav className="hidden md:flex items-center gap-6">
+                <nav className="hidden lg:flex items-center gap-8">
                     <NavLink href="/" active={pathname === "/"}>Home</NavLink>
                     <NavLink href="/hotels" active={pathname.startsWith("/hotels")}>Hotels</NavLink>
-                    <NavLink href="#">Tours & Experiences</NavLink>
-                    <NavLink href="#">Airport Shuttle</NavLink>
+                    <NavLink href="#">Tours</NavLink>
+                    <NavLink href="#">Shuttle</NavLink>
                     <NavLink href="#">Support</NavLink>
                     <NavLink href="https://unccdcop17.org" external>About COP17</NavLink>
                 </nav>
 
                 {/* Actions */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-6">
                     {user ? (
                         <>
-                            <div className="hidden md:flex items-center gap-4">
+                            <div className="hidden md:flex items-center gap-6">
                                 <NavLink href="/my-bookings" active={pathname === "/my-bookings"}>My Bookings</NavLink>
                                 {(user.role === 'admin' || user.role === 'super_admin') && (
-                                    <Button asChild variant="ghost" className="text-white hover:text-white hover:bg-white/10">
+                                    <Button asChild variant="ghost" className="text-[11px] font-black uppercase tracking-widest text-white/70 hover:text-white hover:bg-white/10 rounded-xl px-4">
                                         <Link href="/admin">Dashboard</Link>
                                     </Button>
                                 )}
                             </div>
 
-                            {(user.role === 'admin' || user.role === 'super_admin') && (
-                                <NotificationBell userId={user.id} />
-                            )}
-                            <UserNav />
+                            <div className="flex items-center gap-3">
+                                {(user.role === 'admin' || user.role === 'super_admin') && (
+                                    <NotificationBell userId={user.id} />
+                                )}
+                                <UserNav />
+                            </div>
                         </>
                     ) : (
-                        <>
-                            <Link href="/login" className="text-sm font-medium text-white/70 hover:text-white transition-colors">
+                        <div className="flex items-center gap-6">
+                            <Link href="/login" className="text-[11px] font-black uppercase tracking-widest text-white/60 hover:text-white transition-all">
                                 Sign In
                             </Link>
-                            <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6">
-                                <Link href="/hotels">Book Now</Link>
+                            <Button asChild className="bg-white text-black hover:bg-zinc-100 rounded-2xl px-8 h-12 text-[11px] font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(255,255,255,0.15)] transition-all hover:scale-105 active:scale-95">
+                                <Link href="/hotels">Book Stay</Link>
                             </Button>
-                        </>
+                        </div>
                     )}
                 </div>
             </div>
@@ -77,13 +85,23 @@ export function SiteHeader() {
 
 function NavLink({ href, active, external, children }: { href: string, active?: boolean, external?: boolean, children: React.ReactNode }) {
     const className = cn(
-        "text-sm font-medium transition-colors hover:text-white",
-        active ? "text-white" : "text-white/70"
+        "text-[10px] font-black uppercase tracking-widest transition-all relative pb-1 group",
+        active ? "text-white" : "text-white/60 hover:text-white"
+    );
+
+    const inner = (
+        <>
+            {children}
+            <span className={cn(
+                "absolute bottom-0 left-0 h-[2px] bg-blue-500 transition-all duration-300 rounded-full",
+                active ? "w-full" : "w-0 group-hover:w-full"
+            )} />
+        </>
     );
 
     if (external) {
-        return <a href={href} target="_blank" rel="noopener noreferrer" className={className}>{children}</a>;
+        return <a href={href} target="_blank" rel="noopener noreferrer" className={className}>{inner}</a>;
     }
 
-    return <Link href={href} className={className}>{children}</Link>;
+    return <Link href={href} className={className}>{inner}</Link>;
 }

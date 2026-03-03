@@ -256,6 +256,50 @@ export async function getPublicRoom(roomId: string) {
     return room;
 }
 
+export async function getHomepageStats() {
+    const supabase = getSupabaseAdmin();
+
+    try {
+        // Get total hotels
+        const { count: hotelsCount, error: hotelsError } = await supabase
+            .from("hotels")
+            .select('*', { count: 'exact', head: true })
+
+        if (hotelsError) {
+            console.error("Supabase hotels error:", hotelsError);
+            throw hotelsError;
+        }
+
+        // Get total rooms total_inventory
+        const { data: rooms, error: roomsError } = await supabase
+            .from("rooms")
+            .select("total_inventory");
+
+        if (roomsError) {
+            console.error("Supabase rooms error:", roomsError);
+            throw roomsError;
+        }
+
+        let totalRooms = rooms ? rooms.reduce((sum, room) => sum + (room.total_inventory || 0), 0) : 0;
+
+        // Fallback: If inventory is 0 for all rooms (data issue), show total number of rooms instead
+        if (totalRooms === 0 && rooms && rooms.length > 0) {
+            totalRooms = rooms.length;
+        }
+
+        return {
+            hotels: hotelsCount || 0,
+            rooms: totalRooms
+        };
+    } catch (error) {
+        console.error("Error fetching homepage stats:", error);
+        return {
+            hotels: 0,
+            rooms: 0
+        };
+    }
+}
+
 export async function getSearchSuggestions(query: string) {
     if (!query || query.length < 2) return [];
 

@@ -13,6 +13,6 @@ const HotelMap = dynamic(() => import('@/components/hotel-map'), {
     )
 });
 
-export function HotelMapWrapper({ hotels }: { hotels: (Hotel & { minPrice: number })[] }) {
-    return <HotelMap hotels={hotels} />;
+export function HotelMapWrapper({ hotels, query }: { hotels: (Hotel & { minPrice: number })[], query?: string }) {
+    return <HotelMap hotels={hotels} query={query} />;
 }

@@ -203,6 +203,8 @@ function GalleryImage({ src, alt, priority }: { src: string, alt: string, priori
             src={src.startsWith('http') ? src : `https://api.myhotel.mn/image?path=${src}`}
             alt={alt}
             fill
+            sizes="(max-width: 1200px) 100vw, 80vw"
+            unoptimized
             className={cn(
                 "object-cover transition-opacity duration-700",
                 isLoaded ? "opacity-100" : "opacity-0"
