@@ -1,9 +1,11 @@
 import { ImageGallery } from "@/components/image-gallery";
-import { Star, MapPin } from "lucide-react";
+import { Star, MapPin, ShieldCheck, Mail, Phone, Globe, Info, Clock, CheckCircle2 } from "lucide-react";
 import { RoomList } from "@/components/room-list";
 import { SearchForm } from "@/components/search-form";
 import { getPublicHotel, getPublicRooms } from "@/app/actions/public";
 import { notFound } from "next/navigation";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -29,43 +31,71 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
 
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-20">
-            {/* Hero Section */}
-            <div className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
-                <div className="container mx-auto px-4 py-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-lg bg-zinc-100 dark:bg-zinc-800">
-                            <ImageGallery images={hotel.images || []} alt={hotel.name} />
+            {/* Header / Breadcrumbs */}
+            <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md sticky top-0 z-40 border-b border-zinc-200 dark:border-zinc-800">
+                <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-400">
+                        <Link href="/" className="hover:text-blue-500 transition-colors">Home</Link>
+                        <span>/</span>
+                        <Link href="/hotels" className="hover:text-blue-500 transition-colors">Hotels</Link>
+                        <span>/</span>
+                        <span className="text-zinc-600 dark:text-zinc-300">{hotel.name}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content Hero */}
+            <div className="bg-white dark:bg-black relative overflow-hidden">
+                <div className="container mx-auto px-4 py-12 relative z-10">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+
+                        {/* Gallery Column */}
+                        <div className="lg:col-span-12 xl:col-span-8 space-y-6">
+                            <div className="rounded-[2rem] overflow-hidden shadow-2xl bg-zinc-100 dark:bg-zinc-800 border-4 border-white dark:border-zinc-800 ring-1 ring-zinc-200 dark:ring-zinc-700">
+                                <ImageGallery images={hotel.images || []} alt={hotel.name} aspectRatio="video" />
+                            </div>
                         </div>
-                        <div className="flex flex-col justify-center space-y-6">
-                            <div>
-                                <div className="flex items-center gap-2 mb-2">
-                                    <div className="flex text-amber-500">
-                                        {[...Array(hotel.stars || 5)].map((_, i) => (
-                                            <Star key={i} className="w-5 h-5 fill-current" />
-                                        ))}
-                                    </div>
-                                    <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                                        {hotel.stars}-Star Hotel
-                                    </span>
+
+                        {/* Title & Rapid Info */}
+                        <div className="lg:col-span-12 xl:col-span-4 flex flex-col h-full justify-center py-4 lg:py-0">
+                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 mb-6 self-start">
+                                <div className="flex text-amber-500 gap-0.5">
+                                    {[...Array(hotel.stars || 5)].map((_, i) => (
+                                        <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                                    ))}
                                 </div>
-                                <h1 className="text-4xl font-bold text-zinc-900 dark:text-white mb-4">
-                                    {hotel.name}
-                                </h1>
-                                <div className="flex items-start gap-2 text-zinc-600 dark:text-zinc-400">
-                                    <MapPin className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                                    <p className="text-lg leading-relaxed">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                                    {hotel.stars}-Star Premium Hotel
+                                </span>
+                            </div>
+
+                            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-zinc-950 dark:text-white mb-6 tracking-tight leading-[1.05]">
+                                {hotel.name}
+                            </h1>
+
+                            <div className="flex items-start gap-4 text-zinc-500 dark:text-zinc-400 mb-8 p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
+                                <MapPin className="w-6 h-6 mt-1 flex-shrink-0 text-blue-500" />
+                                <div className="space-y-1">
+                                    <p className="text-lg font-medium leading-relaxed text-zinc-800 dark:text-zinc-200">
                                         {hotel.address || "Location not specified"}
                                     </p>
+                                    <button className="text-sm font-bold text-blue-600 hover:text-blue-700 uppercase tracking-wider">
+                                        View on map
+                                    </button>
                                 </div>
                             </div>
 
                             {(hotel.cached_rating || hotel.cached_review_count) && (
-                                <div className="flex items-center gap-4 bg-amber-50 dark:bg-amber-950/20 p-4 rounded-xl border border-amber-100 dark:border-amber-900/30">
-                                    <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">
-                                        {hotel.cached_rating || "N/A"}
+                                <div className="flex items-center gap-6 p-6 rounded-3xl bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30">
+                                    <div className="text-5xl font-black text-blue-600 dark:text-blue-400 tracking-tighter">
+                                        {hotel.cached_rating || "N/A"}/5
                                     </div>
-                                    <div className="text-sm text-amber-800/80 dark:text-amber-200/80">
-                                        Based on {hotel.cached_review_count || 0} reviews
+                                    <div className="h-10 w-px bg-blue-200 dark:bg-blue-800/50" />
+                                    <div className="space-y-1">
+                                        <p className="text-lg font-black text-blue-900 dark:text-blue-100">Superb</p>
+                                        <p className="text-xs text-blue-800/60 dark:text-blue-200/60 uppercase font-black tracking-widest">
+                                            {hotel.cached_review_count || 0} Professional Reviews
+                                        </p>
                                     </div>
                                 </div>
                             )}
@@ -74,53 +104,79 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
                 </div>
             </div>
 
-            <div className="container mx-auto px-4 mt-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
-                <main className="lg:col-span-2 space-y-12">
-                    {hotel.description && (
-                        <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
-                            <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-4">About the Hotel</h2>
+            {/* Layout Grid */}
+            <div className="container mx-auto px-4 mt-16 grid grid-cols-1 lg:grid-cols-12 gap-12">
+
+                {/* Main Content Area */}
+                <main className="lg:col-span-8 space-y-16">
+
+                    {/* Description Section */}
+                    {hotel.description && hotel.description !== "NULL" && (
+                        <section className="bg-white dark:bg-zinc-900/40 p-10 rounded-[2.5rem] shadow-xl shadow-zinc-200/50 dark:shadow-none border border-zinc-100 dark:border-zinc-800 overflow-hidden relative group">
+                            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                                <Info className="w-24 h-24" />
+                            </div>
+                            <h2 className="text-2xl font-black text-zinc-950 dark:text-white mb-8 tracking-tight flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center">
+                                    <ShieldCheck className="w-4 h-4 text-white" />
+                                </div>
+                                Detailed Property Overview
+                            </h2>
                             <div
-                                className="prose prose-zinc dark:prose-invert max-w-none text-zinc-600 dark:text-zinc-400 text-lg leading-relaxed"
+                                className="prose prose-zinc dark:prose-invert max-w-none text-zinc-600 dark:text-zinc-400 text-lg leading-relaxed font-medium"
                                 dangerouslySetInnerHTML={{ __html: hotel.description }}
                             />
                         </section>
                     )}
 
-                    <section id="rooms">
-                        <div className="flex items-center justify-between mb-8">
-                            <h2 className="text-3xl font-bold text-zinc-900 dark:text-white">Available Rooms</h2>
-                            <div className="px-4 py-2 bg-zinc-200 dark:bg-zinc-800 rounded-lg text-sm font-medium">
-                                {rooms.length} Room types found
+                    {/* Rooms Section */}
+                    <section id="rooms" className="scroll-mt-24">
+                        <div className="flex items-center justify-between mb-10 pb-6 border-b border-zinc-200 dark:border-zinc-800">
+                            <div className="space-y-1">
+                                <h2 className="text-3xl font-black text-zinc-950 dark:text-white tracking-tight">Available Residences</h2>
+                                <p className="text-zinc-500 text-sm font-medium uppercase tracking-widest">Select your preferred room type</p>
+                            </div>
+                            <div className="px-5 py-2.5 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-full text-xs font-black uppercase tracking-widest">
+                                {rooms.length} Suites Left
                             </div>
                         </div>
                         <RoomList hotelId={id} rooms={rooms} checkIn={checkIn} checkOut={checkOut} />
                     </section>
                 </main>
 
-                <aside className="lg:col-span-1">
-                    <div className="sticky top-24 space-y-6">
-                        <div className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                            <h3 className="font-bold text-xl text-zinc-900 dark:text-white mb-6">Modify Search</h3>
+                {/* Sidebar Sticky Area */}
+                <aside className="lg:col-span-4 lg:block">
+                    <div className="sticky top-24 space-y-8">
 
-                            <div className="space-y-6">
+                        {/* Search Persistence / Quick Modify */}
+                        <div className="rounded-[2.5rem] bg-white dark:bg-zinc-900 p-10 shadow-2xl shadow-zinc-200/50 dark:shadow-none border border-zinc-200 dark:border-zinc-800 overflow-hidden relative">
+                            <div className="absolute top-0 right-0 p-12 -mr-6 -mt-6 bg-blue-600/5 rounded-full blur-3xl pointer-events-none" />
+                            <h3 className="font-black text-xl text-zinc-950 dark:text-white mb-8 tracking-tight uppercase tracking-widest text-xs opacity-50">Reservation Assistant</h3>
+
+                            <div className="space-y-8 relative z-10">
                                 <SearchForm />
 
-                                <div className="pt-6 border-t border-zinc-100 dark:border-zinc-800">
-                                    <h4 className="text-sm font-semibold uppercase tracking-wider text-zinc-500 mb-4">Hotel Policies</h4>
-                                    <dl className="space-y-4">
-                                        <div className="flex justify-between items-center bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-lg">
-                                            <dt className="text-zinc-500 dark:text-zinc-400 text-sm">Check-in</dt>
-                                            <dd className="font-bold text-zinc-900 dark:text-white">
-                                                {hotel.check_in_time?.substring(0, 5) || "14:00"}
-                                            </dd>
+                                <div className="pt-8 border-t border-zinc-100 dark:border-zinc-800 grid grid-cols-2 gap-4">
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Clock className="w-3.5 h-3.5 text-blue-500" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Policy</span>
                                         </div>
-                                        <div className="flex justify-between items-center bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-lg">
-                                            <dt className="text-zinc-500 dark:text-zinc-400 text-sm">Check-out</dt>
-                                            <dd className="font-bold text-zinc-900 dark:text-white">
-                                                {hotel.check_out_time?.substring(0, 5) || "11:00"}
-                                            </dd>
+                                        <div className="space-y-1">
+                                            <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">Check-In</p>
+                                            <p className="text-xl font-black text-zinc-900 dark:text-white">{hotel.check_in_time?.substring(0, 5) || "14:00"}</p>
                                         </div>
-                                    </dl>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Ready</span>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">Check-Out</p>
+                                            <p className="text-xl font-black text-zinc-900 dark:text-white">{hotel.check_out_time?.substring(0, 5) || "11:00"}</p>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {hotel.website && (
@@ -128,13 +184,40 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
                                         href={hotel.website}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="inline-flex items-center justify-center w-full px-6 py-3 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white font-semibold rounded-xl transition-colors duration-200"
+                                        className="inline-flex items-center justify-center w-full px-8 py-5 bg-zinc-950 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-black font-black uppercase tracking-widest text-xs rounded-2xl transition-all shadow-xl shadow-zinc-950/10 active:scale-95 group"
                                     >
-                                        Visit Official Website
+                                        <Globe className="w-4 h-4 mr-3 group-hover:rotate-12 transition-transform" />
+                                        Official Website
                                     </a>
                                 )}
                             </div>
                         </div>
+
+                        {/* Direct Contact Card */}
+                        <div className="p-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-[2.5rem] text-white shadow-xl shadow-blue-500/20">
+                            <h4 className="text-sm font-black uppercase tracking-[0.2em] opacity-60 mb-8">Direct Contact</h4>
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-5 group cursor-pointer">
+                                    <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                                        <Mail className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Email Support</p>
+                                        <p className="font-bold text-lg">hotel@support.com</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-5 group cursor-pointer">
+                                    <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                                        <Phone className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Call Directly</p>
+                                        <p className="font-bold text-lg">+976 11-123-456</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </aside>
             </div>

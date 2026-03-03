@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { sendBookingConfirmation } from "@/lib/email";
 import { encrypt } from "@/lib/encryption";
 import { GolomtService } from "@/lib/golomt";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 // Validation Schema
 const bookingSchema = z.object({
@@ -53,9 +54,11 @@ export async function createBookingAction(prevState: BookingState, formData: For
     const { roomId, hotelId, checkIn, checkOut, guestPassport, guestPhone, specialRequests } = validatedFields.data;
 
     try {
+        const adminSupabase = getSupabaseAdmin();
+
         // 1. Check Inventory Availability
         // Get Room Details for Price and Total Inventory
-        const { data: room, error: roomError } = await supabase
+        const { data: room, error: roomError } = await adminSupabase
             .from("rooms")
             .select("price_per_night, total_inventory")
             .eq("id", roomId)
@@ -67,7 +70,7 @@ export async function createBookingAction(prevState: BookingState, formData: For
 
         // Count existing bookings for this room type in the date range
         // Logic: (start1 < end2) AND (end1 > start2) for overlap
-        const { count, error: countError } = await supabase
+        const { count, error: countError } = await adminSupabase
             .from("bookings")
             .select("*", { count: "exact", head: true })
             .eq("room_id", roomId)
@@ -98,7 +101,7 @@ export async function createBookingAction(prevState: BookingState, formData: For
         // 3. Create Booking Record (Pending Payment)
         const { data: { user } } = await supabase.auth.getUser();
 
-        const { data: booking, error: bookingError } = await supabase
+        const { data: booking, error: bookingError } = await adminSupabase
             .from("bookings")
             .insert({
                 room_id: roomId,
@@ -127,16 +130,6 @@ export async function createBookingAction(prevState: BookingState, formData: For
         const hotelName = booking.room?.hotel?.name;
 
         if (ownerId) {
-            const adminClient = await createClient(); // Use service role if available or standard client. 
-            // Note: createClient() uses standard cookies. We need admin rights to insert for *another* user if RLS blocks it.
-            // However, our policy is "Users can view own". Insert policy is missing for authenticated users to insert for others?
-            // Actually, the server action runs as the logged-in user (customer).
-            // Customer cannot insert into 'notifications' for 'ownerId' unless we have an RLS policy for it OR use service role.
-
-            // WE NEED SERVICE ROLE HERE.
-            const { getSupabaseAdmin } = await import("@/lib/supabase/admin"); // Dynamic import to avoid circular deps if any
-            const adminSupabase = getSupabaseAdmin();
-
             await adminSupabase.from("notifications").insert({
                 user_id: ownerId,
                 title: "New Booking Received!",

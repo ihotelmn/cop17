@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Star, MapPin, Navigation, ShieldCheck } from "lucide-react";
 import { Hotel } from "@/app/actions/public";
-import { cn } from "@/lib/utils";
+import { cn, getHotelImageUrl } from "@/lib/utils";
 
 export function HotelCardGrid({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
     const images = hotel.images && hotel.images.length > 0
@@ -19,7 +19,7 @@ export function HotelCardGrid({ hotel }: { hotel: (Hotel & { minPrice: number })
                 {/* Image Section */}
                 <div className="relative aspect-[16/10] w-full overflow-hidden shrink-0">
                     <Image
-                        src={images[0].startsWith('http') ? images[0] : `https://api.myhotel.mn/image?path=${images[0]}`}
+                        src={getHotelImageUrl(images[0])}
                         alt={hotel.name}
                         fill
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 25vw"

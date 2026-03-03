@@ -5,7 +5,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, getHotelImageUrl } from "@/lib/utils";
 
 interface ImageGalleryProps {
     images: string[];
@@ -66,6 +66,10 @@ export function ImageGallery({
         let cleaned = str.replace(/^["'\[]+|["'\]]+$/g, '').trim();
 
         if (cleaned.startsWith('http') || cleaned.startsWith('/') || cleaned.includes('/')) {
+            // Ensure leading slash for relative paths if it's not a full URL
+            if (!cleaned.startsWith('http') && !cleaned.startsWith('/')) {
+                cleaned = '/' + cleaned;
+            }
             return [cleaned];
         }
 
@@ -200,7 +204,7 @@ function GalleryImage({ src, alt, priority }: { src: string, alt: string, priori
 
     return (
         <Image
-            src={src.startsWith('http') ? src : `https://api.myhotel.mn/image?path=${src}`}
+            src={getHotelImageUrl(src)}
             alt={alt}
             fill
             sizes="(max-width: 1200px) 100vw, 80vw"

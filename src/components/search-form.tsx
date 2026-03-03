@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { addDays, format } from "date-fns"
-import { Calendar as CalendarIcon, Search, Users } from "lucide-react"
+import { Calendar as CalendarIcon, Search, Users, MapPin, ChevronDown } from "lucide-react"
 import { DateRange } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
@@ -13,61 +13,50 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
-import { Input } from "@/components/ui/input"
 
 export function SearchForm({ className }: React.HTMLAttributes<HTMLDivElement>) {
-    const [date, setDate] = React.useState<DateRange | undefined>()
-
-    React.useEffect(() => {
-        setDate({
-            from: new Date(),
-            to: addDays(new Date(), 3),
-        })
-    }, [])
+    const [date, setDate] = React.useState<DateRange | undefined>({
+        from: new Date(),
+        to: addDays(new Date(), 3),
+    })
 
     return (
-        <div className={cn("grid gap-4 p-4 rounded-2xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md shadow-lg border border-white/20 dark:border-zinc-800/50", className)}>
-            <form className="grid gap-4 md:grid-cols-4 items-end">
-                <div className="grid gap-2">
-                    <label htmlFor="location" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Location
+        <div className={cn("space-y-6", className)}>
+            <div className="space-y-4">
+                {/* Location - Informational only if we are on hotel page */}
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">
+                        Current Destination
                     </label>
-                    <div className="relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input id="location" placeholder="Ulaanbaatar, Mongolia" className="pl-9" defaultValue="Ulaanbaatar" />
+                    <div className="flex items-center gap-3 px-4 h-14 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-2xl text-sm font-bold text-zinc-900 dark:text-white">
+                        <MapPin className="h-4 w-4 text-blue-500" />
+                        <span>Ulaanbaatar, Mongolia</span>
                     </div>
                 </div>
 
-                <div className="grid gap-2 md:col-span-2">
-                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Check-in - Check-out
+                {/* Date Picker */}
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">
+                        Selected Dates
                     </label>
                     <Popover>
                         <PopoverTrigger asChild>
-                            <Button
-                                id="date"
-                                variant={"outline"}
-                                className={cn(
-                                    "w-full justify-start text-left font-normal",
-                                    !date && "text-muted-foreground"
-                                )}
-                            >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {date?.from ? (
-                                    date.to ? (
-                                        <>
-                                            {format(date.from, "LLL dd, y")} -{" "}
-                                            {format(date.to, "LLL dd, y")}
-                                        </>
-                                    ) : (
-                                        format(date.from, "LLL dd, y")
-                                    )
-                                ) : (
-                                    <span>Pick a date</span>
-                                )}
-                            </Button>
+                            <button className="w-full h-14 px-4 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-2xl flex items-center justify-between group hover:border-blue-500/30 transition-all focus:outline-none">
+                                <div className="flex items-center gap-3">
+                                    <CalendarIcon className="h-4 w-4 text-blue-500" />
+                                    <div className="flex flex-col items-start translate-y-[1px]">
+                                        <span className="text-xs font-bold text-zinc-900 dark:text-white">
+                                            {date?.from ? format(date.from, "MMM dd") : "Arrival"} — {date?.to ? format(date.to, "MMM dd") : "Departure"}
+                                        </span>
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">
+                                            {date?.from && date?.to ? `${Math.round((date.to.getTime() - date.from.getTime()) / (1000 * 60 * 60 * 24))} Nights Stay` : "Select dates"}
+                                        </span>
+                                    </div>
+                                </div>
+                                <ChevronDown className="h-4 w-4 text-zinc-400 group-hover:text-blue-500 transition-colors" />
+                            </button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent className="w-auto p-0 border-none shadow-2xl rounded-3xl overflow-hidden" align="start">
                             <Calendar
                                 initialFocus
                                 mode="range"
@@ -75,24 +64,30 @@ export function SearchForm({ className }: React.HTMLAttributes<HTMLDivElement>) 
                                 selected={date}
                                 onSelect={setDate}
                                 numberOfMonths={2}
+                                className="p-4"
                             />
                         </PopoverContent>
                     </Popover>
                 </div>
 
-                <div className="grid gap-2">
-                    <label htmlFor="guests" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Guests
+                {/* Guests */}
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">
+                        Capacity Needs
                     </label>
-                    <div className="relative">
-                        <Users className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input id="guests" type="number" min={1} max={10} defaultValue={1} className="pl-9" />
+                    <div className="flex items-center justify-between px-4 h-14 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-2xl">
+                        <div className="flex items-center gap-3">
+                            <Users className="h-4 w-4 text-blue-500" />
+                            <span className="text-sm font-bold text-zinc-900 dark:text-white">Minimum 2 Guests</span>
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Requirement</span>
                     </div>
                 </div>
-            </form>
-            <Button size="lg" className="w-full md:w-auto md:ml-auto md:col-span-4" variant="premium">
-                Search Available Rooms
-            </Button>
+            </div>
+
+            <p className="text-[9px] text-center font-bold text-zinc-400 uppercase tracking-widest leading-relaxed px-4">
+                Prices and availability are shown in real-time on the room selection cards below.
+            </p>
         </div>
     )
 }

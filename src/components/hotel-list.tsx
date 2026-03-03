@@ -2,11 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Star, MapPin, Navigation, Wifi, Car, Coffee, ArrowRight, ShieldCheck } from "lucide-react";
+import { Star, MapPin, Navigation, Wifi, Car, Coffee, ArrowRight, ShieldCheck, Calendar, Users, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Hotel } from "@/app/actions/public";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn, getHotelImageUrl } from "@/lib/utils";
 import { estimateTravelTime } from "@/lib/venue";
 import {
     Carousel,
@@ -70,8 +70,8 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
                             <CarouselItem key={index} className="h-full">
                                 <div className="relative w-full h-full">
                                     <Image
-                                        src={img.startsWith('http') ? img : `https://api.myhotel.mn/image?path=${img}`}
-                                        alt={`${hotel.name} - view ${index + 1}`}
+                                        src={getHotelImageUrl(img)}
+                                        alt={hotel.name}
                                         fill
                                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 320px, 320px"
                                         className="object-cover transition-transform duration-700 group-hover:scale-105"

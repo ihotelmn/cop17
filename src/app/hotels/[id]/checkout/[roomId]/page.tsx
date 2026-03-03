@@ -4,6 +4,7 @@ import { format, differenceInDays } from "date-fns";
 import { CheckoutForm } from "./checkout-form";
 import { ShieldCheck, Calendar, Users, MapPin, Building2 } from "lucide-react";
 import Image from "next/image";
+import { getHotelImageUrl } from "@/lib/utils";
 
 interface CheckoutPageProps {
     params: Promise<{ id: string; roomId: string }>;
@@ -82,7 +83,7 @@ export default async function CheckoutPage({ params, searchParams }: CheckoutPag
                                         <div className="h-20 w-20 rounded-lg overflow-hidden bg-zinc-100 shrink-0 relative">
                                             {hotel.images?.[0] ? (
                                                 <img
-                                                    src={hotel.images[0]}
+                                                    src={getHotelImageUrl(hotel.images[0])}
                                                     alt={hotel.name}
                                                     className="w-full h-full object-cover"
                                                 />
