@@ -15,6 +15,8 @@ const bookingSchema = z.object({
     hotelId: z.string().min(1, "Hotel ID required"),
     checkIn: z.string().date(),
     checkOut: z.string().date(),
+    guestName: z.string().min(2, "Name required"),
+    guestEmail: z.string().email("Valid email required"),
     guestPassport: z.string().min(5, "Passport number required"),
     guestPhone: z.string().min(8, "Valid phone number required"),
     specialRequests: z.string().nullable().optional(),
@@ -39,6 +41,8 @@ export async function createBookingAction(prevState: BookingState, formData: For
         hotelId: formData.get("hotelId"),
         checkIn: formData.get("checkIn"),
         checkOut: formData.get("checkOut"),
+        guestName: formData.get("guestName"),
+        guestEmail: formData.get("guestEmail"),
         guestPassport: formData.get("guestPassport"),
         guestPhone: formData.get("guestPhone"),
         specialRequests: formData.get("specialRequests"),
@@ -51,7 +55,7 @@ export async function createBookingAction(prevState: BookingState, formData: For
         };
     }
 
-    const { hotelId, checkIn, checkOut, guestPassport, guestPhone, specialRequests, roomsData } = validatedFields.data;
+    const { hotelId, checkIn, checkOut, guestName, guestEmail, guestPassport, guestPhone, specialRequests, roomsData } = validatedFields.data;
 
     try {
         const adminSupabase = getSupabaseAdmin();
@@ -99,8 +103,12 @@ export async function createBookingAction(prevState: BookingState, formData: For
                 return { error: `Not enough availability for: ${room.name}.` };
             }
 
-            totalCombinedPrice += room.price_per_night * rs.quantity * nights;
+            // Ensure we use the official DB price
+            rs.price = room.price_per_night;
+            totalCombinedPrice += rs.price * rs.quantity * nights;
+            console.log(`[PriceCalc] Room: ${room.name}, Qty: ${rs.quantity}, Nights: ${nights}, Price: ${rs.price}, Subtotal: ${rs.price * rs.quantity * nights}`);
         }
+        console.log(`[PriceTotal] Combined Total: ${totalCombinedPrice}`);
 
         // 2. Encrypt PII
         const encryptedPassport = await encrypt(guestPassport);
@@ -125,6 +133,8 @@ export async function createBookingAction(prevState: BookingState, formData: For
                         check_out_date: checkOut,
                         status: "pending",
                         total_price: rs.price * nights,
+                        guest_name: guestName,
+                        guest_email: guestEmail,
                         guest_passport_encrypted: encryptedPassport,
                         guest_phone_encrypted: encryptedPhone,
                         special_requests_encrypted: encryptedRequests,
@@ -220,7 +230,9 @@ export async function confirmBookingAction(groupId: string) {
                         contact_email
                     )
                 ),
-                user_id
+                user_id,
+                guest_name,
+                guest_email
             `)
             .eq("group_id", groupId)
             .limit(1)
@@ -233,9 +245,11 @@ export async function confirmBookingAction(groupId: string) {
 
         // 3. Fetch User Email (either from encrypted PII or Supabase Auth if logged in)
         const { data: { user } } = await supabase.auth.getUser();
-        const userEmail = user?.email;
 
-        if (userEmail) {
+        const finalEmail = booking.guest_email || user?.email;
+        const finalName = booking.guest_name || user?.user_metadata?.full_name || "Guest";
+
+        if (finalEmail) {
             const datesStr = `${format(new Date(booking.check_in_date), "MMM d")} - ${format(new Date(booking.check_out_date), "MMM d, yyyy")}`;
 
             // @ts-ignore
@@ -243,8 +257,8 @@ export async function confirmBookingAction(groupId: string) {
 
             // Send Confirmation Email using the first booking ID
             await sendBookingConfirmation(
-                userEmail,
-                user?.user_metadata?.full_name || "Guest",
+                finalEmail,
+                finalName,
                 booking.id,
                 hotelName,
                 datesStr
