@@ -38,6 +38,11 @@ export default async function Home(props: Props) {
   const minPrice = getParam("minPrice");
   const maxPrice = getParam("maxPrice");
   const view = getParam("view") || "list";
+  const adults = getParam("adults");
+  const children = getParam("children");
+  const roomsCount = getParam("rooms");
+  const from = getParam("from");
+  const to = getParam("to");
 
   const hotels = await getPublishedHotels({
     query,
@@ -46,6 +51,11 @@ export default async function Home(props: Props) {
     sortBy,
     minPrice,
     maxPrice,
+    adults,
+    children,
+    rooms: roomsCount,
+    from,
+    to,
   });
 
   return (

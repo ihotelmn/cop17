@@ -30,8 +30,12 @@ export function HotelSearch() {
     const router = useRouter();
 
     // State for Popovers
-    const [isDatePopoverOpen, setIsDatePopoverOpen] = useState(false);
-    const [isGuestsPopoverOpen, setIsGuestsPopoverOpen] = useState(false);
+    const [isDesktopDateOpen, setIsDesktopDateOpen] = useState(false);
+    const [isMobileDateOpen, setIsMobileDateOpen] = useState(false);
+
+    // Guests Popovers
+    const [isDesktopGuestsOpen, setIsDesktopGuestsOpen] = useState(false);
+    const [isMobileGuestsOpen, setIsMobileGuestsOpen] = useState(false);
 
     // -- State --
     const [query, setQuery] = useState(searchParams.get("query")?.toString() || "");
@@ -43,7 +47,9 @@ export function HotelSearch() {
     });
 
     // Guests
-    const [guests, setGuests] = useState(parseInt(searchParams.get("guests") || "2"));
+    const [adults, setAdults] = useState(parseInt(searchParams.get("adults") || "2"));
+    const [children, setChildren] = useState(parseInt(searchParams.get("children") || "0"));
+    const [rooms, setRooms] = useState(parseInt(searchParams.get("rooms") || "1"));
 
     const handleSearch = () => {
         const params = new URLSearchParams(searchParams);
@@ -56,25 +62,18 @@ export function HotelSearch() {
         if (date?.to) params.set("to", format(date.to, "yyyy-MM-dd"));
         else params.delete("to");
 
-        if (guests > 1) params.set("guests", guests.toString());
-        else params.delete("guests");
+        params.set("adults", adults.toString());
+        params.set("children", children.toString());
+        params.set("rooms", rooms.toString());
 
         router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-        setIsDatePopoverOpen(false);
-        setIsGuestsPopoverOpen(false);
+        setIsDesktopDateOpen(false);
+        setIsMobileDateOpen(false);
+        setIsDesktopGuestsOpen(false);
+        setIsMobileGuestsOpen(false);
     };
 
-    const updateGuests = (delta: number) => {
-        setGuests((prev: number) => Math.max(1, Math.min(10, prev + delta)));
-    }
-
     const handleSelect = (selectedRange: DateRange | undefined, selectedDay: Date) => {
-        // Log to debug if needed, but logic is:
-        // 1. If we have a full range (from & to), resets to just the new day (Start)
-        // 2. If we have no start, sets the new day (Start)
-        // 3. If new day is before start, resets to new day (Start)
-        // 4. Otherwise, completes the range (Start -> New Day)
-
         if (date?.from && date?.to) {
             setDate({ from: selectedDay, to: undefined });
             return;
@@ -93,6 +92,7 @@ export function HotelSearch() {
     };
 
     const nights = date?.from && date?.to ? differenceInDays(date.to, date.from) : 0;
+    const totalGuests = adults + children;
 
     return (
         <div className="w-full max-w-5xl mx-auto mb-10 px-4 md:px-0">
@@ -102,7 +102,7 @@ export function HotelSearch() {
                 {/* Location with Autocomplete */}
                 <div className="flex-[1.5] flex flex-col justify-center pr-4 border-r border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-[1.5rem] px-8 py-3 transition-all cursor-text group relative">
                     <label className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 mb-1 uppercase tracking-widest">Where</label>
-                    <div className="relative z-50">
+                    <div className="relative">
                         <AutocompleteSearch
                             value={query}
                             onChange={setQuery}
@@ -115,12 +115,11 @@ export function HotelSearch() {
                 <div className="h-12 w-px bg-zinc-100 dark:bg-zinc-800 mx-1 flex-shrink-0" />
 
                 {/* Dates Selector - Split Check-in / Check-out */}
-                <Popover open={isDatePopoverOpen} onOpenChange={setIsDatePopoverOpen}>
+                <Popover open={isDesktopDateOpen} onOpenChange={setIsDesktopDateOpen}>
                     <PopoverTrigger asChild>
                         <button
                             type="button"
                             className="flex-[2] flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-[1.5rem] transition-all outline-none cursor-pointer group/dates px-2"
-                            onClick={() => setIsDatePopoverOpen(true)}
                         >
                             {/* Check-in */}
                             <div className="flex-1 flex flex-col justify-center px-6 py-3 border-r border-transparent text-left relative">
@@ -187,8 +186,8 @@ export function HotelSearch() {
                                 Rates shown are exclusive to COP17 delegates.
                             </p>
                             <Button
-                                className="rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-black uppercase tracking-widest text-[11px] px-10 h-14 shadow-2xl transition-all hover:scale-105 active:scale-95 px-8"
-                                onClick={() => setIsDatePopoverOpen(false)}
+                                className="rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-black uppercase tracking-widest text-[11px] h-14 shadow-2xl transition-all hover:scale-105 active:scale-95 px-8"
+                                onClick={() => setIsDesktopDateOpen(false)}
                             >
                                 Apply Period
                             </Button>
@@ -200,65 +199,110 @@ export function HotelSearch() {
 
                 {/* Guests Selector & Search Button */}
                 <div className="flex-[1.2] flex items-center justify-between relative pl-2 h-full gap-4 pr-1">
-                    <Popover open={isGuestsPopoverOpen} onOpenChange={setIsGuestsPopoverOpen}>
+                    <Popover open={isDesktopGuestsOpen} onOpenChange={setIsDesktopGuestsOpen}>
                         <PopoverTrigger asChild>
                             <button
                                 type="button"
                                 className="flex flex-col justify-center flex-1 px-6 py-3 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-[1.5rem] transition-all text-left outline-none relative h-full"
                             >
                                 <label className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 mb-1 uppercase tracking-widest pointer-events-none">Who</label>
-                                <div className={cn("text-sm truncate pointer-events-none font-bold", guests > 0 ? "text-zinc-900 dark:text-white" : "text-zinc-400")}>
-                                    {guests} guest{guests > 1 ? "s" : ""}
+                                <div className={cn("text-sm truncate pointer-events-none font-bold", totalGuests > 0 ? "text-zinc-900 dark:text-white" : "text-zinc-400")}>
+                                    {totalGuests} guest{totalGuests > 1 ? "s" : ""}, {rooms} room{rooms > 1 ? "s" : ""}
                                 </div>
                             </button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80 p-8 rounded-[2rem] shadow-[0_30px_70px_rgba(0,0,0,0.2)] border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 mt-4" align="end" sideOffset={10}>
                             <div className="space-y-8">
-                                {/* Rooms (Simulated) */}
+                                {/* Adults */}
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-1">
-                                        <span className="text-base font-black text-zinc-900 dark:text-white tracking-tight">Rooms</span>
-                                        <p className="text-xs text-zinc-500 font-medium">Standard assignment</p>
+                                        <span className="text-base font-black text-zinc-900 dark:text-white tracking-tight">Adults</span>
+                                        <p className="text-xs text-zinc-500 font-medium">Ages 13 or above</p>
                                     </div>
                                     <div className="flex items-center gap-5">
-                                        <Button variant="outline" size="icon" className="h-10 w-10 rounded-full border-zinc-200 dark:border-zinc-800 opacity-20" disabled>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-10 w-10 rounded-full border-zinc-200 dark:border-zinc-800 hover:border-zinc-900 dark:hover:border-white transition-all active:scale-90"
+                                            onClick={() => setAdults(Math.max(1, adults - 1))}
+                                            disabled={adults <= 1}
+                                        >
                                             <Minus className="h-4 w-4" />
                                         </Button>
-                                        <span className="w-4 text-center text-sm font-black">1</span>
-                                        <Button variant="outline" size="icon" className="h-10 w-10 rounded-full border-zinc-200 dark:border-zinc-800 opacity-20" disabled>
+                                        <span className="w-4 text-center text-sm font-black">{adults}</span>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-10 w-10 rounded-full border-zinc-200 dark:border-zinc-800 hover:border-zinc-900 dark:hover:border-white transition-all active:scale-90"
+                                            onClick={() => setAdults(Math.min(10, adults + 1))}
+                                        >
                                             <Plus className="h-4 w-4" />
                                         </Button>
                                     </div>
                                 </div>
 
-                                {/* Guests */}
+                                {/* Children */}
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-1">
-                                        <span className="text-base font-black text-zinc-900 dark:text-white tracking-tight">Guests</span>
-                                        <p className="text-xs text-zinc-500 font-medium">Delegates & partners</p>
+                                        <span className="text-base font-black text-zinc-900 dark:text-white tracking-tight">Children</span>
+                                        <p className="text-xs text-zinc-500 font-medium">Ages 0 - 12</p>
                                     </div>
                                     <div className="flex items-center gap-5">
                                         <Button
                                             variant="outline"
                                             size="icon"
                                             className="h-10 w-10 rounded-full border-zinc-200 dark:border-zinc-800 hover:border-zinc-900 dark:hover:border-white transition-all active:scale-90"
-                                            onClick={() => updateGuests(-1)}
-                                            disabled={guests <= 1}
+                                            onClick={() => setChildren(Math.max(0, children - 1))}
+                                            disabled={children <= 0}
                                         >
                                             <Minus className="h-4 w-4" />
                                         </Button>
-                                        <span className="w-4 text-center text-sm font-black">{guests}</span>
+                                        <span className="w-4 text-center text-sm font-black">{children}</span>
                                         <Button
                                             variant="outline"
                                             size="icon"
                                             className="h-10 w-10 rounded-full border-zinc-200 dark:border-zinc-800 hover:border-zinc-900 dark:hover:border-white transition-all active:scale-90"
-                                            onClick={() => updateGuests(1)}
-                                            disabled={guests >= 10}
+                                            onClick={() => setChildren(Math.min(10, children + 1))}
                                         >
                                             <Plus className="h-4 w-4" />
                                         </Button>
                                     </div>
                                 </div>
+
+                                {/* Rooms */}
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-1">
+                                        <span className="text-base font-black text-zinc-900 dark:text-white tracking-tight">Rooms</span>
+                                        <p className="text-xs text-zinc-500 font-medium">Accommodation units</p>
+                                    </div>
+                                    <div className="flex items-center gap-5">
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-10 w-10 rounded-full border-zinc-200 dark:border-zinc-800 hover:border-zinc-900 dark:hover:border-white transition-all active:scale-90"
+                                            onClick={() => setRooms(Math.max(1, rooms - 1))}
+                                            disabled={rooms <= 1}
+                                        >
+                                            <Minus className="h-4 w-4" />
+                                        </Button>
+                                        <span className="w-4 text-center text-sm font-black">{rooms}</span>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-10 w-10 rounded-full border-zinc-200 dark:border-zinc-800 hover:border-zinc-900 dark:hover:border-white transition-all active:scale-90"
+                                            onClick={() => setRooms(Math.min(10, rooms + 1))}
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <Button
+                                    className="w-full mt-4 h-14 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 font-black uppercase tracking-widest text-[11px] shadow-2xl"
+                                    onClick={() => setIsDesktopGuestsOpen(false)}
+                                >
+                                    Done
+                                </Button>
                             </div>
                         </PopoverContent>
                     </Popover>
@@ -295,12 +339,11 @@ export function HotelSearch() {
 
                     <div className="grid grid-cols-2 gap-4">
                         {/* Dates Button */}
-                        <Popover open={isDatePopoverOpen} onOpenChange={setIsDatePopoverOpen}>
+                        <Popover open={isMobileDateOpen} onOpenChange={setIsMobileDateOpen}>
                             <PopoverTrigger asChild>
                                 <Button
                                     variant="outline"
                                     className="flex flex-col items-start justify-center h-24 rounded-2xl border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/30 shadow-none px-6 group active:scale-95 transition-all text-left gap-1.5"
-                                    onClick={() => setIsDatePopoverOpen(true)}
                                 >
                                     <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5">
                                         <CalendarIcon className="h-2.5 w-2.5 text-blue-500" /> Period
@@ -329,7 +372,7 @@ export function HotelSearch() {
                                     />
                                 </div>
                                 <div className="p-6 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-100 dark:border-zinc-800">
-                                    <Button className="w-full rounded-2xl h-16 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest text-[11px] shadow-xl" onClick={() => setIsDatePopoverOpen(false)}>
+                                    <Button className="w-full rounded-2xl h-16 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest text-[11px] shadow-xl" onClick={() => setIsMobileDateOpen(false)}>
                                         Apply Dates
                                     </Button>
                                 </div>
@@ -337,18 +380,17 @@ export function HotelSearch() {
                         </Popover>
 
                         {/* Guests Button */}
-                        <Popover open={isGuestsPopoverOpen} onOpenChange={setIsGuestsPopoverOpen}>
+                        <Popover open={isMobileGuestsOpen} onOpenChange={setIsMobileGuestsOpen}>
                             <PopoverTrigger asChild>
                                 <Button
                                     variant="outline"
                                     className="flex flex-col items-start justify-center h-24 rounded-2xl border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/30 shadow-none px-6 active:scale-95 transition-all text-left gap-1.5"
-                                    onClick={() => setIsGuestsPopoverOpen(true)}
                                 >
                                     <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5">
                                         <Users className="h-2.5 w-2.5 text-blue-500" /> Guests
                                     </span>
-                                    <span className={cn("text-xs font-black truncate w-full tracking-tight", guests > 0 ? "text-zinc-900 dark:text-white" : "text-zinc-400")}>
-                                        {guests} {guests > 1 ? "Adults" : "Adult"}
+                                    <span className={cn("text-xs font-black truncate w-full tracking-tight", totalGuests > 0 ? "text-zinc-900 dark:text-white" : "text-zinc-400")}>
+                                        {totalGuests} {totalGuests > 1 ? "Travelers" : "Traveler"}
                                     </span>
                                 </Button>
                             </PopoverTrigger>
@@ -356,20 +398,35 @@ export function HotelSearch() {
                                 <div className="space-y-8">
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-1">
-                                            <span className="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Travelers</span>
-                                            <p className="text-xs text-zinc-500 font-medium">Delegates & partners</p>
+                                            <span className="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Adults</span>
+                                            <p className="text-xs text-zinc-500 font-medium">Ages 13+</p>
                                         </div>
                                         <div className="flex items-center gap-5">
-                                            <Button variant="outline" size="icon" className="h-11 w-11 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90" onClick={() => updateGuests(-1)} disabled={guests <= 1}>
+                                            <Button variant="outline" size="icon" className="h-11 w-11 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90" onClick={() => setAdults(Math.max(1, adults - 1))} disabled={adults <= 1}>
                                                 <Minus className="h-4 w-4" />
                                             </Button>
-                                            <span className="w-4 text-center text-sm font-black">{guests}</span>
-                                            <Button variant="outline" size="icon" className="h-11 w-11 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90" onClick={() => updateGuests(1)} disabled={guests >= 10}>
+                                            <span className="w-4 text-center text-sm font-black">{adults}</span>
+                                            <Button variant="outline" size="icon" className="h-11 w-11 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90" onClick={() => setAdults(Math.min(10, adults + 1))}>
                                                 <Plus className="h-4 w-4" />
                                             </Button>
                                         </div>
                                     </div>
-                                    <Button className="w-full h-16 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest text-[11px] shadow-xl" onClick={() => setIsGuestsPopoverOpen(false)}>
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-1">
+                                            <span className="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Children</span>
+                                            <p className="text-xs text-zinc-500 font-medium">Ages 0-12</p>
+                                        </div>
+                                        <div className="flex items-center gap-5">
+                                            <Button variant="outline" size="icon" className="h-11 w-11 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90" onClick={() => setChildren(Math.max(0, children - 1))} disabled={children <= 0}>
+                                                <Minus className="h-4 w-4" />
+                                            </Button>
+                                            <span className="w-4 text-center text-sm font-black">{children}</span>
+                                            <Button variant="outline" size="icon" className="h-11 w-11 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90" onClick={() => setChildren(Math.min(10, children + 1))}>
+                                                <Plus className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    <Button className="w-full h-16 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest text-[11px] shadow-xl" onClick={() => setIsMobileGuestsOpen(false)}>
                                         Complete Selection
                                     </Button>
                                 </div>

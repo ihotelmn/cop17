@@ -43,24 +43,20 @@ function Calendar({
                     buttonVariants({ variant: "ghost" }),
                     "h-9 w-9 p-0 font-normal aria-selected:opacity-100 transition-all hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"
                 ),
-                range_start: "day-range-start bg-blue-600 text-white hover:bg-blue-700 hover:text-white focus:bg-blue-600 focus:text-white rounded-full z-10",
-                range_end: "day-range-end bg-blue-600 text-white hover:bg-blue-700 hover:text-white focus:bg-blue-600 focus:text-white rounded-full z-10",
-                range_middle: "aria-selected:bg-blue-50 dark:aria-selected:bg-blue-900/20 aria-selected:text-blue-700 dark:aria-selected:text-blue-300 rounded-none first:rounded-l-full last:rounded-r-full",
-                selected: "bg-blue-600 text-white hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white",
-                today: "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white font-bold border border-zinc-200 dark:border-zinc-700",
-                outside: "day-outside text-muted-foreground opacity-50 aria-selected:bg-transparent aria-selected:text-muted-foreground aria-selected:opacity-30",
-                disabled: "text-muted-foreground opacity-20 cursor-not-allowed",
-                hidden: "invisible",
+                day_range_start: "day-range-start bg-blue-600 text-white hover:bg-blue-700 hover:text-white focus:bg-blue-600 focus:text-white rounded-full z-10",
+                day_range_end: "day-range-end bg-blue-600 text-white hover:bg-blue-700 hover:text-white focus:bg-blue-600 focus:text-white rounded-full z-10",
+                day_range_middle: "aria-selected:bg-blue-50 dark:aria-selected:bg-blue-900/20 aria-selected:text-blue-700 dark:aria-selected:text-blue-300 rounded-none first:rounded-l-full last:rounded-r-full",
+                day_selected: "bg-blue-600 text-white hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white",
+                day_today: "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white font-bold border border-zinc-200 dark:border-zinc-700",
+                day_outside: "day-outside text-muted-foreground opacity-50 aria-selected:bg-transparent aria-selected:text-muted-foreground aria-selected:opacity-30",
+                day_disabled: "text-muted-foreground opacity-20 cursor-not-allowed",
+                day_hidden: "invisible",
                 ...classNames,
             }}
 
             components={{
-                Chevron: (props) => {
-                    if (props.orientation === "left") {
-                        return <ChevronLeft className="h-4 w-4" />;
-                    }
-                    return <ChevronRight className="h-4 w-4" />;
-                },
+                IconLeft: ({ ...props }) => <ChevronLeft className="h-4 w-4" />,
+                IconRight: ({ ...props }) => <ChevronRight className="h-4 w-4" />,
             }}
             {...props}
         />

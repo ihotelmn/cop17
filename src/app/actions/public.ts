@@ -61,6 +61,11 @@ export type HotelSearchParams = {
     sortBy?: string; // price-asc, price-desc, stars-desc, newest, distance-asc
     minPrice?: string;
     maxPrice?: string;
+    adults?: string;
+    children?: string;
+    rooms?: string;
+    from?: string;
+    to?: string;
 };
 
 import { unstable_cache } from "next/cache";
@@ -74,7 +79,10 @@ export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
                 .select(`
                     *,
                     rooms (
-                        price_per_night
+                        id,
+                        price_per_night,
+                        capacity,
+                        total_inventory
                     )
                 `)
                 .order("created_at", { ascending: false });
@@ -135,9 +143,54 @@ export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
                     is_official_partner: !!h.is_official_partner,
                     is_recommended: !!h.is_recommended,
                     has_shuttle_service: !!h.has_shuttle_service,
-                    minPrice: h.rooms?.length > 0 ? Math.min(...h.rooms.map((r: any) => Number(r.price_per_night))) : null
+                    minPrice: h.rooms?.length > 0 ? Math.min(...h.rooms.map((r: any) => Number(r.price_per_night))) : null,
+                    max_capacity: h.rooms?.length > 0 ? Math.max(...h.rooms.map((r: any) => Number(r.capacity))) : 0
                 };
             });
+
+            // Filter by Capacity (guests)
+            const totalRequired = parseInt(params?.adults || "1") + parseInt(params?.children || "0");
+            if (totalRequired > 1) {
+                results = results.filter((h: any) => h.max_capacity >= totalRequired);
+            }
+
+            // Filter by Date Availability
+            if (params?.from && params?.to) {
+                const checkIn = params.from;
+                const checkOut = params.to;
+
+                // Fetch overlapping bookings
+                const { data: overlappingBookings, error: bookingsError } = await supabase
+                    .from("bookings")
+                    .select("room_id")
+                    .neq("status", "cancelled")
+                    .lt("check_in_date", checkOut)
+                    .gt("check_out_date", checkIn);
+
+                if (!bookingsError && overlappingBookings) {
+                    // Count bookings per room
+                    const bookingsByRoom: Record<string, number> = {};
+                    for (const b of overlappingBookings) {
+                        bookingsByRoom[b.room_id] = (bookingsByRoom[b.room_id] || 0) + 1;
+                    }
+
+                    // Check if a hotel has at least one room available
+                    results = results.filter((h: any) => {
+                        if (!h.rooms || h.rooms.length === 0) return false;
+
+                        // A hotel is available if at least one room type has remaining inventory
+                        const hasAvailableRoom = h.rooms.some((r: any) => {
+                            // Filter by capacity as well if needed, but we already filtered hotels by max_capacity
+                            if (r.capacity < totalRequired) return false;
+
+                            const bookedCount = bookingsByRoom[r.id] || 0;
+                            return (r.total_inventory || 0) > bookedCount;
+                        });
+
+                        return hasAvailableRoom;
+                    });
+                }
+            }
 
             // Filter by Price
             if (params?.minPrice) {
@@ -219,18 +272,52 @@ export async function getPublicHotel(id: string) {
     } as Hotel;
 }
 
-export async function getPublicRooms(hotelId: string) {
+export async function getPublicRooms(hotelId: string, guests?: number, from?: string, to?: string) {
     const supabase = getSupabaseAdmin();
 
-    const { data: rooms, error } = await supabase
+    let query = supabase
         .from("rooms")
         .select("*")
-        .eq("hotel_id", hotelId)
-        .order("price_per_night", { ascending: true }); // Show cheapest first
+        .eq("hotel_id", hotelId);
+
+    if (guests && guests > 1) {
+        query = query.gte("capacity", guests);
+    }
+
+    const { data: rooms, error } = await query.order("price_per_night", { ascending: true }); // Show cheapest first
 
     if (error) {
         console.error(`Error fetching public rooms (Hotel ID: ${hotelId}):`, error);
         return [];
+    }
+
+    // Filter by Date Availability
+    if (from && to && rooms && rooms.length > 0) {
+        const checkIn = from;
+        const checkOut = to;
+
+        // Fetch overlapping bookings for this hotel's rooms
+        const roomIds = rooms.map(r => r.id);
+        const { data: overlappingBookings, error: bookingsError } = await supabase
+            .from("bookings")
+            .select("room_id")
+            .in("room_id", roomIds)
+            .neq("status", "cancelled")
+            .lt("check_in_date", checkOut)
+            .gt("check_out_date", checkIn);
+
+        if (!bookingsError && overlappingBookings) {
+            const bookingsByRoom: Record<string, number> = {};
+            for (const b of overlappingBookings) {
+                bookingsByRoom[b.room_id] = (bookingsByRoom[b.room_id] || 0) + 1;
+            }
+
+            // Update remaining inventory
+            return rooms.map(r => ({
+                ...r,
+                total_inventory: Math.max(0, (r.total_inventory || 0) - (bookingsByRoom[r.id] || 0))
+            })) as Room[];
+        }
     }
 
     return rooms as Room[];

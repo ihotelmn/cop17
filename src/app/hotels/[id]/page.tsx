@@ -13,14 +13,18 @@ export const revalidate = 0;
 
 interface PageProps {
     params: Promise<{ id: string }>;
-    searchParams: Promise<{ from?: string; to?: string }>;
+    searchParams: Promise<{ [key: string]: string | undefined }>;
 }
 
 export default async function HotelDetailPage({ params, searchParams }: PageProps) {
     const { id } = await params;
-    const { from, to } = await searchParams;
+    const resolvedParams = await searchParams;
+    const { from, to } = resolvedParams;
     const hotel = await getPublicHotel(id);
-    const rooms = await getPublicRooms(id);
+    const adults = parseInt(resolvedParams.adults || "2");
+    const children = parseInt(resolvedParams.children || "0");
+    const totalGuests = adults + children;
+    const rooms = await getPublicRooms(id, totalGuests, from, to);
 
     if (!hotel) {
         notFound();
