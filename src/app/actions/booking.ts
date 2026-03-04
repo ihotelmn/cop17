@@ -230,7 +230,7 @@ export async function confirmBookingAction(groupId: string) {
         }
 
         // 1.5. Invalidate caches
-        revalidateTag("hotels");
+        (revalidateTag as any)("hotels");
 
         // 2. Fetch the primary (first) booking to get data for email
         const { data: booking, error: fetchError } = await adminSupabase
