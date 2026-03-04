@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { format } from "date-fns";
 import Link from "next/link";
 import { CheckCircle2, ArrowRight, MapPin, Calendar, Building2, User, Mail, ShieldCheck, Printer, Navigation } from "lucide-react";
@@ -16,10 +17,10 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
         notFound();
     }
 
-    const supabase = await createClient();
+    const adminSupabase = getSupabaseAdmin();
 
     // Fetch all bookings in this group
-    const { data: bookings, error } = await supabase
+    const { data: bookings, error } = await adminSupabase
         .from("bookings")
         .select(`
       id,

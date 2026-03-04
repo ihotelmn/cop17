@@ -202,10 +202,11 @@ export async function createBookingAction(prevState: BookingState, formData: For
 
 export async function confirmBookingAction(groupId: string) {
     const supabase = await createClient();
+    const adminSupabase = getSupabaseAdmin();
 
     try {
         // 1. Update Booking Status for all rooms in the group
-        const { error: updateError } = await supabase
+        const { error: updateError } = await adminSupabase
             .from("bookings")
             .update({ status: "confirmed" })
             .eq("group_id", groupId);
@@ -216,7 +217,7 @@ export async function confirmBookingAction(groupId: string) {
         }
 
         // 2. Fetch the primary (first) booking to get data for email
-        const { data: booking, error: fetchError } = await supabase
+        const { data: booking, error: fetchError } = await adminSupabase
             .from("bookings")
             .select(`
                 id,
