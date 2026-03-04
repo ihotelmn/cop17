@@ -4,43 +4,44 @@ export interface EmailPayload {
     body: string;
 }
 
-export async function sendEmail(payload: EmailPayload): Promise<{ success: boolean; error?: string }> {
-    const apiKey = process.env.RESEND_API_KEY;
+import nodemailer from 'nodemailer';
 
-    if (!apiKey) {
+export async function sendEmail(payload: EmailPayload): Promise<{ success: boolean; error?: string }> {
+    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+    const smtpPort = parseInt(process.env.SMTP_PORT || '465');
+    const smtpUser = process.env.SMTP_USER; // noreply@ihotel.mn
+    const smtpPass = process.env.SMTP_PASS; // Google App Password
+
+    if (!smtpUser || !smtpPass) {
+        console.warn("⚠️ EMAIL_WARNING: SMTP_USER or SMTP_PASS is missing. Email will NOT be sent.");
         console.log("--------------- EMAIL SERVICE (MOCK) ---------------");
         console.log(`To: ${payload.to}`);
         console.log(`Subject: ${payload.subject}`);
-        console.log(`Body: Truncated...`);
         console.log("----------------------------------------------------");
-        console.log("TIP: To enable real emails, set RESEND_API_KEY in .env.local");
-
-        await new Promise((resolve) => setTimeout(resolve, 500));
         return { success: true };
     }
 
     try {
-        const response = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${apiKey}`,
+        const transporter = nodemailer.createTransport({
+            host: smtpHost,
+            port: smtpPort,
+            secure: smtpPort === 465,
+            auth: {
+                user: smtpUser,
+                pass: smtpPass,
             },
-            body: JSON.stringify({
-                from: "COP17 Mongolia <noreply@cop17mongolia.mn>",
-                to: [payload.to],
-                subject: payload.subject,
-                html: payload.body,
-            }),
         });
 
-        if (response.ok) {
-            return { success: true };
-        } else {
-            const error = await response.json();
-            return { success: false, error: JSON.stringify(error) };
-        }
+        await transporter.sendMail({
+            from: `"COP17 Mongolia" <${smtpUser}>`, // Display name prevents confusion
+            to: payload.to,
+            subject: payload.subject,
+            html: payload.body,
+        });
+
+        return { success: true };
     } catch (error: any) {
+        console.error("❌ SMTP Email Error:", error);
         return { success: false, error: error.message };
     }
 }
