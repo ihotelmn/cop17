@@ -5,6 +5,7 @@ import { CheckCircle2, ArrowRight, MapPin, Calendar, Building2, User, Mail, Shie
 import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
 import { PrintButton } from "@/components/booking/print-button";
+import { cn, getHotelImageUrl } from "@/lib/utils";
 
 interface SuccessPageProps {
     searchParams: Promise<{ groupId?: string }>;
@@ -108,8 +109,8 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
                                         </div>
                                     </div>
                                     {hotel?.images?.[0] && (
-                                        <div className="w-full md:w-32 h-24 rounded-2xl overflow-hidden shrink-0">
-                                            <img src={hotel.images[0]} alt={hotelName} className="w-full h-full object-cover" />
+                                        <div className="w-full md:w-32 h-24 rounded-2xl overflow-hidden shadow-lg shrink-0">
+                                            <img src={getHotelImageUrl(hotel.images[0])} alt={hotelName} className="w-full h-full object-cover" />
                                         </div>
                                     )}
                                 </div>
