@@ -7,6 +7,7 @@ import { Check, User, Square, ArrowRight, ShieldCheck, Minus, Plus, Zap } from "
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { format, differenceInDays } from "date-fns";
+import { useSearchParams, usePathname, useRouter } from "next/navigation";
 
 interface Room {
     id: string;
@@ -33,19 +34,24 @@ export function RoomCard({ room, hotelId, checkIn, checkOut }: RoomCardProps) {
     const inventory = room.total_inventory !== undefined ? room.total_inventory : 0;
     const isSoldOut = inventory <= 0;
 
-    const [quantity, setQuantity] = useState(isSoldOut ? 0 : 1);
-    const totalPrice = room.price * quantity * nights;
+    const searchParams = useSearchParams();
+    const pathname = usePathname();
+    const router = useRouter();
 
-    const handleIncrement = () => {
-        if (quantity < inventory) {
-            setQuantity(prev => prev + 1);
-        }
-    };
+    const currentQtyStr = searchParams.get(`r_${room.id}`);
+    const quantity = currentQtyStr ? parseInt(currentQtyStr) : 0;
 
-    const handleDecrement = () => {
-        if (quantity > 1) {
-            setQuantity(prev => prev - 1);
+    // Instead of total price for a single room in the UI, we might just show base rate if they select none, or total if they select some.
+    // But the new design says remove the 'Estimated Total' area here and move it to the sidebar.
+
+    const updateQuantity = (newQty: number) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (newQty > 0) {
+            params.set(`r_${room.id}`, newQty.toString());
+        } else {
+            params.delete(`r_${room.id}`);
         }
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     };
 
     return (
@@ -132,55 +138,7 @@ export function RoomCard({ room, hotelId, checkIn, checkOut }: RoomCardProps) {
                         </div>
                     </div>
 
-                    <div
-                        className="text-zinc-500 dark:text-zinc-400 text-lg leading-relaxed font-medium mb-10 line-clamp-2 max-w-2xl"
-                        dangerouslySetInnerHTML={{ __html: room.description }}
-                    />
 
-                    {/* Selector & Price Logic */}
-                    <div className={cn(
-                        "rounded-[2rem] p-8 border flex flex-col lg:flex-row items-center justify-between gap-10 mb-10 transition-all duration-300",
-                        isSoldOut
-                            ? "bg-zinc-50 dark:bg-zinc-900 border-zinc-100 dark:border-zinc-800"
-                            : "bg-blue-50/50 dark:bg-blue-950/10 border-blue-100 dark:border-blue-900/20 shadow-inner"
-                    )}>
-                        <div className="space-y-4 w-full lg:w-auto text-center lg:text-left">
-                            <p className="text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400">Inventory Selection</p>
-                            <div className="flex items-center justify-center lg:justify-start gap-6">
-                                <button
-                                    onClick={handleDecrement}
-                                    disabled={quantity <= 1 || isSoldOut}
-                                    className="w-14 h-14 rounded-2xl bg-white dark:bg-zinc-800 border-2 border-zinc-100 dark:border-zinc-700 flex items-center justify-center text-zinc-950 dark:text-white hover:bg-zinc-50 disabled:opacity-20 transition-all shadow-sm active:scale-90"
-                                >
-                                    <Minus className="w-6 h-6" />
-                                </button>
-                                <div className="flex flex-col items-center min-w-[3rem]">
-                                    <span className="text-3xl font-black text-zinc-950 dark:text-white">{quantity}</span>
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Rooms</span>
-                                </div>
-                                <button
-                                    onClick={handleIncrement}
-                                    disabled={quantity >= inventory || isSoldOut}
-                                    className="w-14 h-14 rounded-2xl bg-white dark:bg-zinc-800 border-2 border-zinc-100 dark:border-zinc-700 flex items-center justify-center text-zinc-950 dark:text-white hover:bg-zinc-50 disabled:opacity-20 transition-all shadow-sm active:scale-90"
-                                >
-                                    <Plus className="w-6 h-6" />
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="h-px lg:h-16 w-full lg:w-px bg-zinc-200 dark:bg-zinc-800" />
-
-                        <div className="space-y-2 text-center lg:text-right w-full lg:w-auto">
-                            <p className="text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400">Estimated Total ({nights} Nights)</p>
-                            <div className="flex items-baseline justify-center lg:justify-end gap-3">
-                                <span className={cn(
-                                    "text-5xl font-black tracking-tighter transition-colors",
-                                    isSoldOut ? "text-zinc-300 dark:text-zinc-700" : "text-blue-600 dark:text-blue-400"
-                                )}>${totalPrice}</span>
-                                <span className="text-xs font-black uppercase tracking-widest text-zinc-400">Overall</span>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 <div className="pt-8 border-t border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row items-center justify-between gap-8 mt-auto">
@@ -197,25 +155,38 @@ export function RoomCard({ room, hotelId, checkIn, checkOut }: RoomCardProps) {
                         </div>
                     </div>
 
-                    <Button
-                        asChild={!isSoldOut}
-                        disabled={isSoldOut}
-                        className={cn(
-                            "w-full md:w-auto px-12 h-18 text-[11px] font-black uppercase tracking-[0.2em] rounded-2.5xl transition-all duration-300",
-                            isSoldOut
-                                ? "bg-zinc-200 text-zinc-400 cursor-not-allowed dark:bg-zinc-800"
-                                : "bg-zinc-950 hover:bg-black dark:bg-white dark:text-black dark:hover:bg-zinc-100 shadow-2xl shadow-zinc-950/20 active:scale-[0.97] group"
-                        )}
-                    >
-                        {isSoldOut ? (
-                            "Sold Out Online"
-                        ) : (
-                            <Link href={`/hotels/${hotelId}/checkout/${room.id}?from=${format(checkIn, "yyyy-MM-dd")}&to=${format(checkOut, "yyyy-MM-dd")}&quantity=${quantity}`}>
-                                {quantity > 1 ? `Reserve ${quantity} Selected Residences` : "Secure This Residence"}
-                                <ArrowRight className="ml-4 h-5 w-5 group-hover:translate-x-2 transition-transform" />
-                            </Link>
-                        )}
-                    </Button>
+                    {isSoldOut ? (
+                        <Button disabled className="w-full md:w-auto px-12 h-18 text-[11px] font-black uppercase tracking-[0.2em] rounded-2.5xl bg-zinc-200 text-zinc-400 cursor-not-allowed dark:bg-zinc-800">
+                            Sold Out Online
+                        </Button>
+                    ) : quantity > 0 ? (
+                        <div className="flex items-center justify-between gap-4 bg-zinc-950 dark:bg-white rounded-2.5xl p-2 w-full md:w-auto h-16 md:h-18 shadow-2xl shadow-zinc-950/20">
+                            <button
+                                onClick={() => updateQuantity(quantity - 1)}
+                                className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-zinc-800 dark:bg-zinc-200 flex items-center justify-center text-white dark:text-zinc-950 hover:bg-zinc-700 dark:hover:bg-zinc-300 transition-all active:scale-90"
+                            >
+                                <Minus className="w-5 h-5" />
+                            </button>
+                            <div className="flex flex-col items-center min-w-[5rem]">
+                                <span className="text-xl md:text-2xl font-black text-white dark:text-zinc-950 leading-none">{quantity}</span>
+                                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mt-1">Rooms</span>
+                            </div>
+                            <button
+                                onClick={() => updateQuantity(quantity + 1)}
+                                disabled={quantity >= inventory}
+                                className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-zinc-800 dark:bg-zinc-200 flex items-center justify-center text-white dark:text-zinc-950 hover:bg-zinc-700 dark:hover:bg-zinc-300 disabled:opacity-30 disabled:hover:scale-100 transition-all active:scale-90"
+                            >
+                                <Plus className="w-5 h-5" />
+                            </button>
+                        </div>
+                    ) : (
+                        <Button
+                            onClick={() => updateQuantity(1)}
+                            className="w-full md:w-auto px-12 h-16 md:h-18 text-[11px] md:text-xs font-black uppercase tracking-[0.2em] rounded-2.5xl transition-all duration-300 bg-zinc-950 hover:bg-black dark:bg-white dark:text-black dark:hover:bg-zinc-100 shadow-2xl shadow-zinc-950/20 active:scale-[0.97]"
+                        >
+                            Select Residence
+                        </Button>
+                    )}
                 </div>
             </div>
         </div>

@@ -2,6 +2,7 @@ import { ImageGallery } from "@/components/image-gallery";
 import { Star, MapPin, ShieldCheck, Mail, Phone, Globe, Info, Clock, CheckCircle2 } from "lucide-react";
 import { RoomList } from "@/components/room-list";
 import { SearchForm } from "@/components/search-form";
+import { ReservationSummary } from "@/components/reservation-summary";
 import { SingleHotelMapWrapper } from "@/components/single-hotel-map";
 import { getPublicHotel, getPublicRooms } from "@/app/actions/public";
 import { notFound } from "next/navigation";
@@ -205,6 +206,14 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Newly Added Reservation Summary */}
+                                <ReservationSummary
+                                    hotelId={id}
+                                    rooms={rooms}
+                                    checkIn={checkIn}
+                                    checkOut={checkOut}
+                                />
 
                                 {hotel.website && (
                                     <a
