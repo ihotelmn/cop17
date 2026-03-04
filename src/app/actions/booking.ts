@@ -160,7 +160,7 @@ export async function createBookingAction(prevState: BookingState, formData: For
 
         // 4. Initiate Payment (Golomt Bank)
         try {
-            const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/booking/success?groupId=${groupId}`;
+            const returnUrl = `/booking/success?groupId=${groupId}`;
 
             const paymentResponse = await GolomtService.createInvoice({
                 transactionId: groupId,
