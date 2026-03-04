@@ -27,10 +27,16 @@ export function SearchForm({ className }: React.HTMLAttributes<HTMLDivElement>) 
 
     const fromStr = searchParams.get("from")
     const toStr = searchParams.get("to")
-    const date: DateRange | undefined = {
-        from: fromStr ? new Date(fromStr) : new Date(),
-        to: toStr ? new Date(toStr) : addDays(new Date(), 3),
-    }
+
+    const date: DateRange | undefined = React.useMemo(() => {
+        if (!fromStr && !toStr) {
+            return { from: new Date(), to: addDays(new Date(), 3) }
+        }
+        return {
+            from: fromStr ? new Date(fromStr) : undefined,
+            to: toStr ? new Date(toStr) : undefined
+        }
+    }, [fromStr, toStr])
 
     const adults = parseInt(searchParams.get("adults") || "2")
     const children = parseInt(searchParams.get("children") || "0")
@@ -41,9 +47,12 @@ export function SearchForm({ className }: React.HTMLAttributes<HTMLDivElement>) 
     const updateParams = (newDate?: DateRange, newAdults?: number, newChildren?: number) => {
         const params = new URLSearchParams(searchParams)
 
-        const d = newDate || date
+        const d = newDate !== undefined ? newDate : date
         if (d?.from) params.set("from", format(d.from, "yyyy-MM-dd"))
+        else params.delete("from")
+
         if (d?.to) params.set("to", format(d.to, "yyyy-MM-dd"))
+        else params.delete("to")
 
         const a = newAdults ?? adults
         const c = newChildren ?? children
@@ -66,14 +75,7 @@ export function SearchForm({ className }: React.HTMLAttributes<HTMLDivElement>) 
             nextRange = { from: date.from, to: selectedDay }
         }
 
-        if (nextRange?.from && nextRange?.to) {
-            updateParams(nextRange)
-            // setIsDatePopoverOpen(false) // Keep open for confirmation? usually better to auto-close when range complete
-        } else {
-            // If only one date is selected, we might want to temporarily store it somewhere, 
-            // but since we want to be URL driven, we should update the URL immediately.
-            updateParams(nextRange)
-        }
+        updateParams(nextRange)
     }
 
     return (

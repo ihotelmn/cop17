@@ -2,11 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Star, MapPin, Navigation, ShieldCheck } from "lucide-react";
 import { Hotel } from "@/app/actions/public";
 import { cn, getHotelImageUrl } from "@/lib/utils";
 
 export function HotelCardGrid({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
+    const searchParams = useSearchParams();
+    const paramsString = searchParams.toString();
+    const href = paramsString ? `/hotels/${hotel.id}?${paramsString}` : `/hotels/${hotel.id}`;
+
     const images = hotel.images && hotel.images.length > 0
         ? hotel.images
         : ["https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2940"];
@@ -14,7 +19,7 @@ export function HotelCardGrid({ hotel }: { hotel: (Hotel & { minPrice: number })
     const displayDistance = hotel.cached_distance_km || hotel.distanceToVenue;
 
     return (
-        <Link href={`/hotels/${hotel.id}`} className="group block h-full w-full">
+        <Link href={href} className="group block h-full w-full">
             <div className="flex flex-col h-full w-full bg-white dark:bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.12)] hover:-translate-y-2 group-hover:border-blue-500/40">
                 {/* Image Section */}
                 <div className="relative aspect-[16/10] w-full overflow-hidden shrink-0">

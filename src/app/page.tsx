@@ -178,7 +178,7 @@ export default async function Home(props: Props) {
                           <div key={hotel.id} className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800">
                             <h3 className="font-bold text-zinc-900 dark:text-white">{hotel.name}</h3>
                             <p className="text-sm text-zinc-500">${hotel.minPrice}/night</p>
-                            <Link href={`/hotels/${hotel.id}`} className="text-sm text-blue-600 hover:underline mt-2 inline-block font-medium">View Details</Link>
+                            <Link href={`/hotels/${hotel.id}${Object.keys(searchParams).length ? '?' + new URLSearchParams(searchParams as Record<string, string>).toString() : ''}`} className="text-sm text-blue-600 hover:underline mt-2 inline-block font-medium">View Details</Link>
                           </div>
                         ))}
                       </div>

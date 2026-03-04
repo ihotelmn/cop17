@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { GoogleMap, useJsApiLoader, OverlayView } from "@react-google-maps/api";
 import { Hotel } from "@/app/actions/public";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Star, X, MapPin, Navigation, Hotel as HotelIcon, Building2 } from "lucide-react";
 import { Button } from "./ui/button";
@@ -46,6 +47,7 @@ const mapOptions: google.maps.MapOptions = {
 };
 
 export default function HotelMap({ hotels, query }: { hotels: (Hotel & { minPrice: number })[], query?: string }) {
+    const searchParams = useSearchParams();
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
@@ -276,7 +278,7 @@ export default function HotelMap({ hotels, query }: { hotels: (Hotel & { minPric
                                                         <p className="text-xl font-black text-zinc-900 dark:text-white">${hotel.minPrice}<span className="text-xs font-medium text-zinc-500">/nt</span></p>
                                                     </div>
                                                     <Button asChild size="lg" className="h-11 rounded-xl px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-500/20">
-                                                        <Link href={`/hotels/${hotel.id}`}>
+                                                        <Link href={`/hotels/${hotel.id}${searchParams && searchParams.toString() ? '?' + searchParams.toString() : ''}`}>
                                                             Details
                                                         </Link>
                                                     </Button>
