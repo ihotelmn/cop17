@@ -89,8 +89,13 @@ export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
 
             // Apply Basic DB Filters
             if (params?.query) {
-                const q = `%${params.query}%`;
-                queryBuilder = queryBuilder.or(`name.ilike.${q},address.ilike.${q}`);
+                const qLower = params.query.toLowerCase().trim();
+                const genericTerms = ['ulaanbaatar', 'улаанбаатар', 'ub', 'уб', 'ulaanbaatar, mongolia', 'улаанбаатар хот'];
+
+                if (!genericTerms.includes(qLower)) {
+                    const q = `%${params.query}%`;
+                    queryBuilder = queryBuilder.or(`name.ilike.${q},address.ilike.${q}`);
+                }
             }
 
             if (params?.stars) {
@@ -285,9 +290,8 @@ export async function getPublicRooms(hotelId: string, guests?: number, from?: st
         .select("*")
         .eq("hotel_id", hotelId);
 
-    if (guests && guests > 1) {
-        query = query.gte("capacity", guests);
-    }
+    // We shouldn't filter out rooms by capacity here because guests might want to book multiple smaller rooms.
+    // Instead, we just fetch all rooms for the hotel.
 
     const { data: rooms, error } = await query.order("price_per_night", { ascending: true }); // Show cheapest first
 

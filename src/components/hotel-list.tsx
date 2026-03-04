@@ -50,7 +50,10 @@ export function HotelList({ hotels }: { hotels: (Hotel & { minPrice: number })[]
     );
 }
 
+import { useSearchParams } from "next/navigation";
+
 function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
+    const searchParams = useSearchParams();
     // Images fallback
     const images = hotel.images && hotel.images.length > 0
         ? hotel.images
@@ -59,6 +62,9 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
     // Use cached real data
     const displayDistance = hotel.cached_distance_km || hotel.distanceToVenue;
     const displayTime = hotel.cached_drive_time_text || (hotel.distanceToVenue ? `~${estimateTravelTime(hotel.distanceToVenue, 'driving')}` : null);
+
+    const qs = searchParams.toString();
+    const href = qs ? `/hotels/${hotel.id}?${qs}` : `/hotels/${hotel.id}`;
 
     return (
         <div className="group relative flex flex-col md:flex-row overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-sm transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.12)] hover:-translate-y-1.5 dark:border-zinc-800 dark:bg-zinc-900">
@@ -194,7 +200,7 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
                         )}
                     </div>
 
-                    <Link href={`/hotels/${hotel.id}`} className="inline-flex items-center justify-center h-11 px-8 rounded-2xl bg-zinc-900 text-white text-xs font-black uppercase tracking-widest transition-all hover:bg-blue-600 active:scale-95 shadow-xl shadow-zinc-900/10">
+                    <Link href={href} className="inline-flex items-center justify-center h-11 px-8 rounded-2xl bg-zinc-900 text-white text-xs font-black uppercase tracking-widest transition-all hover:bg-blue-600 active:scale-95 shadow-xl shadow-zinc-900/10">
                         See Availability
                     </Link>
                 </div>
