@@ -87,7 +87,7 @@ export function ReservationSummary({ hotelId, rooms, checkIn, checkOut }: Reserv
             </div>
 
             <Button asChild className="w-full h-18 text-xs font-black uppercase tracking-[0.2em] rounded-2.5xl bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-600/20 transition-all active:scale-[0.97] group">
-                <Link href={`/hotels/${hotelId}/checkout/${mainRoomId}?${checkoutParams.toString()}`}>
+                <Link href={`/hotels/${hotelId}/checkout?${checkoutParams.toString()}`}>
                     Proceed to Secure Booking
                     <ArrowRight className="ml-4 h-5 w-5 group-hover:translate-x-2 transition-transform" />
                 </Link>

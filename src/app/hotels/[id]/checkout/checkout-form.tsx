@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 interface CheckoutFormProps {
     hotelId: string;
-    roomId: string;
+    selectedRooms: { id: string; name: string; quantity: number; price: number }[];
     checkIn: Date;
     checkOut: Date;
     totalPrice: number;
@@ -19,7 +19,7 @@ interface CheckoutFormProps {
 
 export function CheckoutForm({
     hotelId,
-    roomId,
+    selectedRooms,
     checkIn,
     checkOut,
     totalPrice,
@@ -34,7 +34,7 @@ export function CheckoutForm({
 
         const formData = new FormData(event.currentTarget);
         formData.append("hotelId", hotelId);
-        formData.append("roomId", roomId);
+        formData.append("roomsData", JSON.stringify(selectedRooms));
         formData.append("checkIn", format(checkIn, "yyyy-MM-dd"));
         formData.append("checkOut", format(checkOut, "yyyy-MM-dd"));
 

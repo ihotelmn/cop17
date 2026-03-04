@@ -11,7 +11,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 // Validation Schema
 const bookingSchema = z.object({
-    roomId: z.string().min(1, "Room ID required"),
+    roomsData: z.string().min(1, "Rooms data required"),
     hotelId: z.string().min(1, "Hotel ID required"),
     checkIn: z.string().date(),
     checkOut: z.string().date(),
@@ -35,7 +35,7 @@ export async function createBookingAction(prevState: BookingState, formData: For
 
     // Validate Input
     const validatedFields = bookingSchema.safeParse({
-        roomId: formData.get("roomId"),
+        roomsData: formData.get("roomsData"),
         hotelId: formData.get("hotelId"),
         checkIn: formData.get("checkIn"),
         checkOut: formData.get("checkOut"),
@@ -51,40 +51,55 @@ export async function createBookingAction(prevState: BookingState, formData: For
         };
     }
 
-    const { roomId, hotelId, checkIn, checkOut, guestPassport, guestPhone, specialRequests } = validatedFields.data;
+    const { hotelId, checkIn, checkOut, guestPassport, guestPhone, specialRequests, roomsData } = validatedFields.data;
 
     try {
         const adminSupabase = getSupabaseAdmin();
 
-        // 1. Check Inventory Availability
-        // Get Room Details for Price and Total Inventory
-        const { data: room, error: roomError } = await adminSupabase
-            .from("rooms")
-            .select("price_per_night, total_inventory")
-            .eq("id", roomId)
-            .single();
-
-        if (roomError || !room) {
-            return { error: "Room not found." };
+        let roomsSelected: { id: string; name: string; quantity: number; price: number }[] = [];
+        try {
+            roomsSelected = JSON.parse(roomsData);
+        } catch {
+            return { error: "Invalid rooms data format." };
         }
 
-        // Count existing bookings for this room type in the date range
-        // Logic: (start1 < end2) AND (end1 > start2) for overlap
-        const { count, error: countError } = await adminSupabase
-            .from("bookings")
-            .select("*", { count: "exact", head: true })
-            .eq("room_id", roomId)
-            .neq("status", "cancelled")
-            .lt("check_in_date", checkOut)
-            .gt("check_out_date", checkIn);
-
-        if (countError) {
-            console.error("Availability Check Error:", countError);
-            return { error: "System error checking availability." };
+        if (!roomsSelected || roomsSelected.length === 0) {
+            return { error: "No rooms selected for booking." };
         }
 
-        if ((count || 0) >= room.total_inventory) {
-            return { error: "This room type is fully booked for the selected dates." };
+        const start = new Date(checkIn);
+        const end = new Date(checkOut);
+        const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+
+        let totalCombinedPrice = 0;
+
+        // 1. Check Inventory Availability for all
+        for (const rs of roomsSelected) {
+            const { data: room, error: roomError } = await adminSupabase
+                .from("rooms")
+                .select("name, price_per_night, total_inventory")
+                .eq("id", rs.id)
+                .single();
+
+            if (roomError || !room) {
+                return { error: `Room type ${rs.name || rs.id} not found.` };
+            }
+
+            const { count, error: countError } = await adminSupabase
+                .from("bookings")
+                .select("*", { count: "exact", head: true })
+                .eq("room_id", rs.id)
+                .neq("status", "cancelled")
+                .lt("check_in_date", checkOut)
+                .gt("check_out_date", checkIn);
+
+            if (countError) return { error: "System error checking availability." };
+
+            if (((count || 0) + rs.quantity) > room.total_inventory) {
+                return { error: `Not enough availability for: ${room.name}.` };
+            }
+
+            totalCombinedPrice += room.price_per_night * rs.quantity * nights;
         }
 
         // 2. Encrypt PII
@@ -92,62 +107,64 @@ export async function createBookingAction(prevState: BookingState, formData: For
         const encryptedPhone = await encrypt(guestPhone);
         const encryptedRequests = specialRequests ? await encrypt(specialRequests) : null;
 
-        // Calculate Total Price
-        const start = new Date(checkIn);
-        const end = new Date(checkOut);
-        const nights = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-        const totalPrice = room.price_per_night * nights;
-
-        // 3. Create Booking Record (Pending Payment)
+        // 3. Create Booking Records (Pending Payment)
         const { data: { user } } = await supabase.auth.getUser();
+        const groupId = crypto.randomUUID();
 
-        const { data: booking, error: bookingError } = await adminSupabase
-            .from("bookings")
-            .insert({
-                room_id: roomId,
-                user_id: user?.id, // Link to user if logged in
-                check_in_date: checkIn,
-                check_out_date: checkOut,
-                status: "pending",
-                total_price: totalPrice,
-                guest_passport_encrypted: encryptedPassport,
-                guest_phone_encrypted: encryptedPhone,
-                special_requests_encrypted: encryptedRequests,
-            })
-            .select("id, room:rooms(hotel:hotels(owner_id, name))") // Select nested relation for owner_id
-            .single();
+        let ownerId = null;
+        let hotelName = null;
 
-        if (bookingError) {
-            console.error("Booking Creation Error:", bookingError);
-            return { error: "Failed to create booking record." };
+        for (const rs of roomsSelected) {
+            for (let i = 0; i < rs.quantity; i++) {
+                const { data: booking, error: bookingError } = await adminSupabase
+                    .from("bookings")
+                    .insert({
+                        room_id: rs.id,
+                        user_id: user?.id,
+                        check_in_date: checkIn,
+                        check_out_date: checkOut,
+                        status: "pending",
+                        total_price: rs.price * nights,
+                        guest_passport_encrypted: encryptedPassport,
+                        guest_phone_encrypted: encryptedPhone,
+                        special_requests_encrypted: encryptedRequests,
+                        group_id: groupId
+                    })
+                    .select("room:rooms(hotel:hotels(owner_id, name))")
+                    .single();
+
+                if (bookingError) {
+                    console.error("Booking Creation Error:", bookingError);
+                    return { error: "Failed to create booking records." };
+                }
+
+                if (!ownerId && booking) {
+                    // @ts-ignore
+                    ownerId = booking.room?.hotel?.owner_id;
+                    // @ts-ignore
+                    hotelName = booking.room?.hotel?.name;
+                }
+            }
         }
 
         // --- NOTIFICATION LOGIC ---
-        // Notify Hotel Owner
-        // @ts-ignore
-        const ownerId = booking.room?.hotel?.owner_id;
-        // @ts-ignore
-        const hotelName = booking.room?.hotel?.name;
-
-        if (ownerId) {
+        if (ownerId && hotelName) {
             await adminSupabase.from("notifications").insert({
                 user_id: ownerId,
                 title: "New Booking Received!",
-                message: `New booking at ${hotelName} for ${nights} nights.`,
+                message: `New multi-room booking at ${hotelName} for ${nights} nights.`,
                 type: "booking_new",
-                link: `/admin/bookings/${booking.id}`
+                link: `/admin/bookings` // Grouped booking link
             });
         }
-        // --------------------------
 
         // 4. Initiate Payment (Golomt Bank)
         try {
-            const transactionId = booking.id;
-            const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/booking/success?bookingId=${booking.id}`;
+            const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/booking/success?groupId=${groupId}`;
 
             const paymentResponse = await GolomtService.createInvoice({
-                transactionId,
-                amount: totalPrice,
+                transactionId: groupId,
+                amount: totalCombinedPrice,
                 returnUrl
             });
 
@@ -173,19 +190,29 @@ export async function createBookingAction(prevState: BookingState, formData: For
     }
 }
 
-export async function confirmBookingAction(bookingId: string) {
+export async function confirmBookingAction(groupId: string) {
     const supabase = await createClient();
 
     try {
-        // 1. Update Booking Status
-        const { data: booking, error: updateError } = await supabase
+        // 1. Update Booking Status for all rooms in the group
+        const { error: updateError } = await supabase
             .from("bookings")
             .update({ status: "confirmed" })
-            .eq("id", bookingId)
+            .eq("group_id", groupId);
+
+        if (updateError) {
+            console.error("Confirm Booking Error:", updateError);
+            return { success: false, error: "Failed to confirm bookings." };
+        }
+
+        // 2. Fetch the primary (first) booking to get data for email
+        const { data: booking, error: fetchError } = await supabase
+            .from("bookings")
             .select(`
                 id,
                 check_in_date,
                 check_out_date,
+                room_id,
                 room:rooms (
                     name,
                     hotel:hotels (
@@ -195,16 +222,16 @@ export async function confirmBookingAction(bookingId: string) {
                 ),
                 user_id
             `)
+            .eq("group_id", groupId)
+            .limit(1)
             .single();
 
-        if (updateError || !booking) {
-            console.error("Confirm Booking Error:", updateError);
-            return { success: false, error: "Failed to confirm booking." };
+        if (fetchError || !booking) {
+            console.error("Fetch Booking Error:", fetchError);
+            return { success: false, error: "Failed to fetch booking details for email." };
         }
 
-        // 2. Fetch User Email (either from encrypted PII or Supabase Auth if logged in)
-        // For simplicity in this phase, we'll try to get it from auth if available
-        // In a real scenario, we'd decrypt the email from the booking record if we saved it
+        // 3. Fetch User Email (either from encrypted PII or Supabase Auth if logged in)
         const { data: { user } } = await supabase.auth.getUser();
         const userEmail = user?.email;
 
@@ -214,7 +241,7 @@ export async function confirmBookingAction(bookingId: string) {
             // @ts-ignore
             const hotelName = booking.room?.hotel?.name || "COP17 Hotel";
 
-            // 3. Send Confirmation Email
+            // Send Confirmation Email using the first booking ID
             await sendBookingConfirmation(
                 userEmail,
                 user?.user_metadata?.full_name || "Guest",
