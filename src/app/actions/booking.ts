@@ -33,32 +33,31 @@ export type BookingState = {
 };
 
 export async function createBookingAction(prevState: BookingState, formData: FormData): Promise<BookingState> {
-    const supabase = await createClient();
-
-    // Validate Input
-    const validatedFields = bookingSchema.safeParse({
-        roomsData: formData.get("roomsData"),
-        hotelId: formData.get("hotelId"),
-        checkIn: formData.get("checkIn"),
-        checkOut: formData.get("checkOut"),
-        guestName: formData.get("guestName"),
-        guestEmail: formData.get("guestEmail"),
-        guestPassport: formData.get("guestPassport"),
-        guestPhone: formData.get("guestPhone"),
-        specialRequests: formData.get("specialRequests"),
-    });
-
-    if (!validatedFields.success) {
-        return {
-            error: "Invalid input fields. Please check your data.",
-            fieldErrors: validatedFields.error.flatten().fieldErrors,
-        };
-    }
-
-    const { hotelId, checkIn, checkOut, guestName, guestEmail, guestPassport, guestPhone, specialRequests, roomsData } = validatedFields.data;
-
     try {
+        const supabase = await createClient();
         const adminSupabase = getSupabaseAdmin();
+
+        // Validate Input
+        const validatedFields = bookingSchema.safeParse({
+            roomsData: formData.get("roomsData"),
+            hotelId: formData.get("hotelId"),
+            checkIn: formData.get("checkIn"),
+            checkOut: formData.get("checkOut"),
+            guestName: formData.get("guestName"),
+            guestEmail: formData.get("guestEmail"),
+            guestPassport: formData.get("guestPassport"),
+            guestPhone: formData.get("guestPhone"),
+            specialRequests: formData.get("specialRequests"),
+        });
+
+        if (!validatedFields.success) {
+            return {
+                error: "Invalid input fields. Please check your data.",
+                fieldErrors: validatedFields.error.flatten().fieldErrors,
+            };
+        }
+
+        const { hotelId, checkIn, checkOut, guestName, guestEmail, guestPassport, guestPhone, specialRequests, roomsData } = validatedFields.data;
 
         let roomsSelected: { id: string; name: string; quantity: number; price: number }[] = [];
         try {
@@ -201,10 +200,9 @@ export async function createBookingAction(prevState: BookingState, formData: For
 }
 
 export async function confirmBookingAction(groupId: string) {
-    const supabase = await createClient();
-    const adminSupabase = getSupabaseAdmin();
-
     try {
+        const supabase = await createClient();
+        const adminSupabase = getSupabaseAdmin();
         // 1. Update Booking Status for all rooms in the group
         const { error: updateError } = await adminSupabase
             .from("bookings")
@@ -244,11 +242,9 @@ export async function confirmBookingAction(groupId: string) {
             return { success: false, error: "Failed to fetch booking details for email." };
         }
 
-        // 3. Fetch User Email (either from encrypted PII or Supabase Auth if logged in)
-        const { data: { user } } = await supabase.auth.getUser();
-
-        const finalEmail = booking.guest_email || user?.email;
-        const finalName = booking.guest_name || user?.user_metadata?.full_name || "Guest";
+        // 3. Determine Email/Name from Booking (already has guest info)
+        const finalEmail = booking.guest_email;
+        const finalName = booking.guest_name || "Guest";
 
         if (finalEmail) {
             const datesStr = `${format(new Date(booking.check_in_date), "MMM d")} - ${format(new Date(booking.check_out_date), "MMM d, yyyy")}`;
