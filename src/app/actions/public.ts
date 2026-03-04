@@ -307,13 +307,15 @@ export async function getPublicRooms(hotelId: string, guests?: number, from?: st
 
         // Fetch overlapping bookings for this hotel's rooms
         const roomIds = rooms.map(r => r.id);
+        const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+
         const { data: overlappingBookings, error: bookingsError } = await supabase
             .from("bookings")
             .select("room_id")
             .in("room_id", roomIds)
-            .neq("status", "cancelled")
             .lt("check_in_date", checkOut)
-            .gt("check_out_date", checkIn);
+            .gt("check_out_date", checkIn)
+            .or(`status.eq.confirmed,and(status.eq.pending,created_at.gte.${fifteenMinutesAgo})`);
 
         if (!bookingsError && overlappingBookings) {
             const bookingsByRoom: Record<string, number> = {};

@@ -88,24 +88,30 @@ export async function createBookingAction(prevState: BookingState, formData: For
                 return { error: `Room type ${rs.name || rs.id} not found.` };
             }
 
+            // Exclude 'cancelled' and OLD 'pending' bookings from availability check
+            // Only count 'confirmed' and 'pending' from the last 15 minutes
+            const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+
             const { count, error: countError } = await adminSupabase
                 .from("bookings")
                 .select("*", { count: "exact", head: true })
                 .eq("room_id", rs.id)
-                .neq("status", "cancelled")
                 .lt("check_in_date", checkOut)
-                .gt("check_out_date", checkIn);
+                .gt("check_out_date", checkIn)
+                .or(`status.eq.confirmed,and(status.eq.pending,created_at.gte.${fifteenMinutesAgo})`);
 
-            if (countError) return { error: "System error checking availability." };
+            if (countError) {
+                console.error("Availability Check Error:", countError);
+                return { error: "System error checking availability." };
+            }
 
             if (((count || 0) + rs.quantity) > room.total_inventory) {
-                return { error: `Not enough availability for: ${room.name}.` };
+                return { error: `Not enough availability for: ${room.name}. (Available: ${Math.max(0, room.total_inventory - (count || 0))})` };
             }
 
             // Ensure we use the official DB price
             rs.price = room.price_per_night;
             totalCombinedPrice += rs.price * rs.quantity * nights;
-            console.log(`[PriceCalc] Room: ${room.name}, Qty: ${rs.quantity}, Nights: ${nights}, Price: ${rs.price}, Subtotal: ${rs.price * rs.quantity * nights}`);
         }
         console.log(`[PriceTotal] Combined Total: ${totalCombinedPrice}`);
 

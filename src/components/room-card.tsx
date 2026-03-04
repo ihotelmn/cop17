@@ -127,10 +127,10 @@ export function RoomCard({ room, hotelId, checkIn, checkOut }: RoomCardProps) {
                                         <span className="text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">{room.size} m²</span>
                                     </div>
                                 )}
-                                {!isSoldOut && (
+                                {inventory > 0 && (
                                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
                                         <Check className="h-4 w-4" />
-                                        <span className="text-xs font-black uppercase tracking-widest">Available</span>
+                                        <span className="text-xs font-black uppercase tracking-widest">{inventory} Units Left</span>
                                     </div>
                                 )}
                             </div>
