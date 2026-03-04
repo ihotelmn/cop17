@@ -2,6 +2,7 @@ import { ImageGallery } from "@/components/image-gallery";
 import { Star, MapPin, ShieldCheck, Mail, Phone, Globe, Info, Clock, CheckCircle2 } from "lucide-react";
 import { RoomList } from "@/components/room-list";
 import { SearchForm } from "@/components/search-form";
+import { SingleHotelMapWrapper } from "@/components/single-hotel-map";
 import { getPublicHotel, getPublicRooms } from "@/app/actions/public";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -73,15 +74,37 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
                                 {hotel.name}
                             </h1>
 
-                            <div className="flex items-start gap-4 text-zinc-500 dark:text-zinc-400 mb-8 p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
-                                <MapPin className="w-6 h-6 mt-1 flex-shrink-0 text-blue-500" />
-                                <div className="space-y-1">
-                                    <p className="text-lg font-medium leading-relaxed text-zinc-800 dark:text-zinc-200">
-                                        {hotel.address || "Location not specified"}
-                                    </p>
-                                    <button className="text-sm font-bold text-blue-600 hover:text-blue-700 uppercase tracking-wider">
-                                        View on map
-                                    </button>
+                            <div className="mb-8 rounded-[2rem] overflow-hidden bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl group">
+                                <div className="h-48 w-full relative">
+                                    {hotel.latitude && hotel.longitude ? (
+                                        <SingleHotelMapWrapper
+                                            latitude={hotel.latitude}
+                                            longitude={hotel.longitude}
+                                            hotelName={hotel.name}
+                                        />
+                                    ) : (
+                                        <div className="h-full w-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+                                            <MapPin className="w-12 h-12 text-zinc-300" />
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="p-6 flex items-start gap-4">
+                                    <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                                        <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold leading-tight text-zinc-900 dark:text-zinc-100">
+                                            {hotel.address || "Location not specified"}
+                                        </p>
+                                        <a
+                                            href={`https://www.google.com/maps/dir/?api=1&destination=${hotel.latitude},${hotel.longitude}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 mt-2 inline-block"
+                                        >
+                                            Get Directions
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
 

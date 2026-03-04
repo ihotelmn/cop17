@@ -16,6 +16,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "COP17 Mongolia | Official Hotel Booking",
   description: "Exclusive hotel booking platform for COP17 delegates in Mongolia.",
+  icons: {
+    icon: [
+      { url: "/favicon.webp", type: "image/webp" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" }
+    ],
+    shortcut: "/favicon.webp",
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }
+    ],
+  },
 };
 
 import { AuthProvider } from "@/lib/auth-context";
