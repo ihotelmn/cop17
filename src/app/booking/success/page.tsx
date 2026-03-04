@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CheckCircle2, ArrowRight, MapPin, Calendar, Building2, User, Mail, ShieldCheck, Printer, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
+import { PrintButton } from "@/components/booking/print-button";
 
 interface SuccessPageProps {
     searchParams: Promise<{ groupId?: string }>;
@@ -77,8 +78,8 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
             <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 py-12 px-4 md:py-20 text-zinc-900 dark:text-zinc-100">
                 <div className="max-w-4xl mx-auto">
                     {/* SUCCESS HEADER */}
-                    <div className="text-center mb-12">
-                        <div className="mx-auto h-20 w-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-6">
+                    <div className="text-center mb-12 animate-in fade-in slide-in-from-top-4 duration-700">
+                        <div className="mx-auto h-20 w-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-6 shadow-xl shadow-green-500/10">
                             <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-500" />
                         </div>
                         <h1 className="text-4xl font-black tracking-tight mb-3">Your stay is confirmed!</h1>
@@ -161,9 +162,7 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
                                     <div className="flex items-center gap-3"><Mail className="h-4 w-4 opacity-60" /> {firstBooking.guest_email}</div>
                                     <div className="flex items-center gap-3"><Calendar className="h-4 w-4 opacity-60" /> {safeFormat(checkInDate, "MMM d")} - {safeFormat(checkOutDate, "MMM d")}</div>
                                 </div>
-                                <Button className="w-full h-12 bg-white text-zinc-900 hover:bg-zinc-100 rounded-xl font-black uppercase tracking-widest text-[10px]" onClick={() => window.print()}>
-                                    <Printer className="h-4 w-4 mr-2" /> Print Confirmation
-                                </Button>
+                                <PrintButton />
                             </div>
                             <Button asChild variant="link" className="w-full text-zinc-400 hover:text-blue-600 font-bold uppercase tracking-widest text-[10px]">
                                 <Link href="/">Back to iHotel <ArrowRight className="h-3 w-3 ml-2" /></Link>
