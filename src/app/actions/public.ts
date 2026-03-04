@@ -148,10 +148,15 @@ export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
                 };
             });
 
-            // Filter by Capacity (guests)
             const totalRequired = parseInt(params?.adults || "1") + parseInt(params?.children || "0");
+
+            // First, only keep hotels that mathematically have enough total beds across all rooms
             if (totalRequired > 1) {
-                results = results.filter((h: any) => h.max_capacity >= totalRequired);
+                results = results.filter((h: any) => {
+                    if (!h.rooms || h.rooms.length === 0) return false;
+                    const totalHotelCapacity = h.rooms.reduce((sum: number, r: any) => sum + (Number(r.capacity) * Number(r.total_inventory || 0)), 0);
+                    return totalHotelCapacity >= totalRequired;
+                });
             }
 
             // Filter by Date Availability
@@ -174,20 +179,20 @@ export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
                         bookingsByRoom[b.room_id] = (bookingsByRoom[b.room_id] || 0) + 1;
                     }
 
-                    // Check if a hotel has at least one room available
                     results = results.filter((h: any) => {
                         if (!h.rooms || h.rooms.length === 0) return false;
 
-                        // A hotel is available if at least one room type has remaining inventory
-                        const hasAvailableRoom = h.rooms.some((r: any) => {
-                            // Filter by capacity as well if needed, but we already filtered hotels by max_capacity
-                            if (r.capacity < totalRequired) return false;
+                        // Calculate total available capacity across all rooms in this hotel
+                        let totalAvailableCapacity = 0;
 
+                        for (const r of h.rooms) {
                             const bookedCount = bookingsByRoom[r.id] || 0;
-                            return (r.total_inventory || 0) > bookedCount;
-                        });
+                            const availableInventory = Math.max(0, (r.total_inventory || 0) - bookedCount);
+                            totalAvailableCapacity += availableInventory * Number(r.capacity);
+                        }
 
-                        return hasAvailableRoom;
+                        // The hotel is available if the sum of all available beds >= total required
+                        return totalAvailableCapacity >= totalRequired;
                     });
                 }
             }

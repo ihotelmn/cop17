@@ -25,13 +25,15 @@ export function SearchForm({ className }: React.HTMLAttributes<HTMLDivElement>) 
     const [isDatePopoverOpen, setIsDatePopoverOpen] = React.useState(false)
     const [isGuestsPopoverOpen, setIsGuestsPopoverOpen] = React.useState(false)
 
-    const [date, setDate] = React.useState<DateRange | undefined>({
-        from: searchParams.get("from") ? new Date(searchParams.get("from")!) : new Date(),
-        to: searchParams.get("to") ? new Date(searchParams.get("to")!) : addDays(new Date(), 3),
-    })
+    const fromStr = searchParams.get("from")
+    const toStr = searchParams.get("to")
+    const date: DateRange | undefined = {
+        from: fromStr ? new Date(fromStr) : new Date(),
+        to: toStr ? new Date(toStr) : addDays(new Date(), 3),
+    }
 
-    const [adults, setAdults] = React.useState(parseInt(searchParams.get("adults") || "2"))
-    const [children, setChildren] = React.useState(parseInt(searchParams.get("children") || "0"))
+    const adults = parseInt(searchParams.get("adults") || "2")
+    const children = parseInt(searchParams.get("children") || "0")
 
     const nights = date?.from && date?.to ? differenceInDays(date.to, date.from) : 0
     const totalGuests = adults + children
@@ -64,10 +66,13 @@ export function SearchForm({ className }: React.HTMLAttributes<HTMLDivElement>) 
             nextRange = { from: date.from, to: selectedDay }
         }
 
-        setDate(nextRange)
         if (nextRange?.from && nextRange?.to) {
             updateParams(nextRange)
             // setIsDatePopoverOpen(false) // Keep open for confirmation? usually better to auto-close when range complete
+        } else {
+            // If only one date is selected, we might want to temporarily store it somewhere, 
+            // but since we want to be URL driven, we should update the URL immediately.
+            updateParams(nextRange)
         }
     }
 
@@ -114,7 +119,7 @@ export function SearchForm({ className }: React.HTMLAttributes<HTMLDivElement>) 
                         <PopoverContent className="w-auto p-0 border-none shadow-[0_30px_70px_rgba(0,0,0,0.2)] rounded-3xl overflow-hidden" align="start" sideOffset={8}>
                             <div className="px-6 py-4 bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
                                 <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Stay Selection</span>
-                                <Button variant="ghost" size="sm" onClick={() => setDate(undefined)} className="h-8 text-[9px] font-black uppercase text-zinc-400 hover:text-red-500 rounded-lg">Reset</Button>
+                                <Button variant="ghost" size="sm" onClick={() => updateParams(undefined)} className="h-8 text-[9px] font-black uppercase text-zinc-400 hover:text-red-500 rounded-lg">Reset</Button>
                             </div>
                             <Calendar
                                 initialFocus
@@ -170,7 +175,7 @@ export function SearchForm({ className }: React.HTMLAttributes<HTMLDivElement>) 
                                     <div className="flex items-center gap-4">
                                         <Button
                                             variant="outline" size="icon" className="h-9 w-9 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90 transition-all"
-                                            onClick={() => { const val = Math.max(1, adults - 1); setAdults(val); updateParams(undefined, val); }}
+                                            onClick={() => { const val = Math.max(1, adults - 1); updateParams(undefined, val); }}
                                             disabled={adults <= 1}
                                         >
                                             <Minus className="h-3.5 w-3.5" />
@@ -178,7 +183,7 @@ export function SearchForm({ className }: React.HTMLAttributes<HTMLDivElement>) 
                                         <span className="w-4 text-center text-xs font-black">{adults}</span>
                                         <Button
                                             variant="outline" size="icon" className="h-9 w-9 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90 transition-all"
-                                            onClick={() => { const val = Math.min(10, adults + 1); setAdults(val); updateParams(undefined, val); }}
+                                            onClick={() => { const val = Math.min(10, adults + 1); updateParams(undefined, val); }}
                                         >
                                             <Plus className="h-3.5 w-3.5" />
                                         </Button>
@@ -194,7 +199,7 @@ export function SearchForm({ className }: React.HTMLAttributes<HTMLDivElement>) 
                                     <div className="flex items-center gap-4">
                                         <Button
                                             variant="outline" size="icon" className="h-9 w-9 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90 transition-all"
-                                            onClick={() => { const val = Math.max(0, children - 1); setChildren(val); updateParams(undefined, undefined, val); }}
+                                            onClick={() => { const val = Math.max(0, children - 1); updateParams(undefined, undefined, val); }}
                                             disabled={children <= 0}
                                         >
                                             <Minus className="h-3.5 w-3.5" />
@@ -202,7 +207,7 @@ export function SearchForm({ className }: React.HTMLAttributes<HTMLDivElement>) 
                                         <span className="w-4 text-center text-xs font-black">{children}</span>
                                         <Button
                                             variant="outline" size="icon" className="h-9 w-9 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90 transition-all"
-                                            onClick={() => { const val = Math.min(10, children + 1); setChildren(val); updateParams(undefined, undefined, val); }}
+                                            onClick={() => { const val = Math.min(10, children + 1); updateParams(undefined, undefined, val); }}
                                         >
                                             <Plus className="h-3.5 w-3.5" />
                                         </Button>
