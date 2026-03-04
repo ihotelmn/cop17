@@ -5,16 +5,44 @@ export interface EmailPayload {
 }
 
 export async function sendEmail(payload: EmailPayload): Promise<{ success: boolean; error?: string }> {
-    console.log("--------------- EMAIL SERVICE (MOCK) ---------------");
-    console.log(`To: ${payload.to}`);
-    console.log(`Subject: ${payload.subject}`);
-    console.log(`Body: ${payload.body}`);
-    console.log("----------------------------------------------------");
+    const apiKey = process.env.RESEND_API_KEY;
 
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    if (!apiKey) {
+        console.log("--------------- EMAIL SERVICE (MOCK) ---------------");
+        console.log(`To: ${payload.to}`);
+        console.log(`Subject: ${payload.subject}`);
+        console.log(`Body: Truncated...`);
+        console.log("----------------------------------------------------");
+        console.log("TIP: To enable real emails, set RESEND_API_KEY in .env.local");
 
-    return { success: true };
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return { success: true };
+    }
+
+    try {
+        const response = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+                from: "COP17 Mongolia <noreply@cop17mongolia.mn>",
+                to: [payload.to],
+                subject: payload.subject,
+                html: payload.body,
+            }),
+        });
+
+        if (response.ok) {
+            return { success: true };
+        } else {
+            const error = await response.json();
+            return { success: false, error: JSON.stringify(error) };
+        }
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
 }
 
 export async function sendBookingConfirmation(

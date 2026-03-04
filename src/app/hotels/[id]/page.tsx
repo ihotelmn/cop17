@@ -8,6 +8,7 @@ import { getPublicHotel, getPublicRooms } from "@/app/actions/public";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { format, addDays } from "date-fns";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -21,19 +22,27 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
     const { id } = await params;
     const resolvedParams = await searchParams;
     const { from, to } = resolvedParams;
+
+    // Default dates if missing to ensure availability is always calculated
+    const defaultFrom = format(new Date(), "yyyy-MM-dd");
+    const defaultTo = format(addDays(new Date(), 1), "yyyy-MM-dd");
+
+    const checkIn = from || defaultFrom;
+    const checkOut = to || defaultTo;
+
     const hotel = await getPublicHotel(id);
     const adults = parseInt(resolvedParams.adults || "2");
     const children = parseInt(resolvedParams.children || "0");
     const totalGuests = adults + children;
-    const rooms = await getPublicRooms(id, totalGuests, from, to);
+    const rooms = await getPublicRooms(id, totalGuests, checkIn, checkOut);
 
     if (!hotel) {
         notFound();
     }
 
-    // Parse dates
-    const checkIn = from ? new Date(from) : new Date();
-    const checkOut = to ? new Date(to) : new Date(new Date().setDate(new Date().getDate() + 1));
+    // Use the resolved stay dates
+    const finalCheckIn = typeof checkIn === 'string' ? new Date(checkIn) : checkIn;
+    const finalCheckOut = typeof checkOut === 'string' ? new Date(checkOut) : checkOut;
 
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-20">
@@ -168,7 +177,7 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
                                 {rooms.length} Suites Left
                             </div>
                         </div>
-                        <RoomList hotelId={id} rooms={rooms} checkIn={checkIn} checkOut={checkOut} />
+                        <RoomList hotelId={id} rooms={rooms} checkIn={finalCheckIn} checkOut={finalCheckOut} />
                     </section>
                 </main>
 
@@ -211,8 +220,8 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
                                 <ReservationSummary
                                     hotelId={id}
                                     rooms={rooms}
-                                    checkIn={checkIn}
-                                    checkOut={checkOut}
+                                    checkIn={finalCheckIn}
+                                    checkOut={finalCheckOut}
                                 />
 
                                 {hotel.website && (

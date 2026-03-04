@@ -1,3 +1,4 @@
+import { confirmBookingAction } from "@/app/actions/booking";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { format, isValid } from "date-fns";
 import Link from "next/link";
@@ -18,6 +19,10 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
     if (!groupId) {
         notFound();
     }
+
+    // CRITICAL: Trigger confirmation if it hasn't been confirmed yet
+    // This will also trigger the email sending
+    await confirmBookingAction(groupId);
 
     try {
         const adminSupabase = getSupabaseAdmin();

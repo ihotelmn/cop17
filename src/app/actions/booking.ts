@@ -8,6 +8,7 @@ import { sendBookingConfirmation } from "@/lib/email";
 import { encrypt } from "@/lib/encryption";
 import { GolomtService } from "@/lib/golomt";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { revalidateTag } from "next/cache";
 
 // Validation Schema
 const bookingSchema = z.object({
@@ -88,25 +89,33 @@ export async function createBookingAction(prevState: BookingState, formData: For
                 return { error: `Room type ${rs.name || rs.id} not found.` };
             }
 
-            // Exclude 'cancelled' and OLD 'pending' bookings from availability check
-            // Only count 'confirmed' and 'pending' from the last 15 minutes
-            const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-
-            const { count, error: countError } = await adminSupabase
+            const { data: overlappingBookings, error: countError } = await adminSupabase
                 .from("bookings")
-                .select("*", { count: "exact", head: true })
+                .select("id, status, created_at")
                 .eq("room_id", rs.id)
                 .lt("check_in_date", checkOut)
                 .gt("check_out_date", checkIn)
-                .or(`status.eq.confirmed,and(status.eq.pending,created_at.gte.${fifteenMinutesAgo})`);
+                .in("status", ["confirmed", "pending"]);
 
             if (countError) {
                 console.error("Availability Check Error:", countError);
                 return { error: "System error checking availability." };
             }
 
-            if (((count || 0) + rs.quantity) > room.total_inventory) {
-                return { error: `Not enough availability for: ${room.name}. (Available: ${Math.max(0, room.total_inventory - (count || 0))})` };
+            const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+            let bookedCount = 0;
+            if (overlappingBookings) {
+                for (const b of overlappingBookings) {
+                    const isConfirmed = b.status === "confirmed";
+                    const isRecentPending = b.status === "pending" && new Date(b.created_at) >= fifteenMinutesAgo;
+                    if (isConfirmed || isRecentPending) {
+                        bookedCount++;
+                    }
+                }
+            }
+
+            if ((bookedCount + rs.quantity) > room.total_inventory) {
+                return { error: `Not enough availability for: ${room.name}. (Available: ${Math.max(0, room.total_inventory - bookedCount)})` };
             }
 
             // Ensure we use the official DB price
@@ -219,6 +228,9 @@ export async function confirmBookingAction(groupId: string) {
             console.error("Confirm Booking Error:", updateError);
             return { success: false, error: "Failed to confirm bookings." };
         }
+
+        // 1.5. Invalidate caches
+        revalidateTag("hotels");
 
         // 2. Fetch the primary (first) booking to get data for email
         const { data: booking, error: fetchError } = await adminSupabase

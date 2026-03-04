@@ -172,32 +172,52 @@ export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
                 // Fetch overlapping bookings
                 const { data: overlappingBookings, error: bookingsError } = await supabase
                     .from("bookings")
-                    .select("room_id")
-                    .neq("status", "cancelled")
+                    .select("room_id, status, created_at")
                     .lt("check_in_date", checkOut)
-                    .gt("check_out_date", checkIn);
+                    .gt("check_out_date", checkIn)
+                    .in("status", ["confirmed", "pending"]);
 
                 if (!bookingsError && overlappingBookings) {
-                    // Count bookings per room
+                    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+                    // Count valid bookings per room
                     const bookingsByRoom: Record<string, number> = {};
                     for (const b of overlappingBookings) {
-                        bookingsByRoom[b.room_id] = (bookingsByRoom[b.room_id] || 0) + 1;
+                        const isConfirmed = b.status === "confirmed";
+                        const isRecentPending = b.status === "pending" && new Date(b.created_at) >= fifteenMinutesAgo;
+
+                        if (isConfirmed || isRecentPending) {
+                            bookingsByRoom[b.room_id] = (bookingsByRoom[b.room_id] || 0) + 1;
+                        }
                     }
 
-                    results = results.filter((h: any) => {
-                        if (!h.rooms || h.rooms.length === 0) return false;
+                    results = results.map((h: any) => {
+                        if (!h.rooms || h.rooms.length === 0) return h;
 
-                        // Calculate total available capacity across all rooms in this hotel
-                        let totalAvailableCapacity = 0;
-
-                        for (const r of h.rooms) {
+                        // Calculate TRUE available rooms and TRUE minPrice
+                        const availableRooms = h.rooms.map((r: any) => {
                             const bookedCount = bookingsByRoom[r.id] || 0;
                             const availableInventory = Math.max(0, (r.total_inventory || 0) - bookedCount);
-                            totalAvailableCapacity += availableInventory * Number(r.capacity);
-                        }
+                            return { ...r, availableInventory };
+                        }).filter((r: any) => r.availableInventory > 0);
 
-                        // The hotel is available if the sum of all available beds >= total required
-                        return totalAvailableCapacity >= totalRequired;
+                        return {
+                            ...h,
+                            rooms: h.rooms.map((r: any) => ({
+                                ...r,
+                                availableInventory: Math.max(0, (r.total_inventory || 0) - (bookingsByRoom[r.id] || 0))
+                            })),
+                            minPrice: availableRooms.length > 0
+                                ? Math.min(...availableRooms.map((r: any) => Number(r.price_per_night)))
+                                : null,
+                            isFullyBooked: availableRooms.length === 0
+                        };
+                    });
+
+                    // Filter out hotels with NO available beds for the requested guest count
+                    results = results.filter((h: any) => {
+                        const totalAvailableHotelCapacity = h.rooms.reduce((sum: number, r: any) =>
+                            sum + (Number(r.capacity) * (r.availableInventory || 0)), 0);
+                        return totalAvailableHotelCapacity >= totalRequired;
                     });
                 }
             }
@@ -307,20 +327,25 @@ export async function getPublicRooms(hotelId: string, guests?: number, from?: st
 
         // Fetch overlapping bookings for this hotel's rooms
         const roomIds = rooms.map(r => r.id);
-        const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-
         const { data: overlappingBookings, error: bookingsError } = await supabase
             .from("bookings")
-            .select("room_id")
+            .select("room_id, status, created_at")
             .in("room_id", roomIds)
             .lt("check_in_date", checkOut)
             .gt("check_out_date", checkIn)
-            .or(`status.eq.confirmed,and(status.eq.pending,created_at.gte.${fifteenMinutesAgo})`);
+            .in("status", ["confirmed", "pending"]);
 
         if (!bookingsError && overlappingBookings) {
+            const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
             const bookingsByRoom: Record<string, number> = {};
+
             for (const b of overlappingBookings) {
-                bookingsByRoom[b.room_id] = (bookingsByRoom[b.room_id] || 0) + 1;
+                const isConfirmed = b.status === "confirmed";
+                const isRecentPending = b.status === "pending" && new Date(b.created_at) >= fifteenMinutesAgo;
+
+                if (isConfirmed || isRecentPending) {
+                    bookingsByRoom[b.room_id] = (bookingsByRoom[b.room_id] || 0) + 1;
+                }
             }
 
             // Update remaining inventory
