@@ -41,17 +41,23 @@ export function RoomCard({ room, hotelId, checkIn, checkOut }: RoomCardProps) {
     const currentQtyStr = searchParams.get(`r_${room.id}`);
     const quantity = currentQtyStr ? parseInt(currentQtyStr) : 0;
 
-    // Instead of total price for a single room in the UI, we might just show base rate if they select none, or total if they select some.
-    // But the new design says remove the 'Estimated Total' area here and move it to the sidebar.
+    const [localQty, setLocalQty] = React.useState(quantity);
+
+    React.useEffect(() => {
+        setLocalQty(quantity);
+    }, [quantity]);
 
     const updateQuantity = (newQty: number) => {
+        setLocalQty(newQty); // Optimistic immediate update
         const params = new URLSearchParams(searchParams.toString());
         if (newQty > 0) {
             params.set(`r_${room.id}`, newQty.toString());
         } else {
             params.delete(`r_${room.id}`);
         }
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+        React.startTransition(() => {
+            router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+        });
     };
 
     return (
@@ -159,21 +165,21 @@ export function RoomCard({ room, hotelId, checkIn, checkOut }: RoomCardProps) {
                         <Button disabled className="w-full md:w-auto px-12 h-18 text-[11px] font-black uppercase tracking-[0.2em] rounded-2.5xl bg-zinc-200 text-zinc-400 cursor-not-allowed dark:bg-zinc-800">
                             Sold Out Online
                         </Button>
-                    ) : quantity > 0 ? (
+                    ) : localQty > 0 ? (
                         <div className="flex items-center justify-between gap-4 bg-zinc-950 dark:bg-white rounded-2.5xl p-2 w-full md:w-auto h-16 md:h-18 shadow-2xl shadow-zinc-950/20">
                             <button
-                                onClick={() => updateQuantity(quantity - 1)}
+                                onClick={() => updateQuantity(localQty - 1)}
                                 className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-zinc-800 dark:bg-zinc-200 flex items-center justify-center text-white dark:text-zinc-950 hover:bg-zinc-700 dark:hover:bg-zinc-300 transition-all active:scale-90"
                             >
                                 <Minus className="w-5 h-5" />
                             </button>
                             <div className="flex flex-col items-center min-w-[5rem]">
-                                <span className="text-xl md:text-2xl font-black text-white dark:text-zinc-950 leading-none">{quantity}</span>
+                                <span className="text-xl md:text-2xl font-black text-white dark:text-zinc-950 leading-none">{localQty}</span>
                                 <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mt-1">Rooms</span>
                             </div>
                             <button
-                                onClick={() => updateQuantity(quantity + 1)}
-                                disabled={quantity >= inventory}
+                                onClick={() => updateQuantity(localQty + 1)}
+                                disabled={localQty >= inventory}
                                 className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-zinc-800 dark:bg-zinc-200 flex items-center justify-center text-white dark:text-zinc-950 hover:bg-zinc-700 dark:hover:bg-zinc-300 disabled:opacity-30 disabled:hover:scale-100 transition-all active:scale-90"
                             >
                                 <Plus className="w-5 h-5" />

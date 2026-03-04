@@ -1,4 +1,4 @@
-import { getPublicHotel } from "@/app/actions/public";
+import { getPublicHotel, getPublicRooms } from "@/app/actions/public";
 import { notFound } from "next/navigation";
 import { format, differenceInDays } from "date-fns";
 import { CheckoutForm } from "./checkout-form";
@@ -21,6 +21,8 @@ export default async function CheckoutPage({ params, searchParams }: CheckoutPag
         notFound();
     }
 
+    const allRooms = await getPublicRooms(hotelId, undefined, from, to);
+
     // Default dates if missing
     const checkIn = from ? new Date(from) : new Date();
     const checkOut = to ? new Date(to) : new Date(new Date().setDate(new Date().getDate() + 1));
@@ -37,7 +39,7 @@ export default async function CheckoutPage({ params, searchParams }: CheckoutPag
             const quantity = parseInt(value);
             if (quantity > 0) {
                 // @ts-ignore
-                const room = hotel.rooms?.find((r: any) => r.id === roomId);
+                const room = allRooms.find((r: any) => r.id === roomId);
                 if (room) {
                     selectedRooms.push({
                         id: room.id,
