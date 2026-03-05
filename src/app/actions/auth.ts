@@ -98,15 +98,17 @@ export async function signupAction(prevState: AuthState, formData: FormData): Pr
 
     const { email, password, fullName } = validatedFields.data;
 
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || origin || 'https://cop17.ihotel.mn';
+
     const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
             data: {
                 full_name: fullName,
-                role: "guest", // Explicitly set guest metadata for trigger
+                role: "guest",
             },
-            emailRedirectTo: `${origin}/auth/callback`,
+            emailRedirectTo: `${baseUrl}/auth/callback`,
         },
     });
 
