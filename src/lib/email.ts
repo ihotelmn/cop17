@@ -4,16 +4,13 @@ export interface EmailPayload {
     body: string;
 }
 
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 export async function sendEmail(payload: EmailPayload): Promise<{ success: boolean; error?: string }> {
-    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
-    const smtpPort = parseInt(process.env.SMTP_PORT || '465');
-    const smtpUser = process.env.SMTP_USER; // noreply@ihotel.mn
-    const smtpPass = process.env.SMTP_PASS; // Google App Password
+    const apiKey = process.env.RESEND_API_KEY;
 
-    if (!smtpUser || !smtpPass) {
-        console.warn("⚠️ EMAIL_WARNING: SMTP_USER or SMTP_PASS is missing. Email will NOT be sent.");
+    if (!apiKey) {
+        console.warn("⚠️ EMAIL_WARNING: RESEND_API_KEY is missing. Email will NOT be sent.");
         console.log("--------------- EMAIL SERVICE (MOCK) ---------------");
         console.log(`To: ${payload.to}`);
         console.log(`Subject: ${payload.subject}`);
@@ -22,26 +19,25 @@ export async function sendEmail(payload: EmailPayload): Promise<{ success: boole
     }
 
     try {
-        const transporter = nodemailer.createTransport({
-            host: smtpHost,
-            port: smtpPort,
-            secure: smtpPort === 465,
-            auth: {
-                user: smtpUser,
-                pass: smtpPass,
-            },
-        });
+        const resend = new Resend(apiKey);
+        // Using the professional subdomain email
+        const fromEmail = "COP17 Mongolia <noreply@cop17.ihotel.mn>";
 
-        await transporter.sendMail({
-            from: `"COP17 Mongolia" <${smtpUser}>`, // Display name prevents confusion
-            to: payload.to,
+        const { error } = await resend.emails.send({
+            from: fromEmail,
+            to: [payload.to],
             subject: payload.subject,
             html: payload.body,
         });
 
+        if (error) {
+            console.error("❌ Resend API Error:", error);
+            return { success: false, error: error.message };
+        }
+
         return { success: true };
     } catch (error: any) {
-        console.error("❌ SMTP Email Error:", error);
+        console.error("❌ Resend System Crash:", error);
         return { success: false, error: error.message };
     }
 }
