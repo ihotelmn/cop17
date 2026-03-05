@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
 
 export default function AuthErrorPage() {
+    const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+    const errorMessage = searchParams?.get("message") || "There was a problem confirming your email address. The link might be expired or already used.";
+
     return (
         <div className="flex min-h-screen flex-col items-center justify-center p-4 text-center space-y-6">
             <div className="rounded-full bg-red-100 p-4 dark:bg-red-900/20">
@@ -14,7 +17,7 @@ export default function AuthErrorPage() {
             <div className="space-y-2">
                 <h1 className="text-3xl font-bold tracking-tight">Authentication Error</h1>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                    There was a problem confirming your email address. The link might be expired or already used.
+                    {errorMessage}
                 </p>
             </div>
 

@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
-    const { searchParams, origin } = new URL(request.url);
+    const { searchParams } = new URL(request.url);
     const code = searchParams.get("code");
-    // if "next" is in param, use it as the redirect URL
     const next = searchParams.get("next") ?? "/";
+
+    // Strictly use the production URL or the request origin if env is missing
+    const origin = process.env.NEXT_PUBLIC_APP_URL || "https://cop17.ihotel.mn";
 
     if (code) {
         const supabase = await createClient();
@@ -14,11 +16,9 @@ export async function GET(request: Request) {
             return NextResponse.redirect(`${origin}${next}`);
         } else {
             console.error("Auth Callback Error (Exchange Code):", error.message);
+            return NextResponse.redirect(`${origin}/auth/auth-code-error?message=${encodeURIComponent(error.message)}`);
         }
-    } else {
-        console.error("Auth Callback Error: No code provided in URL");
     }
 
-    // return the user to an error page with instructions
-    return NextResponse.redirect(`${origin}/auth/auth-code-error`);
+    return NextResponse.redirect(`${origin}/auth/auth-code-error?message=No+code+provided`);
 }
