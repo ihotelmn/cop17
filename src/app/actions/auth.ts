@@ -98,7 +98,10 @@ export async function signupAction(prevState: AuthState, formData: FormData): Pr
 
     const { email, password, fullName } = validatedFields.data;
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || origin || 'https://cop17.ihotel.mn';
+    const productionUrl = 'https://cop17.ihotel.mn';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || productionUrl;
+
+    console.log("Starting signup flow. Redirecting to:", `${baseUrl}/auth/callback`);
 
     const { error } = await supabase.auth.signUp({
         email,

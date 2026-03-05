@@ -6,11 +6,12 @@ export async function GET(request: Request) {
     const code = searchParams.get("code");
     const next = searchParams.get("next") ?? "/";
 
-    // Strictly use the production URL or the request origin if env is missing
-    const origin = process.env.NEXT_PUBLIC_APP_URL || "https://cop17.ihotel.mn";
+    const productionUrl = 'https://cop17.ihotel.mn';
+    const origin = process.env.NEXT_PUBLIC_APP_URL || productionUrl;
 
     if (code) {
         const supabase = await createClient();
+        console.log("Exchanging code for session on origin:", origin);
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (!error) {
             return NextResponse.redirect(`${origin}${next}`);
