@@ -51,7 +51,7 @@ export async function sendBookingConfirmation(
 ) {
     const subject = `Booking Confirmation: ${hotelName} - ${bookingId}`;
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cop17.mn';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cop17.ihotel.mn';
     const bookingLink = `${baseUrl}/my-bookings`;
 
     // Premium HTML Template with Inline Styles for maximum compatibility
@@ -123,7 +123,7 @@ export async function sendBookingConfirmation(
                 <div style="text-align: center; margin-top: 40px; font-size: 11px; color: #94a3b8; line-height: 1.8;">
                     &copy; 2026 COP17 Mongolia Organizing Committee.<br>
                     Official Accommodation & Logistics Partner.<br>
-                    <a href="${baseUrl}" style="color: #64748b; text-decoration: underline;">Visit Platform</a>
+                    <a href="${baseUrl}" style="color: #64748b; text-decoration: underline;">Visit cop17.ihotel.mn</a>
                 </div>
             </div>
         </body>
