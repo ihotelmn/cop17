@@ -202,7 +202,10 @@ export default async function Home(props: Props) {
                   <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">No properties found</h3>
                   <p className="text-zinc-500 mb-6">Try adjusting your filters.</p>
                   <Button variant="outline" asChild>
-                    <Link href="/" scroll={false}>Clear Filters</Link>
+                    <Link href={`/?${new URLSearchParams(
+                      Object.entries({ query, from, to, adults, children, rooms: roomsCount })
+                        .filter(([_, v]) => v) as [string, string][]
+                    ).toString()}`} scroll={false}>Clear Filters</Link>
                   </Button>
                 </div>
               )}

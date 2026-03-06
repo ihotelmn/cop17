@@ -127,17 +127,23 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
                 <div className="flex-1">
                     {/* Top row: Stars + Price */}
                     <div className="flex items-center justify-between mb-3">
-                        <div className="flex gap-0.5">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                                <Star
-                                    key={i}
-                                    className={cn(
-                                        "h-3.5 w-3.5",
-                                        i < hotel.stars ? "fill-amber-400 text-amber-400" : "text-zinc-100 dark:text-zinc-800"
-                                    )}
-                                />
-                            ))}
-                        </div>
+                        {hotel.stars && hotel.stars > 0 ? (
+                            <div className="flex gap-0.5">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                    <Star
+                                        key={i}
+                                        className={cn(
+                                            "h-3.5 w-3.5",
+                                            i < hotel.stars ? "fill-amber-400 text-amber-400" : "text-zinc-100 dark:text-zinc-800"
+                                        )}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md">
+                                Rating not provided
+                            </span>
+                        )}
                         <div className="flex flex-col items-end">
                             <div className="flex items-baseline gap-1">
                                 <span className="text-2xl font-black tracking-tighter text-zinc-900 dark:text-white">

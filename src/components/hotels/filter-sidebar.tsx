@@ -27,27 +27,28 @@ export function FilterSidebar() {
 
     // -- Init State from URL --
     useEffect(() => {
-        // Price
         const min = searchParams.get("minPrice");
         const max = searchParams.get("maxPrice");
         if (min || max) {
             setPriceRange([Number(min) || 0, Number(max) || 1000]);
+        } else {
+            setPriceRange([0, 1000]);
         }
 
         // Stars
         const starsParam = searchParams.get("stars");
         if (starsParam) {
-            // API expects "5", we might support multiple in UI but API currently takes single gte.
-            // For better UI, let's assume we filter by "at least X stars" or we update API later to support list.
-            // Current API: gte("stars", stars). So if user selects 4 and 5, we should probably send 4 (gte 4 covers 4,5).
-            // Let's just track the single highest selection or logic map it.
-            // Simplified: "Minimum Rating"
+            setSelectedStars([starsParam]);
+        } else {
+            setSelectedStars([]);
         }
 
         // Amenities
         const amenitiesParam = searchParams.get("amenities");
         if (amenitiesParam) {
             setSelectedAmenities(amenitiesParam.split(","));
+        } else {
+            setSelectedAmenities([]);
         }
     }, [searchParams]);
 
@@ -162,8 +163,15 @@ export function FilterSidebar() {
         setPriceRange([0, 1000]);
         setSelectedStars([]);
         setSelectedAmenities([]);
-        // Push to base path to clear all params including query, stars, amenities, etc.
-        router.push(pathname, { scroll: false });
+
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete("minPrice");
+        params.delete("maxPrice");
+        params.delete("stars");
+        params.delete("amenities");
+        params.delete("sortBy");
+
+        router.push(`${pathname}?${params.toString()}`, { scroll: false });
     };
 
     const hasActiveFilters =

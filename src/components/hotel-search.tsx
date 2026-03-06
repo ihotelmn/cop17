@@ -446,7 +446,7 @@ export function SortDropdown() {
 
     return (
         <Select value={currentSort} onValueChange={handleSort}>
-            <SelectTrigger className="w-[180px] h-10 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-lg">
+            <SelectTrigger aria-label="Sort properties" className="w-[180px] h-10 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-lg">
                 <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
