@@ -129,7 +129,7 @@ export default async function Home(props: Props) {
         <div className="container mx-auto px-4 max-w-7xl">
 
           {/* Search Bar */}
-          <div className="-mt-32 mb-16 relative z-30">
+          <div id="search" className="-mt-32 mb-16 relative z-30 scroll-mt-24">
             <HotelSearch />
           </div>
 

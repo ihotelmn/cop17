@@ -46,10 +46,10 @@ export function SiteHeader() {
                 {/* Navigation */}
                 <nav className="hidden lg:flex items-center gap-8">
                     <NavLink href="/" active={pathname === "/"}>Home</NavLink>
-                    <NavLink href="/hotels" active={pathname.startsWith("/hotels")}>Hotels</NavLink>
-                    <NavLink href="#">Tours</NavLink>
-                    <NavLink href="#">Shuttle</NavLink>
-                    <NavLink href="#">Support</NavLink>
+                    <NavLink href="/#search" active={pathname.startsWith("/hotels")}>Hotels</NavLink>
+                    <NavLink href="/tours" active={pathname === "/tours"}>Tours</NavLink>
+                    <NavLink href="/shuttle" active={pathname === "/shuttle"}>Shuttle</NavLink>
+                    <NavLink href="/support" active={pathname === "/support"}>Support</NavLink>
                     <NavLink href="https://unccdcop17.org" external>About COP17</NavLink>
                 </nav>
 
@@ -79,7 +79,7 @@ export function SiteHeader() {
                                 Sign In
                             </Link>
                             <Button asChild className="bg-white text-black hover:bg-zinc-100 rounded-2xl px-10 h-11 text-[12px] font-bold uppercase tracking-wider shadow-[0_10px_30px_rgba(255,255,255,0.15)] transition-all hover:scale-105 active:scale-95">
-                                <Link href="/hotels">Book Stay</Link>
+                                <Link href="/#search">Book Stay</Link>
                             </Button>
                         </div>
                     )}
