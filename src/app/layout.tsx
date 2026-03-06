@@ -38,7 +38,6 @@ import { createClient } from "@/lib/supabase/server";
 import PageTransition from "@/components/page-transition";
 import { Analytics } from "@vercel/analytics/react";
 
-export const dynamic = "force-dynamic";
 
 export default async function RootLayout({
   children,
@@ -57,9 +56,12 @@ export default async function RootLayout({
       >
         <AuthProvider initialUser={user}>
           <SiteHeader />
+          <main className="min-h-screen pt-16">
 
-          <PageTransition>{children}</PageTransition>
+            <PageTransition>{children}</PageTransition>
+          </main>
           <OrganizersSection />
+
           <SiteFooter />
           <Toaster />
           <Analytics />

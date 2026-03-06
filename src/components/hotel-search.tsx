@@ -73,22 +73,8 @@ export function HotelSearch() {
         setIsMobileGuestsOpen(false);
     };
 
-    const handleSelect = (selectedRange: DateRange | undefined, selectedDay: Date) => {
-        if (date?.from && date?.to) {
-            setDate({ from: selectedDay, to: undefined });
-            return;
-        }
-
-        if (!date?.from) {
-            setDate({ from: selectedDay, to: undefined });
-            return;
-        }
-
-        if (selectedDay < date.from) {
-            setDate({ from: selectedDay, to: undefined });
-        } else {
-            setDate({ from: date.from, to: selectedDay });
-        }
+    const handleSelect = (selectedRange: DateRange | undefined) => {
+        setDate(selectedRange);
     };
 
     const nights = date?.from && date?.to ? differenceInDays(date.to, date.from) : 0;

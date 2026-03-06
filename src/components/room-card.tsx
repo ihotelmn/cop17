@@ -113,8 +113,8 @@ export function RoomCard({ room, hotelId, checkIn, checkOut }: RoomCardProps) {
                 <div>
                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-8 mb-10">
                         <div className="space-y-4">
-                            <h3 className="text-4xl font-black text-zinc-950 dark:text-white tracking-tighter leading-tight">
-                                {room.name}
+                            <h3 className="text-4xl font-black text-zinc-950 dark:text-white tracking-tighter leading-tight capitalize">
+                                {room.name.replace(/standart/ig, 'Standard')}
                             </h3>
                             <div className="flex flex-wrap items-center gap-4">
                                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-white/5 border border-zinc-200/50 dark:border-white/5">
@@ -169,6 +169,7 @@ export function RoomCard({ room, hotelId, checkIn, checkOut }: RoomCardProps) {
                         <div className="flex items-center justify-between gap-4 bg-zinc-950 dark:bg-white rounded-2.5xl p-2 w-full md:w-auto h-16 md:h-18 shadow-2xl shadow-zinc-950/20">
                             <button
                                 onClick={() => updateQuantity(localQty - 1)}
+                                aria-label={`Decrease quantity for ${room.name.replace(/standart/ig, 'Standard')}`}
                                 className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-zinc-800 dark:bg-zinc-200 flex items-center justify-center text-white dark:text-zinc-950 hover:bg-zinc-700 dark:hover:bg-zinc-300 transition-all active:scale-90"
                             >
                                 <Minus className="w-5 h-5" />
@@ -180,6 +181,7 @@ export function RoomCard({ room, hotelId, checkIn, checkOut }: RoomCardProps) {
                             <button
                                 onClick={() => updateQuantity(localQty + 1)}
                                 disabled={localQty >= inventory}
+                                aria-label={`Increase quantity for ${room.name.replace(/standart/ig, 'Standard')}`}
                                 className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-zinc-800 dark:bg-zinc-200 flex items-center justify-center text-white dark:text-zinc-950 hover:bg-zinc-700 dark:hover:bg-zinc-300 disabled:opacity-30 disabled:hover:scale-100 transition-all active:scale-90"
                             >
                                 <Plus className="w-5 h-5" />
@@ -188,6 +190,7 @@ export function RoomCard({ room, hotelId, checkIn, checkOut }: RoomCardProps) {
                     ) : (
                         <Button
                             onClick={() => updateQuantity(1)}
+                            aria-label={`Select ${room.name.replace(/standart/ig, 'Standard')}`}
                             className="w-full md:w-auto px-12 h-16 md:h-18 text-[11px] md:text-xs font-black uppercase tracking-[0.2em] rounded-2.5xl transition-all duration-300 bg-zinc-950 hover:bg-black dark:bg-white dark:text-black dark:hover:bg-zinc-100 shadow-2xl shadow-zinc-950/20 active:scale-[0.97]"
                         >
                             Select Residence

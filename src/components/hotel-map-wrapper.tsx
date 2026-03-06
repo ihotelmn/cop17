@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
-import { Hotel } from "@/app/actions/public";
+import type { Hotel } from "@/types/hotel";
 
 const HotelMap = dynamic(() => import('@/components/hotel-map'), {
     ssr: false,

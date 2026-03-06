@@ -51,7 +51,6 @@ export function AuthProvider({
     // Sync state if server passes a new user (e.g. after login redirect)
     useEffect(() => {
         if (initialUser && !isLoggingOut) {
-            console.log("Hydrating user from server prop update:", initialUser.email);
             const role = (initialUser.user_metadata?.role as any) || "guest";
             setUser({
                 id: initialUser.id,
@@ -65,7 +64,7 @@ export function AuthProvider({
 
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log("Auth State Change:", event, session?.user?.email);
+            console.log("Auth State Change:", event);
 
             if (session?.user) {
                 // Refresh profile data if needed, or just trust session
@@ -103,7 +102,6 @@ export function AuthProvider({
 
     const fetchProfile = async (authUser: SupabaseUser) => {
         try {
-            console.log("Fetching profile for:", authUser.email);
 
             // Try to get profile
             const { data: profile, error } = await supabase
@@ -138,7 +136,6 @@ export function AuthProvider({
                 full_name: profile?.full_name || authUser.user_metadata?.full_name,
                 role: role,
             });
-            console.log("User set with role:", role);
 
         } catch (error) {
             console.error("Error in fetchProfile:", error);

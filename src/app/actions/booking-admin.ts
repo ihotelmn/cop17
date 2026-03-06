@@ -6,20 +6,10 @@ import { decrypt } from "@/lib/encryption";
 import { z } from "zod";
 import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import type { BookingAdmin, BookingFilters } from "@/types/booking";
 
-export type BookingAdmin = {
-    id: string;
-    guestName: string;
-    hotelName: string;
-    roomName: string;
-    dates: string;
-    status: string;
-    amount: number;
-    checkIn: string;
-    checkOut: string;
-    rawStatus: string;
-    createdAt: string;
-};
+// No re-exports here to avoid Turbopack build errors.
+// Import types from @/types/booking instead.
 
 // Helper: Get room IDs belonging to hotels owned by the user (Admin Client recommended)
 async function getOwnerRoomIds(adminClient: any, userId: string): Promise<string[]> {
@@ -43,12 +33,6 @@ async function getOwnerRoomIds(adminClient: any, userId: string): Promise<string
 
     return rooms.map((r: any) => r.id);
 }
-
-export type BookingFilters = {
-    status?: string;
-    hotelId?: string;
-    search?: string;
-};
 
 export async function getAllBookings(filters?: BookingFilters): Promise<{ success: boolean; data?: BookingAdmin[]; error?: string }> {
     const supabase = await createClient();

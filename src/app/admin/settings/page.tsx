@@ -2,8 +2,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ChangePasswordForm } from "@/components/admin/change-password-form";
+import { createClient } from "@/lib/supabase/server";
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     return (
         <div className="space-y-6">
             <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
@@ -13,21 +18,19 @@ export default function SettingsPage() {
                     <CardHeader>
                         <CardTitle>Profile Settings</CardTitle>
                         <CardDescription>
-                            Manage your account settings and preferences.
+                            Your basic account information.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="name">Display Name</Label>
-                            <Input id="name" placeholder="Your Name" disabled />
-                        </div>
-                        <div className="grid gap-2">
                             <Label htmlFor="email">Email Address</Label>
-                            <Input id="email" type="email" placeholder="email@example.com" disabled />
+                            <Input id="email" type="email" value={user?.email || ""} disabled className="bg-zinc-50 dark:bg-zinc-800" />
+                            <p className="text-[10px] text-zinc-500 italic">Email cannot be changed on this platform.</p>
                         </div>
-                        <Button disabled>Save Changes (Coming Soon)</Button>
                     </CardContent>
                 </Card>
+
+                <ChangePasswordForm />
 
                 <Card>
                     <CardHeader>
@@ -37,10 +40,11 @@ export default function SettingsPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-sm text-muted-foreground">Global settings will be available here using the configuration table.</p>
+                        <p className="text-sm text-muted-foreground">Global settings and configuration will be available here soon.</p>
                     </CardContent>
                 </Card>
             </div>
         </div>
     );
 }
+

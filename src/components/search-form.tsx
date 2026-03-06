@@ -62,20 +62,8 @@ export function SearchForm({ className }: React.HTMLAttributes<HTMLDivElement>) 
         router.replace(`${pathname}?${params.toString()}`, { scroll: false })
     }
 
-    const handleDateSelect = (selectedRange: DateRange | undefined, selectedDay: Date) => {
-        let nextRange: DateRange | undefined = undefined
-
-        if (date?.from && date?.to) {
-            nextRange = { from: selectedDay, to: undefined }
-        } else if (!date?.from) {
-            nextRange = { from: selectedDay, to: undefined }
-        } else if (selectedDay < date.from) {
-            nextRange = { from: selectedDay, to: undefined }
-        } else {
-            nextRange = { from: date.from, to: selectedDay }
-        }
-
-        updateParams(nextRange)
+    const handleDateSelect = (selectedRange: DateRange | undefined) => {
+        updateParams(selectedRange)
     }
 
     return (

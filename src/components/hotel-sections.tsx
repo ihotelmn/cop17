@@ -1,6 +1,6 @@
 "use client";
 
-import { Hotel } from "@/app/actions/public";
+import type { Hotel } from "@/types/hotel";
 import { HotelCardGrid } from "./hotel-card-grid";
 import { ArrowRight, Star, ShieldCheck, Flame, Hotel as HotelIcon } from "lucide-react";
 import Link from "next/link";

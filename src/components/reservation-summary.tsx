@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Room } from "@/app/actions/admin";
+import type { Room } from "@/types/hotel";
 import { format, differenceInDays } from "date-fns";
 import { ArrowRight, BedDouble, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -68,7 +68,7 @@ export function ReservationSummary({ hotelId, rooms, checkIn, checkOut }: Reserv
                             <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600">
                                 <span className="font-bold text-xs">{r.quantity}x</span>
                             </div>
-                            <span className="font-bold text-zinc-900 dark:text-zinc-100 truncate max-w-[150px]">{r.name}</span>
+                            <span className="font-bold text-zinc-900 dark:text-zinc-100 truncate max-w-[150px] capitalize">{r.name.replace(/standart/ig, 'Standard')}</span>
                         </div>
                         <span className="font-bold text-zinc-900 dark:text-zinc-100">${r.price_per_night * r.quantity * nights}</span>
                     </div>

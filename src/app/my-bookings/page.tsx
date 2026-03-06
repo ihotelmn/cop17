@@ -7,6 +7,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "My Bookings | COP17 Mongolia",
+    description: "View and manage your COP17 hotel reservations, download receipts, and get directions.",
+};
 
 export default async function MyBookingsPage() {
     const supabase = await createClient();

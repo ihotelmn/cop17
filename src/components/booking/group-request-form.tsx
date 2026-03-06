@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
-import { submitGroupRequestAction, GroupRequestState } from "@/app/actions/group-actions";
+import { submitGroupRequestAction } from "@/app/actions/group-actions";
+import type { GroupRequestState } from "@/types/group";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

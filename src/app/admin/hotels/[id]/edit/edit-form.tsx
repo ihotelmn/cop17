@@ -1,6 +1,8 @@
 "use client";
 
-import { updateHotel, Hotel } from "@/app/actions/admin";
+import { updateHotel } from "@/app/actions/admin";
+import type { Hotel } from "@/types/hotel";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

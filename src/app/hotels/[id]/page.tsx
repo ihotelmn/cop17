@@ -9,13 +9,35 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { format, addDays } from "date-fns";
-
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+import type { Metadata, ResolvingMetadata } from "next";
 
 interface PageProps {
     params: Promise<{ id: string }>;
     searchParams: Promise<{ [key: string]: string | undefined }>;
+}
+
+export async function generateMetadata(
+    { params }: PageProps,
+    parent: ResolvingMetadata
+): Promise<Metadata> {
+    const { id } = await params;
+    const hotel = await getPublicHotel(id);
+
+    if (!hotel) {
+        return {
+            title: "Hotel Not Found | COP17 Mongolia",
+        };
+    }
+
+    return {
+        title: `${hotel.name} | COP17 Mongolia Official Booking`,
+        description: hotel.description?.replace(/<[^>]*>?/gm, '').substring(0, 160) || `Book your stay at ${hotel.name} for COP17 Mongolia.`,
+        openGraph: {
+            title: hotel.name,
+            description: `Official accommodation for COP17 at ${hotel.name}.`,
+            images: hotel.images?.[0] ? [hotel.images[0]] : [],
+        },
+    };
 }
 
 export default async function HotelDetailPage({ params, searchParams }: PageProps) {
@@ -73,16 +95,25 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
 
                         {/* Title & Rapid Info */}
                         <div className="lg:col-span-12 xl:col-span-4 flex flex-col h-full justify-center py-4 lg:py-0">
-                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 mb-6 self-start">
-                                <div className="flex text-amber-500 gap-0.5">
-                                    {[...Array(hotel.stars || 5)].map((_, i) => (
-                                        <Star key={i} className="w-3.5 h-3.5 fill-current" />
-                                    ))}
+                            {hotel.stars && hotel.stars > 0 ? (
+                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 mb-6 self-start">
+                                    <div className="flex text-amber-500 gap-0.5">
+                                        {[...Array(hotel.stars)].map((_, i) => (
+                                            <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                                        ))}
+                                    </div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                                        {hotel.stars}-Star Premium Hotel
+                                    </span>
                                 </div>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
-                                    {hotel.stars}-Star Premium Hotel
-                                </span>
-                            </div>
+                            ) : (
+                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 mb-6 self-start">
+                                    <Star className="w-3.5 h-3.5 text-zinc-400" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                                        Star rating not provided
+                                    </span>
+                                </div>
+                            )}
 
                             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-zinc-950 dark:text-white mb-6 tracking-tight leading-[1.05]">
                                 {hotel.name}

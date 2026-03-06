@@ -22,7 +22,8 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
 
     // CRITICAL: Trigger confirmation if it hasn't been confirmed yet
     // This will also trigger the email sending
-    await confirmBookingAction(groupId);
+    await confirmBookingAction(groupId, true); // true = silent (skip revalidateTag during render)
+
 
     try {
         const adminSupabase = getSupabaseAdmin();

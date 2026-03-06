@@ -9,6 +9,10 @@ import { encrypt } from "@/lib/encryption";
 import { GolomtService } from "@/lib/golomt";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { revalidateTag } from "next/cache";
+import type { BookingState } from "@/types/booking";
+
+// No re-exports here to avoid Turbopack build errors.
+// Import types from @/types/booking instead.
 
 // Validation Schema
 const bookingSchema = z.object({
@@ -22,16 +26,6 @@ const bookingSchema = z.object({
     guestPhone: z.string().min(8, "Valid phone number required"),
     specialRequests: z.string().nullable().optional(),
 });
-
-export type BookingState = {
-    error?: string;
-    success?: boolean;
-    message?: string;
-    paymentRedirectUrl?: string;
-    fieldErrors?: {
-        [key: string]: string[] | undefined;
-    };
-};
 
 export async function createBookingAction(prevState: BookingState, formData: FormData): Promise<BookingState> {
     try {
@@ -214,7 +208,7 @@ export async function createBookingAction(prevState: BookingState, formData: For
     }
 }
 
-export async function confirmBookingAction(groupId: string) {
+export async function confirmBookingAction(groupId: string, silent: boolean = false) {
     try {
         const supabase = await createClient();
         const adminSupabase = getSupabaseAdmin();
@@ -230,7 +224,15 @@ export async function confirmBookingAction(groupId: string) {
         }
 
         // 1.5. Invalidate caches
-        (revalidateTag as any)("hotels");
+        if (!silent) {
+            try {
+                (revalidateTag as any)("hotels");
+            } catch (e) {
+                // Silently ignore if called during render
+            }
+        }
+
+
 
         // 2. Fetch the primary (first) booking to get data for email
         const { data: booking, error: fetchError } = await adminSupabase

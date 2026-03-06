@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { GoogleMap, useJsApiLoader, OverlayView } from "@react-google-maps/api";
-import { Hotel } from "@/app/actions/public";
+import type { Hotel } from "@/types/hotel";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Star, X, MapPin, Navigation, Hotel as HotelIcon, Building2 } from "lucide-react";

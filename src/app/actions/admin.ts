@@ -5,6 +5,10 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import type { Hotel, Room } from "@/types/hotel";
+
+// No re-exports here to avoid Turbopack build errors.
+// Import types from @/types/hotel instead.
 
 const hotelSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
@@ -30,36 +34,6 @@ const hotelSchema = z.object({
     latitude: z.preprocess((val) => (val ? Number(val) : undefined), z.number().optional()),
     longitude: z.preprocess((val) => (val ? Number(val) : undefined), z.number().optional()),
 });
-
-export type Hotel = {
-    id: string;
-    name: string;
-    description: string | null;
-    address: string | null;
-    stars: number;
-    amenities: string[] | null;
-    images: string[] | null;
-    created_at: string;
-    // New fields
-    hotel_type: string | null;
-    contact_phone: string | null;
-    contact_email: string | null;
-    website: string | null;
-    check_in_time: string | null;
-    check_out_time: string | null;
-    latitude: number | null;
-    longitude: number | null;
-    // Cached Distance
-    cached_distance_km: number | null;
-    cached_drive_time_text: string | null;
-    cached_drive_time_value: number | null;
-    cached_walk_time_text: string | null;
-    cached_walk_time_value: number | null;
-    // Google Reviews
-    google_place_id: string | null;
-    cached_rating: number | null;
-    cached_review_count: number | null;
-};
 
 export async function getHotels() {
     const supabase = await createClient();
@@ -93,7 +67,6 @@ export async function getHotels() {
         return [];
     }
 
-    console.log(`[getHotels] Found ${hotels?.length || 0} hotels for user ${user.id} (${profile.role})`);
     return hotels as Hotel[];
 }
 
@@ -481,20 +454,7 @@ export async function updateHotel(id: string, prevState: any, formData: FormData
     redirect("/admin/hotels");
 }
 
-export type Room = {
-    id: string;
-    hotel_id: string;
-    name: string;
-    description: string | null;
-    type: string;
-    price_per_night: number;
-    capacity: number;
-    total_inventory: number;
-    amenities: string[] | null;
-    images: string[] | null;
-    size: number | null;
-    created_at: string;
-};
+
 
 const roomSchema = z.object({
     name: z.string().min(2),

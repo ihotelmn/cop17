@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Star, MapPin, Navigation, ShieldCheck } from "lucide-react";
-import { Hotel } from "@/app/actions/public";
+import type { Hotel } from "@/types/hotel";
 import { cn, getHotelImageUrl } from "@/lib/utils";
 
 export function HotelCardGrid({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {

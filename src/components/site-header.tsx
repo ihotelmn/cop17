@@ -12,18 +12,24 @@ import { UserNav } from "@/components/user-nav";
 export function SiteHeader() {
     const pathname = usePathname();
     const isHome = pathname === "/";
+    const isAuthPage = pathname === "/login" || pathname === "/signup";
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { user, logout } = useAuth();
 
+    // Hide auth section on login/signup pages to avoid "ghost session" confusion
+    const showUserContent = user && !isAuthPage;
+
+
     return (
         <header className={cn(
-            "fixed top-0 left-0 right-0 z-[100] transition-all duration-500",
+            "fixed top-0 left-0 right-0 z-40 transition-all duration-500",
             isHome
                 ? "bg-black/20 backdrop-blur-md border-b border-white/5"
                 : "bg-zinc-950/90 backdrop-blur-xl border-b border-white/10 shadow-2xl"
         )}>
-            <div className="container mx-auto px-4 h-20 flex items-center justify-between">
+            <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-3 group transition-transform hover:scale-105 active:scale-95">
                     <div className="relative">
@@ -49,35 +55,36 @@ export function SiteHeader() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-6">
-                    {user ? (
+                    {showUserContent ? (
                         <>
                             <div className="hidden md:flex items-center gap-6">
                                 <NavLink href="/my-bookings" active={pathname === "/my-bookings"}>My Bookings</NavLink>
-                                {(user.role === 'admin' || user.role === 'super_admin') && (
-                                    <Button asChild variant="ghost" className="text-[11px] font-black uppercase tracking-widest text-white/70 hover:text-white hover:bg-white/10 rounded-xl px-4">
+                                {(user!.role === 'admin' || user!.role === 'super_admin') && (
+                                    <Button asChild variant="ghost" className="text-[12px] font-bold uppercase tracking-wider text-white/70 hover:text-white hover:bg-white/10 rounded-xl px-4">
                                         <Link href="/admin">Dashboard</Link>
                                     </Button>
                                 )}
                             </div>
 
-                            <div className="flex items-center gap-3">
-                                {(user.role === 'admin' || user.role === 'super_admin') && (
-                                    <NotificationBell userId={user.id} />
+                            <div className="flex items-center gap-4">
+                                {(user!.role === 'admin' || user!.role === 'super_admin') && (
+                                    <NotificationBell userId={user!.id} />
                                 )}
                                 <UserNav />
                             </div>
                         </>
-                    ) : (
+                    ) : !isAuthPage && (
                         <div className="flex items-center gap-6">
-                            <Link href="/login" className="text-[11px] font-black uppercase tracking-widest text-white/60 hover:text-white transition-all">
+                            <Link href="/login" className="text-[12px] font-bold uppercase tracking-wider text-white/60 hover:text-white transition-all">
                                 Sign In
                             </Link>
-                            <Button asChild className="bg-white text-black hover:bg-zinc-100 rounded-2xl px-8 h-12 text-[11px] font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(255,255,255,0.15)] transition-all hover:scale-105 active:scale-95">
+                            <Button asChild className="bg-white text-black hover:bg-zinc-100 rounded-2xl px-10 h-11 text-[12px] font-bold uppercase tracking-wider shadow-[0_10px_30px_rgba(255,255,255,0.15)] transition-all hover:scale-105 active:scale-95">
                                 <Link href="/hotels">Book Stay</Link>
                             </Button>
                         </div>
                     )}
                 </div>
+
             </div>
         </header>
     );
@@ -85,9 +92,10 @@ export function SiteHeader() {
 
 function NavLink({ href, active, external, children }: { href: string, active?: boolean, external?: boolean, children: React.ReactNode }) {
     const className = cn(
-        "text-[10px] font-black uppercase tracking-widest transition-all relative pb-1 group",
-        active ? "text-white" : "text-white/60 hover:text-white"
+        "text-[12px] font-bold uppercase tracking-wider transition-all relative pb-1 group flex items-center h-full",
+        active ? "text-white" : "text-white/70 hover:text-white"
     );
+
 
     const inner = (
         <>

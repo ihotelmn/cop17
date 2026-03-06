@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 
@@ -32,15 +33,22 @@ export default function Error({
                 </p>
 
                 <div className="pt-8">
-                    <Button
-                        onClick={() => reset()}
-                        size="lg"
-                        variant="outline"
-                        className="gap-2 border-red-900/50 hover:bg-red-950/30 text-red-400 hover:text-red-300"
-                    >
-                        <RefreshCw className="h-4 w-4" />
-                        Try Again
-                    </Button>
+                    <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
+                        <Button
+                            onClick={() => reset()}
+                            size="lg"
+                            variant="outline"
+                            className="gap-2 border-red-900/50 hover:bg-red-950/30 text-red-400 hover:text-red-300 rounded-xl"
+                        >
+                            <RefreshCw className="h-4 w-4" />
+                            Try Again
+                        </Button>
+                        <Button asChild size="lg" className="rounded-xl px-8">
+                            <Link href="/">
+                                Return Home
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>

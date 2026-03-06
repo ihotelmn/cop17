@@ -16,6 +16,12 @@ import { FilterSidebar } from "@/components/hotels/filter-sidebar";
 
 import { getHomepageStats, getPublishedHotels } from "@/app/actions/public";
 import { HotelSections } from "@/components/hotel-sections";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Official Accommodation Booking | COP17 Mongolia",
+  description: "Official platform to book vetted, secure hotel stays for UNCCD COP17 Mongolia delegates. Access exclusive rates and shuttle services.",
+};
 
 type Props = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -59,7 +65,9 @@ export default async function Home(props: Props) {
   });
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 relative overflow-hidden">
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 relative overflow-hidden mt-[-4rem]">
+
+
       {/* Background Banner */}
       {/* Background Banner with Dark Overlay for Contrast */}
       <div className="absolute inset-0 z-0">
@@ -76,7 +84,8 @@ export default async function Home(props: Props) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
       </div>
 
-      <div className="relative z-10 max-w-5xl w-full text-center pt-32 pb-40">
+      <div className="relative z-10 max-w-5xl w-full text-center pt-48 pb-40">
+
 
         {/* Hero Section */}
         <div className="relative z-10 container mx-auto px-4 text-center text-white">

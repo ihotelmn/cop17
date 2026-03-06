@@ -12,7 +12,9 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { loginAction, AuthState } from "@/app/actions/auth";
+import { loginAction } from "@/app/actions/auth";
+import type { AuthState } from "@/types/auth";
+
 
 const initialState: AuthState = { error: undefined, success: undefined };
 

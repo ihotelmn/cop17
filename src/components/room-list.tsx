@@ -1,6 +1,6 @@
 "use client";
 
-import { Room } from "@/app/actions/admin";
+import type { Room } from "@/types/hotel";
 import { RoomCard } from "./room-card";
 import { Info } from "lucide-react";
 

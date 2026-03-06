@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import type { GroupRequestState } from "@/types/group";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
@@ -16,15 +17,6 @@ const groupRequestSchema = z.object({
     budgetRange: z.string().optional(), // e.g., "$100-$200 per night"
     specialRequirements: z.string().optional(),
 });
-
-export type GroupRequestState = {
-    error?: string;
-    success?: boolean;
-    message?: string;
-    fieldErrors?: {
-        [key: string]: string[] | undefined;
-    };
-};
 
 export async function submitGroupRequestAction(prevState: GroupRequestState, formData: FormData): Promise<GroupRequestState> {
     const validatedFields = groupRequestSchema.safeParse({

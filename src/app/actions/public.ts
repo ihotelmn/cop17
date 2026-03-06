@@ -2,71 +2,7 @@
 
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { calculateDistance, COP17_VENUE } from "@/lib/venue";
-
-export type Hotel = {
-    id: string;
-    name: string;
-    description: string | null;
-    address: string | null;
-    stars: number;
-    amenities: string[] | null;
-    images: string[] | null;
-    created_at: string;
-    latitude?: number | null;
-    longitude?: number | null;
-    // New fields
-    hotel_type?: string | null;
-    contact_phone?: string | null;
-    contact_email?: string | null;
-    website?: string | null;
-    check_in_time?: string | null;
-    check_out_time?: string | null;
-    // Calculated
-    distanceToVenue?: number | null;
-    // Cached Distance
-    cached_distance_km?: number | null;
-    cached_drive_time_text?: string | null;
-    cached_drive_time_value?: number | null;
-    cached_walk_time_text?: string | null;
-    cached_walk_time_value?: number | null;
-    // Google Reviews
-    google_place_id?: string | null;
-    cached_rating?: number | null;
-    cached_review_count?: number | null;
-    // Delegate features
-    is_official_partner?: boolean;
-    is_recommended?: boolean;
-    has_shuttle_service?: boolean;
-};
-
-export type Room = {
-    id: string;
-    hotel_id: string;
-    name: string;
-    description: string | null;
-    type: string;
-    price_per_night: number;
-    capacity: number;
-    total_inventory: number;
-    amenities: string[] | null;
-    images: string[] | null;
-    size: number | null;
-    created_at: string;
-};
-
-export type HotelSearchParams = {
-    query?: string;
-    stars?: string;
-    amenities?: string;
-    sortBy?: string; // price-asc, price-desc, stars-desc, newest, distance-asc
-    minPrice?: string;
-    maxPrice?: string;
-    adults?: string;
-    children?: string;
-    rooms?: string;
-    from?: string;
-    to?: string;
-};
+import type { Hotel, Room, HotelSearchParams } from "@/types/hotel";
 
 import { unstable_cache } from "next/cache";
 

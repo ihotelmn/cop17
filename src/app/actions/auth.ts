@@ -5,18 +5,13 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import type { AuthState } from "@/types/auth";
 
 const authSchema = z.object({
     email: z.string().email(),
     password: z.string().min(6),
     fullName: z.string().min(2).optional(),
 });
-
-export type AuthState = {
-    error?: string;
-    success?: boolean;
-    message?: string;
-};
 
 export async function loginAction(prevState: AuthState, formData: FormData): Promise<AuthState> {
     const supabase = await createClient();
@@ -44,7 +39,6 @@ export async function loginAction(prevState: AuthState, formData: FormData): Pro
 
     // Check Role for Redirect
     const { data: { user } } = await supabase.auth.getUser();
-    console.log("Login successful. User:", user?.id);
 
     if (user) {
         let { data: profile } = await supabase
@@ -55,7 +49,6 @@ export async function loginAction(prevState: AuthState, formData: FormData): Pro
 
         // Fallback: If profile is not found (which shouldn't happen but might due to RLS lag), try fetching with Admin client
         if (!profile) {
-            console.log("Profile not found with standard client, trying admin client...");
             const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
             const adminClient = getSupabaseAdmin();
             const { data: adminProfile } = await adminClient
@@ -66,7 +59,6 @@ export async function loginAction(prevState: AuthState, formData: FormData): Pro
             profile = adminProfile;
         }
 
-        console.log("User Profile Role:", profile?.role);
 
         if (profile) {
             revalidatePath("/", "layout");
@@ -133,4 +125,38 @@ export async function signOutAction() {
     revalidatePath("/", "layout");
     redirect("/login");
 }
+
+const passwordSchema = z.object({
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string()
+}).refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+});
+
+export async function updatePasswordAction(prevState: AuthState, formData: FormData): Promise<AuthState> {
+    const supabase = await createClient();
+
+    const validatedFields = passwordSchema.safeParse({
+        password: formData.get("password"),
+        confirmPassword: formData.get("confirmPassword"),
+    });
+
+    if (!validatedFields.success) {
+        return { error: validatedFields.error.flatten().fieldErrors.password?.[0] || validatedFields.error.flatten().fieldErrors.confirmPassword?.[0] };
+    }
+
+    const { password } = validatedFields.data;
+
+    const { error } = await supabase.auth.updateUser({
+        password: password
+    });
+
+    if (error) {
+        return { error: error.message };
+    }
+
+    return { success: true, message: "Password updated successfully!" };
+}
+
 

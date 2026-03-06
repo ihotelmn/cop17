@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Star, MapPin, Navigation, Wifi, Car, Coffee, ArrowRight, ShieldCheck, Calendar, Users, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Hotel } from "@/app/actions/public";
+import type { Hotel } from "@/types/hotel";
 import { useState } from "react";
 import { cn, getHotelImageUrl } from "@/lib/utils";
 import { estimateTravelTime } from "@/lib/venue";
