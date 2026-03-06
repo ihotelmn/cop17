@@ -8,6 +8,8 @@ import { notFound } from "next/navigation";
 import { PrintButton } from "@/components/booking/print-button";
 import { cn, getHotelImageUrl } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 interface SuccessPageProps {
     searchParams: Promise<{ groupId?: string }>;
 }
