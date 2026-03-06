@@ -66,9 +66,15 @@ export default async function HotelsAdminPage() {
                                         </TableCell>
                                         <TableCell className="text-zinc-300">{hotel.address || "N/A"}</TableCell>
                                         <TableCell className="text-zinc-300">
-                                            <span className="inline-flex items-center bg-amber-900/30 text-amber-500 text-xs px-2 py-1 rounded">
-                                                {hotel.stars} Stars
-                                            </span>
+                                            {hotel.stars && hotel.stars > 0 ? (
+                                                <span className="inline-flex items-center bg-amber-900/30 text-amber-500 text-xs px-2 py-1 rounded">
+                                                    {hotel.stars} Stars
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center bg-zinc-800 text-zinc-500 text-xs px-2 py-1 rounded">
+                                                    N/A
+                                                </span>
+                                            )}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">

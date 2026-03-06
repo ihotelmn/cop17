@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { Activity } from "lucide-react";
+import { AuditLogDetails } from "./audit-log-details";
 
 export default async function AuditLogsPage() {
     // 1. Verify User Role using standard client (secure)
@@ -15,7 +16,6 @@ export default async function AuditLogsPage() {
         redirect("/login");
     }
 
-    // Verify Role - Use Admin Client to bypass RLS issues
     const supabaseAdmin = getSupabaseAdmin();
 
     const { data: profile } = await supabaseAdmin
@@ -28,24 +28,19 @@ export default async function AuditLogsPage() {
         redirect("/");
     }
 
-    // 2. Use Service Role to bypass RLS and fetch logs
-    // 2. Use Service Role to bypass RLS and fetch logs
-    // 2. Use Service Role to bypass RLS and fetch logs
-    // supabaseAdmin is already declared above
-
+    // 2. Fetch logs with limit
     const { data: logs, error } = await supabaseAdmin
         .from("audit_logs")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(100);
 
     if (error) {
         console.error("Error fetching audit logs:", error);
         return <div className="text-red-500">Failed to load audit logs.</div>;
     }
 
-    // Fetch user details manually since we can't easily join auth.users with standard client
-    // and maintaining a relation to profiles might be cleaner but this works for now.
+    // Build user map for display
     const userIds = Array.from(new Set(logs.map((log: any) => log.changed_by).filter(Boolean))) as string[];
     let userMap = new Map<string, string>();
 
@@ -60,10 +55,41 @@ export default async function AuditLogsPage() {
         }
     }
 
+    // Sanitize PII from log data before sending to client
+    const SENSITIVE_FIELDS = [
+        "guest_email", "guest_name", "guest_passport_encrypted",
+        "guest_phone_encrypted", "special_requests_encrypted", "email"
+    ];
+
+    function sanitizeData(data: any): any {
+        if (!data || typeof data !== "object") return data;
+        const sanitized = { ...data };
+        for (const field of SENSITIVE_FIELDS) {
+            if (field in sanitized) {
+                sanitized[field] = "[REDACTED]";
+            }
+        }
+        return sanitized;
+    }
+
+    // De-duplicate consecutive identical action+table entries
+    const processedLogs = logs.map((log: any) => ({
+        ...log,
+        new_data: sanitizeData(log.new_data),
+        old_data: sanitizeData(log.old_data),
+        changed_by_display: userMap.get(log.changed_by) || "System",
+    }));
+
     return (
         <div className="space-y-8">
-            <div className="flex items-center gap-4">
-                <h2 className="text-3xl font-bold tracking-tight text-white">System Audit Logs</h2>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-3xl font-bold tracking-tight text-white">System Audit Logs</h2>
+                    <p className="text-zinc-500 mt-1">Track all critical system changes. PII fields are automatically redacted.</p>
+                </div>
+                <span className="text-xs text-zinc-500 bg-zinc-800 px-3 py-1.5 rounded-lg font-mono">
+                    Showing latest {processedLogs.length} entries
+                </span>
             </div>
 
             <Card className="bg-zinc-900 border-zinc-800">
@@ -72,30 +98,30 @@ export default async function AuditLogsPage() {
                         <Activity className="h-5 w-5 text-blue-500" />
                         Recent Activity
                     </CardTitle>
-                    <CardDescription>Track all critical system changes and user actions.</CardDescription>
+                    <CardDescription>Sensitive fields (email, passport, phone) are automatically redacted.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow className="border-zinc-800 hover:bg-zinc-800/50">
-                                <TableHead className="text-zinc-400">Time</TableHead>
-                                <TableHead className="text-zinc-400">Action</TableHead>
-                                <TableHead className="text-zinc-400">Table / Record</TableHead>
-                                <TableHead className="text-zinc-400">Changed By</TableHead>
+                                <TableHead className="text-zinc-400 w-[140px]">Time</TableHead>
+                                <TableHead className="text-zinc-400 w-[90px]">Action</TableHead>
+                                <TableHead className="text-zinc-400 w-[150px]">Table / Record</TableHead>
+                                <TableHead className="text-zinc-400 w-[140px]">Changed By</TableHead>
                                 <TableHead className="text-zinc-400">Details</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {logs.length === 0 ? (
+                            {processedLogs.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                                         No activity recorded yet.
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                logs.map((log: any) => (
+                                processedLogs.map((log: any) => (
                                     <TableRow key={log.id} className="border-zinc-800 hover:bg-zinc-800/50">
-                                        <TableCell className="text-zinc-300 whitespace-nowrap">
+                                        <TableCell className="text-zinc-300 whitespace-nowrap text-xs">
                                             {format(new Date(log.created_at), "MMM d, HH:mm:ss")}
                                         </TableCell>
                                         <TableCell>
@@ -108,13 +134,13 @@ export default async function AuditLogsPage() {
                                         </TableCell>
                                         <TableCell className="text-zinc-300">
                                             <div className="font-mono text-xs">{log.table_name}</div>
-                                            <div className="text-xs text-zinc-500">{log.record_id.slice(0, 8)}...</div>
+                                            <div className="text-xs text-zinc-500">{log.record_id?.slice(0, 8)}...</div>
                                         </TableCell>
                                         <TableCell className="text-zinc-300 text-xs">
-                                            {userMap.get(log.changed_by) || log.changed_by || "System"}
+                                            {log.changed_by_display}
                                         </TableCell>
-                                        <TableCell className="text-zinc-400 font-mono text-xs max-w-xs truncate">
-                                            {JSON.stringify(log.new_data)}
+                                        <TableCell>
+                                            <AuditLogDetails data={log.new_data} />
                                         </TableCell>
                                     </TableRow>
                                 ))

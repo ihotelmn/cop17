@@ -96,23 +96,34 @@ export default async function UsersPage() {
 }
 
 function RoleBadge({ role }: { role: string }) {
-    const styles = {
+    const styles: Record<string, string> = {
+        super_admin: "bg-red-900/30 text-red-400 border-red-900/50 hover:bg-red-900/40",
         admin: "bg-red-900/30 text-red-400 border-red-900/50 hover:bg-red-900/40",
+        hotel_admin: "bg-purple-900/30 text-purple-400 border-purple-900/50 hover:bg-purple-900/40",
         vip: "bg-amber-900/30 text-amber-400 border-amber-900/50 hover:bg-amber-900/40",
         guest: "bg-blue-900/30 text-blue-400 border-blue-900/50 hover:bg-blue-900/40",
     };
-    const icon = {
+    const icon: Record<string, React.ReactNode> = {
+        super_admin: <ShieldAlert className="mr-1 h-3 w-3" />,
         admin: <ShieldAlert className="mr-1 h-3 w-3" />,
+        hotel_admin: <Shield className="mr-1 h-3 w-3" />,
         vip: <Shield className="mr-1 h-3 w-3" />,
         guest: <User className="mr-1 h-3 w-3" />,
-    }
+    };
+    const labels: Record<string, string> = {
+        super_admin: "Super Admin",
+        admin: "Admin",
+        hotel_admin: "Hotel Admin",
+        vip: "VIP",
+        guest: "Guest",
+    };
 
-    const className = styles[role as keyof typeof styles] || "bg-zinc-800 text-zinc-400";
+    const className = styles[role] || "bg-zinc-800 text-zinc-400";
 
     return (
         <Badge variant="outline" className={`${className} px-2 py-0.5`}>
-            {icon[role as keyof typeof icon]}
-            {role.toUpperCase()}
+            {icon[role]}
+            {labels[role] || role}
         </Badge>
     );
 }

@@ -160,18 +160,24 @@ export default async function ReportsPage() {
 function StatusBadge({ status }: { status: string | null }) {
     if (!status) return null;
 
-    const styles = {
+    const styles: Record<string, string> = {
         confirmed: "bg-emerald-900/30 text-emerald-400 border-emerald-900/50",
         paid: "bg-emerald-900/30 text-emerald-400 border-emerald-900/50",
         pending: "bg-amber-900/30 text-amber-400 border-amber-900/50",
         cancelled: "bg-red-900/30 text-red-400 border-red-900/50",
     };
+    const labels: Record<string, string> = {
+        confirmed: "Confirmed",
+        paid: "Paid",
+        pending: "Pending",
+        cancelled: "Cancelled",
+    };
 
-    const className = styles[status as keyof typeof styles] || "bg-zinc-800 text-zinc-400";
+    const className = styles[status] || "bg-zinc-800 text-zinc-400";
 
     return (
-        <span className={`px-2 py-1 rounded-full text-xs border ${className} capitalize`}>
-            {status}
+        <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${className}`}>
+            {labels[status] || status.charAt(0).toUpperCase() + status.slice(1)}
         </span>
     );
 }

@@ -155,12 +155,12 @@ export default async function Home(props: Props) {
                   {/* Toggle View */}
                   <div className="flex items-center bg-white dark:bg-zinc-900 p-1 rounded-lg border border-zinc-200 dark:border-zinc-800 hidden sm:flex">
                     <Button variant={view === "list" ? "secondary" : "ghost"} size="sm" asChild>
-                      <Link href={`/?view=list`} scroll={false}>
+                      <Link href={`/?${new URLSearchParams({ ...searchParams as Record<string, string>, view: 'list' }).toString()}`} scroll={false}>
                         <ListIcon className="h-4 w-4 mr-2" /> List
                       </Link>
                     </Button>
                     <Button variant={view === "map" ? "secondary" : "ghost"} size="sm" asChild>
-                      <Link href={`/?view=map`} scroll={false}>
+                      <Link href={`/?${new URLSearchParams({ ...searchParams as Record<string, string>, view: 'map' }).toString()}`} scroll={false}>
                         <MapIcon className="h-4 w-4 mr-2" /> Map
                       </Link>
                     </Button>
