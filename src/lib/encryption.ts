@@ -1,21 +1,21 @@
 import "server-only";
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
-if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 32) {
-    throw new Error(
-        "ENCRYPTION_KEY environment variable is required and must be exactly 32 characters. " +
-        "Generate one with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex').slice(0,32))\""
-    );
-}
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 16; // AES block size
 
 // Helper to convert string to buffer (using Web Crypto API in Node/Next Edge)
 async function getKey() {
+    const encryptionKey = process.env.ENCRYPTION_KEY;
+    if (!encryptionKey || encryptionKey.length !== 32) {
+        throw new Error(
+            "ENCRYPTION_KEY environment variable is required and must be exactly 32 characters. " +
+            "Generate one with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex').slice(0,32))\""
+        );
+    }
     const encoder = new TextEncoder();
     const keyMaterial = await crypto.subtle.importKey(
         "raw",
-        encoder.encode(ENCRYPTION_KEY),
+        encoder.encode(encryptionKey),
         "AES-GCM",
         false,
         ["encrypt", "decrypt"]
