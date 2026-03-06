@@ -40,10 +40,10 @@ export function HotelSearch() {
     // -- State --
     const [query, setQuery] = useState(searchParams.get("query")?.toString() || "");
 
-    // Dates
+    // Dates — parse with T12:00:00 to prevent UTC-midnight timezone shift
     const [date, setDate] = useState<DateRange | undefined>({
-        from: searchParams.get("from") ? new Date(searchParams.get("from")!) : undefined,
-        to: searchParams.get("to") ? new Date(searchParams.get("to")!) : undefined,
+        from: searchParams.get("from") ? new Date(`${searchParams.get("from")}T12:00:00`) : undefined,
+        to: searchParams.get("to") ? new Date(`${searchParams.get("to")}T12:00:00`) : undefined,
     });
 
     // Guests
@@ -73,7 +73,18 @@ export function HotelSearch() {
         setIsMobileGuestsOpen(false);
     };
 
+    // 3rd-click range reset: if both from AND to are selected, next click resets to new start date
     const handleSelect = (selectedRange: DateRange | undefined) => {
+        if (date?.from && date?.to && selectedRange?.from) {
+            // Both dates were already selected — user is starting a new selection
+            // react-day-picker sets selectedRange.from to the existing from and shifts to
+            // We want to reset: use the day that differs from the old range as new start
+            const clickedDay = selectedRange.to || selectedRange.from;
+            if (clickedDay.getTime() !== date.to.getTime()) {
+                setDate({ from: clickedDay, to: undefined });
+                return;
+            }
+        }
         setDate(selectedRange);
     };
 

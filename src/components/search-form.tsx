@@ -79,7 +79,15 @@ export function SearchForm({ className }: React.HTMLAttributes<HTMLDivElement>) 
         router.replace(`${pathname}?${params.toString()}`, { scroll: false })
     }
 
+    // 3rd-click range reset: if range is complete, next click starts a new selection
     const handleDateSelect = (selectedRange: DateRange | undefined) => {
+        if (date?.from && date?.to && selectedRange?.from) {
+            const clickedDay = selectedRange.to || selectedRange.from;
+            if (clickedDay.getTime() !== date.to.getTime()) {
+                updateParams({ from: clickedDay, to: undefined });
+                return;
+            }
+        }
         updateParams(selectedRange)
     }
 
