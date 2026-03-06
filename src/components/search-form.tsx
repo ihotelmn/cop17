@@ -28,15 +28,32 @@ export function SearchForm({ className }: React.HTMLAttributes<HTMLDivElement>) 
     const fromStr = searchParams.get("from")
     const toStr = searchParams.get("to")
 
+    // Parse dates with T12:00:00 to prevent UTC-midnight timezone shift
     const date: DateRange | undefined = React.useMemo(() => {
         if (!fromStr && !toStr) {
             return { from: new Date(), to: addDays(new Date(), 3) }
         }
         return {
-            from: fromStr ? new Date(fromStr) : undefined,
-            to: toStr ? new Date(toStr) : undefined
+            from: fromStr ? new Date(`${fromStr}T12:00:00`) : undefined,
+            to: toStr ? new Date(`${toStr}T12:00:00`) : undefined
         }
     }, [fromStr, toStr])
+
+    // Push default dates into URL immediately if missing,
+    // so server-side and client-side are always synced
+    const didPushDefaults = React.useRef(false)
+    React.useEffect(() => {
+        if (didPushDefaults.current) return
+        if (!fromStr || !toStr) {
+            didPushDefaults.current = true
+            const params = new URLSearchParams(searchParams.toString())
+            if (!fromStr) params.set("from", format(new Date(), "yyyy-MM-dd"))
+            if (!toStr) params.set("to", format(addDays(new Date(), 3), "yyyy-MM-dd"))
+            if (!params.has("adults")) params.set("adults", "2")
+            if (!params.has("children")) params.set("children", "0")
+            router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+        }
+    }, [fromStr, toStr, searchParams, pathname, router])
 
     const adults = parseInt(searchParams.get("adults") || "2")
     const children = parseInt(searchParams.get("children") || "0")

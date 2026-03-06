@@ -45,9 +45,9 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
     const resolvedParams = await searchParams;
     const { from, to } = resolvedParams;
 
-    // Default dates if missing to ensure availability is always calculated
+    // Default dates if missing — MUST match SearchForm defaults (3 nights from today)
     const defaultFrom = format(new Date(), "yyyy-MM-dd");
-    const defaultTo = format(addDays(new Date(), 1), "yyyy-MM-dd");
+    const defaultTo = format(addDays(new Date(), 3), "yyyy-MM-dd");
 
     const checkIn = from || defaultFrom;
     const checkOut = to || defaultTo;

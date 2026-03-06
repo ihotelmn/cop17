@@ -23,10 +23,10 @@ export default async function CheckoutPage({ params, searchParams }: CheckoutPag
 
     const allRooms = await getPublicRooms(hotelId, undefined, from, to);
 
-    // Default dates if missing
+    // Default dates if missing — match SearchForm defaults (3 nights)
     // Add T12:00:00 so timezone shifting doesn't jump the day backward
     const checkIn = from ? new Date(`${from}T12:00:00`) : new Date();
-    const checkOut = to ? new Date(`${to}T12:00:00`) : new Date(new Date().setDate(new Date().getDate() + 1));
+    const checkOut = to ? new Date(`${to}T12:00:00`) : new Date(new Date().setDate(new Date().getDate() + 3));
     const nights = Math.max(1, differenceInDays(checkOut, checkIn));
 
     // Calculate selected rooms

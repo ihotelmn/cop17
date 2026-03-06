@@ -17,7 +17,13 @@ interface ReservationSummaryProps {
 export function ReservationSummary({ hotelId, rooms, checkIn, checkOut }: ReservationSummaryProps) {
     const searchParams = useSearchParams();
 
-    const nights = Math.max(1, differenceInDays(checkOut, checkIn));
+    // Use URL params as single source of truth for dates (avoids server timezone mismatch)
+    const fromParam = searchParams.get("from");
+    const toParam = searchParams.get("to");
+    const clientCheckIn = fromParam ? new Date(`${fromParam}T12:00:00`) : checkIn;
+    const clientCheckOut = toParam ? new Date(`${toParam}T12:00:00`) : checkOut;
+
+    const nights = Math.max(1, differenceInDays(clientCheckOut, clientCheckIn));
 
     // Calculate selected rooms
     const selectedRooms = rooms.reduce((acc, room) => {
@@ -43,14 +49,11 @@ export function ReservationSummary({ hotelId, rooms, checkIn, checkOut }: Reserv
     const totalRooms = selectedRooms.reduce((sum: number, r: any) => sum + r.quantity, 0);
     const totalPrice = selectedRooms.reduce((sum: number, r: any) => sum + (r.price_per_night * r.quantity * nights), 0);
 
-    // Build the checkout URL
-    // For now, if there's only one room selected, we can go to standard /checkout/[roomId] with quantity param.
-    // If multiple rooms, we need to adapt the checkout page, or we pass multiple via URL parameters.
-    // Let's pass the first room as the main to avoid breaking the existing router, BUT add the serialized data so we can handle it later.
-    // Wait, let's keep it simple: create a URL search params for all selected rooms
+    // Build the checkout URL — keep from/to from URL params (already correct)
     const checkoutParams = new URLSearchParams(searchParams.toString());
-    checkoutParams.set("from", format(checkIn, "yyyy-MM-dd"));
-    checkoutParams.set("to", format(checkOut, "yyyy-MM-dd"));
+    // Ensure from/to are present (fallback only if somehow missing)
+    if (!checkoutParams.has("from") && fromParam) checkoutParams.set("from", fromParam);
+    if (!checkoutParams.has("to") && toParam) checkoutParams.set("to", toParam);
 
     // Determine target checkout path.
     // If we haven't refactored the checkout to handle multi-rooms yet, we can't easily book them. Let's just pass the first room ID for the path to not break, but pass the rest in params.
