@@ -136,7 +136,7 @@ export async function createBookingAction(prevState: BookingState, formData: For
                     .from("bookings")
                     .insert({
                         room_id: rs.id,
-                        user_id: user?.id || crypto.randomUUID(),
+                        user_id: user?.id || null,
                         check_in_date: checkIn,
                         check_out_date: checkOut,
                         status: "pending",
