@@ -124,7 +124,7 @@ export function CheckoutForm({
                     name="specialRequests"
                     className="w-full min-h-[100px] rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 p-4 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     placeholder="E.g. High floor, dietary requirements, early check-in, etc."
-                />
+                ></textarea>
             </div>
 
             {error && (

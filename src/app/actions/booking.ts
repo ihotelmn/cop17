@@ -136,7 +136,7 @@ export async function createBookingAction(prevState: BookingState, formData: For
                     .from("bookings")
                     .insert({
                         room_id: rs.id,
-                        user_id: user?.id,
+                        user_id: user?.id || crypto.randomUUID(),
                         check_in_date: checkIn,
                         check_out_date: checkOut,
                         status: "pending",
@@ -153,7 +153,7 @@ export async function createBookingAction(prevState: BookingState, formData: For
 
                 if (bookingError) {
                     console.error("Booking Creation Error:", bookingError);
-                    return { error: "Failed to create booking records." };
+                    return { error: `Failed to create booking: ${bookingError.message || 'System constraint error'}` };
                 }
 
                 if (!ownerId && booking) {

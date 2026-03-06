@@ -24,8 +24,9 @@ export default async function CheckoutPage({ params, searchParams }: CheckoutPag
     const allRooms = await getPublicRooms(hotelId, undefined, from, to);
 
     // Default dates if missing
-    const checkIn = from ? new Date(from) : new Date();
-    const checkOut = to ? new Date(to) : new Date(new Date().setDate(new Date().getDate() + 1));
+    // Add T12:00:00 so timezone shifting doesn't jump the day backward
+    const checkIn = from ? new Date(`${from}T12:00:00`) : new Date();
+    const checkOut = to ? new Date(`${to}T12:00:00`) : new Date(new Date().setDate(new Date().getDate() + 1));
     const nights = Math.max(1, differenceInDays(checkOut, checkIn));
 
     // Calculate selected rooms
@@ -145,8 +146,8 @@ export default async function CheckoutPage({ params, searchParams }: CheckoutPag
                                         <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Rooms Selected ({totalQuantity})</p>
                                         {selectedRooms.map(r => (
                                             <div key={r.id} className="flex justify-between items-center text-sm">
-                                                <span className="font-medium text-blue-700 dark:text-blue-300">
-                                                    {r.quantity}x {r.name}
+                                                <span className="font-medium text-blue-700 dark:text-blue-300 capitalize">
+                                                    {r.quantity}x {r.name.replace(/standart/ig, 'Standard')}
                                                 </span>
                                                 <span className="text-zinc-500">${r.price * r.quantity * nights}</span>
                                             </div>

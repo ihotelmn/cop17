@@ -62,9 +62,9 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
         notFound();
     }
 
-    // Use the resolved stay dates
-    const finalCheckIn = typeof checkIn === 'string' ? new Date(checkIn) : checkIn;
-    const finalCheckOut = typeof checkOut === 'string' ? new Date(checkOut) : checkOut;
+    // Use the resolved stay dates safely
+    const finalCheckIn = typeof checkIn === 'string' ? new Date(`${checkIn}T12:00:00`) : checkIn;
+    const finalCheckOut = typeof checkOut === 'string' ? new Date(`${checkOut}T12:00:00`) : checkOut;
 
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-20">
