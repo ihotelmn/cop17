@@ -24,12 +24,12 @@ interface Room {
 interface RoomCardProps {
     room: Room;
     hotelId: string;
-    checkIn: Date;
-    checkOut: Date;
+    checkIn?: Date;
+    checkOut?: Date;
 }
 
 export function RoomCard({ room, hotelId, checkIn, checkOut }: RoomCardProps) {
-    const nights = Math.max(1, differenceInDays(checkOut, checkIn));
+    const nights = checkIn && checkOut ? Math.max(1, differenceInDays(checkOut, checkIn)) : 0;
 
     const inventory = room.total_inventory !== undefined ? room.total_inventory : 0;
     const isSoldOut = inventory <= 0;

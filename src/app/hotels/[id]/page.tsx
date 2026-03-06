@@ -8,7 +8,6 @@ import { getPublicHotel, getPublicRooms } from "@/app/actions/public";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { format, addDays } from "date-fns";
 import type { Metadata, ResolvingMetadata } from "next";
 
 interface PageProps {
@@ -45,12 +44,10 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
     const resolvedParams = await searchParams;
     const { from, to } = resolvedParams;
 
-    // Default dates if missing — MUST match SearchForm defaults (3 nights from today)
-    const defaultFrom = format(new Date(), "yyyy-MM-dd");
-    const defaultTo = format(addDays(new Date(), 3), "yyyy-MM-dd");
-
-    const checkIn = from || defaultFrom;
-    const checkOut = to || defaultTo;
+    // No default dates — if user hasn't picked dates, they stay undefined
+    // This prevents fake defaults from appearing and causing sync issues
+    const checkIn = from || undefined;
+    const checkOut = to || undefined;
 
     const hotel = await getPublicHotel(id);
     const adults = parseInt(resolvedParams.adults || "2");
@@ -62,9 +59,9 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
         notFound();
     }
 
-    // Use the resolved stay dates safely
-    const finalCheckIn = typeof checkIn === 'string' ? new Date(`${checkIn}T12:00:00`) : checkIn;
-    const finalCheckOut = typeof checkOut === 'string' ? new Date(`${checkOut}T12:00:00`) : checkOut;
+    // Create Date objects only if dates exist
+    const finalCheckIn = checkIn ? new Date(`${checkIn}T12:00:00`) : undefined;
+    const finalCheckOut = checkOut ? new Date(`${checkOut}T12:00:00`) : undefined;
 
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-20">

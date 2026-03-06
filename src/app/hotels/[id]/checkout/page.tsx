@@ -14,19 +14,29 @@ export default async function CheckoutPage({ params, searchParams }: CheckoutPag
     const { id: hotelId } = await params;
     const resolvedParams = await searchParams;
     const { from, to } = resolvedParams;
+    // Dates are REQUIRED for checkout
+    if (!from || !to) {
+        return (
+            <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col items-center justify-center p-4 text-center">
+                <h1 className="text-2xl font-bold mb-4">Stay dates not selected</h1>
+                <p className="text-zinc-500 mb-8">Please go back to the hotel page and select your check-in and check-out dates before booking.</p>
+                <a href={`/hotels/${hotelId}`} className="px-6 py-3 bg-blue-600 outline-none text-white rounded-xl font-bold">
+                    Return to Hotel
+                </a>
+            </div>
+        );
+    }
 
     const hotel = await getPublicHotel(hotelId);
-
     if (!hotel) {
         notFound();
     }
 
     const allRooms = await getPublicRooms(hotelId, undefined, from, to);
 
-    // Default dates if missing — match SearchForm defaults (3 nights)
-    // Add T12:00:00 so timezone shifting doesn't jump the day backward
-    const checkIn = from ? new Date(`${from}T12:00:00`) : new Date();
-    const checkOut = to ? new Date(`${to}T12:00:00`) : new Date(new Date().setDate(new Date().getDate() + 3));
+    // Parse dates with T12:00:00 to prevent timezone shift
+    const checkIn = new Date(`${from}T12:00:00`);
+    const checkOut = new Date(`${to}T12:00:00`);
     const nights = Math.max(1, differenceInDays(checkOut, checkIn));
 
     // Calculate selected rooms

@@ -7,8 +7,8 @@ import { Info } from "lucide-react";
 interface RoomListProps {
     hotelId: string;
     rooms: Room[];
-    checkIn: Date;
-    checkOut: Date;
+    checkIn?: Date;
+    checkOut?: Date;
 }
 
 export function RoomList({ hotelId, rooms, checkIn, checkOut }: RoomListProps) {
