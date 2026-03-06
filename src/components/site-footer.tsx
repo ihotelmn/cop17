@@ -100,9 +100,9 @@ export function SiteFooter() {
                         &copy; {new Date().getFullYear()} COP17 Organizing Committee. All rights reserved.
                     </p>
                     <div className="flex gap-8 text-[11px] font-bold text-zinc-600 uppercase tracking-widest">
-                        <Link href="#" className="hover:text-white transition-colors">Privacy</Link>
-                        <Link href="#" className="hover:text-white transition-colors">Terms</Link>
-                        <Link href="#" className="hover:text-white transition-colors">Cookies</Link>
+                        <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+                        <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
+                        <Link href="/cookies" className="hover:text-white transition-colors">Cookies</Link>
                     </div>
                 </div>
             </div>
