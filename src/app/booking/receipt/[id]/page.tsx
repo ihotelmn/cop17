@@ -4,6 +4,8 @@ import { format } from "date-fns";
 import { Printer, ShieldCheck, MapPin, Phone, Mail } from "lucide-react";
 import { PrintTrigger } from "./print-trigger";
 
+export const dynamic = "force-dynamic";
+
 interface ReceiptPageProps {
     params: Promise<{ id: string }>;
 }
