@@ -121,13 +121,7 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
             </div>
 
             <div className="flex justify-center mt-20 no-print">
-                <button
-                    onClick={() => window.print()}
-                    className="flex items-center gap-2 px-8 h-12 bg-zinc-900 text-white rounded-full font-bold hover:bg-zinc-800 transition-colors shadow-lg"
-                >
-                    <Printer className="h-5 w-5" />
-                    Print Receipt
-                </button>
+                <PrintTrigger showButton />
             </div>
 
             <style dangerouslySetInnerHTML={{
