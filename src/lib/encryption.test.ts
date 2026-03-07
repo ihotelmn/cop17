@@ -28,4 +28,24 @@ describe('Encryption Utility', () => {
         expect(decrypted1).toBe(text)
         expect(decrypted2).toBe(text)
     })
+
+    it('should accept a 64-character hex encryption key', async () => {
+        process.env.ENCRYPTION_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+
+        const originalText = "Hex key payload"
+        const encrypted = await encrypt(originalText)
+        const decrypted = await decrypt(encrypted)
+
+        expect(decrypted).toBe(originalText)
+    })
+
+    it('should accept a quoted base64 encryption key', async () => {
+        process.env.ENCRYPTION_KEY = '"MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="'
+
+        const originalText = "Base64 key payload"
+        const encrypted = await encrypt(originalText)
+        const decrypted = await decrypt(encrypted)
+
+        expect(decrypted).toBe(originalText)
+    })
 })
