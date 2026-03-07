@@ -32,15 +32,18 @@ function getBookingActionErrorMessage(error: unknown): string {
         return "An unexpected error occurred. Please try again.";
     }
 
+    const msg = error.message;
+
     if (
-        error.message.includes("ENCRYPTION_KEY") ||
-        error.message.includes("Supabase Admin keys are missing") ||
-        error.message.includes("Missing required environment variable")
+        msg.includes("ENCRYPTION_KEY") ||
+        msg.includes("Supabase Admin keys are missing") ||
+        msg.includes("Missing required environment variable")
     ) {
-        return "Booking service is temporarily unavailable. Please contact support.";
+        console.error("CRITICAL CONFIG ERROR:", msg);
+        return `Booking service configuration error: ${msg}. Please ensure all environment variables are set in production.`;
     }
 
-    return error.message || "An unexpected error occurred. Please try again.";
+    return msg || "An unexpected error occurred. Please try again.";
 }
 
 export async function createBookingAction(prevState: BookingState, formData: FormData): Promise<BookingState> {
