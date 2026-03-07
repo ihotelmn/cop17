@@ -1,7 +1,11 @@
 import { Client } from 'pg';
 import 'dotenv/config';
 
-const DATABASE_URL = "postgres://postgres:Uurtsaikh2025$@db.ybwylibmckofuvktvihs.supabase.co:5432/postgres";
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
+    throw new Error("DATABASE_URL is required to run this script.");
+}
 
 const client = new Client({
     connectionString: DATABASE_URL,

@@ -12,14 +12,27 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from "react";
 
-export function MobileFilter({ count }: { count?: number }) {
+export function MobileFilter({
+    count,
+    compact = false,
+}: {
+    count?: number;
+    compact?: boolean;
+}) {
     const [open, setOpen] = useState(false);
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2 lg:hidden h-12 px-6 rounded-full border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
-                    <SlidersHorizontal className="h-4 w-4" /> Filters {count ? `(${count})` : ""}
+                <Button
+                    variant="outline"
+                    className={compact
+                        ? "flex h-10 items-center gap-2 rounded-full border-zinc-300 px-4 text-xs font-black uppercase tracking-[0.16em] shadow-none transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800 lg:hidden"
+                        : "flex items-center gap-2 lg:hidden h-12 px-6 rounded-full border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                    }
+                >
+                    <SlidersHorizontal className="h-4 w-4" />
+                    {compact ? `Filter${count ? ` (${count})` : ""}` : `Filters ${count ? `(${count})` : ""}`}
                 </Button>
             </DialogTrigger>
             <DialogContent className="w-full h-full max-w-none rounded-none border-none p-0 flex flex-col bg-zinc-50 dark:bg-zinc-950">

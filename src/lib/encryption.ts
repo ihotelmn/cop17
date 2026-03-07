@@ -1,11 +1,12 @@
 import "server-only";
+import { requireEnv } from "@/lib/env";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 16; // AES block size
 
 // Helper to convert string to buffer (using Web Crypto API in Node/Next Edge)
 async function getKey() {
-    const encryptionKey = process.env.ENCRYPTION_KEY || "ab18c1da336351bd65a874e833f9e065";
+    const encryptionKey = requireEnv("ENCRYPTION_KEY");
     if (!encryptionKey || encryptionKey.length !== 32) {
         throw new Error(
             "ENCRYPTION_KEY environment variable is required and must be exactly 32 characters. " +

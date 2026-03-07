@@ -84,9 +84,7 @@ async function runFix() {
     // Standard supabase-js doesn't run raw SQL on client unless we have a specific function.
     // BUT the postgres migration tool uses direct connection.
 
-    // Alternative: Use the 'pg' library to connect directly to DATABASE_URL?
-    // User provided DATABASE_URL in .env.local!
-    // "DATABASE_URL=postgres://postgres:Uurtsaikh2025$@db.ybwylibmckofuvktvihs.supabase.co:5432/postgres"
+    // Alternative: Use the 'pg' library to connect directly to DATABASE_URL from env.
 
     // So I should use 'pg' (node-postgres) to run this.
 }

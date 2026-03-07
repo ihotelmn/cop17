@@ -1,10 +1,19 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { differenceInDays, format } from "date-fns";
+import type { DateRange } from "react-day-picker";
+import {
+    Calendar as CalendarIcon,
+    MapPin,
+    Minus,
+    Plus,
+    Search,
+    Users,
+} from "lucide-react";
+
 import { Button } from "@/components/ui/button";
-import { Search, Calendar as CalendarIcon, Users, Minus, Plus, MapPin } from "lucide-react";
-import { MobileFilter } from "./hotels/mobile-filter";
 import { cn } from "@/lib/utils";
 import {
     Select,
@@ -19,435 +28,552 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { format } from "date-fns";
-import { DateRange } from "react-day-picker";
 import { AutocompleteSearch } from "./autocomplete-search";
-import { differenceInDays } from "date-fns";
+import {
+    applyBookingSearchStateToParams,
+    type BookingSearchState,
+    createBookingSearchState,
+    getDateRangeFromBookingSearchState,
+    mergeBookingSearchState,
+    normalizeBookingSearchState,
+    persistBookingSearchState,
+    readPartialBookingSearchState,
+    readStoredBookingSearchState,
+} from "@/lib/booking-search";
 
 export function HotelSearch() {
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const router = useRouter();
+    const searchParamsString = searchParams.toString();
+    const urlSearchState = useMemo(
+        () => normalizeBookingSearchState(readPartialBookingSearchState(new URLSearchParams(searchParamsString))),
+        [searchParamsString]
+    );
 
-    // State for Popovers
     const [isDesktopDateOpen, setIsDesktopDateOpen] = useState(false);
     const [isMobileDateOpen, setIsMobileDateOpen] = useState(false);
-
-    // Guests Popovers
     const [isDesktopGuestsOpen, setIsDesktopGuestsOpen] = useState(false);
     const [isMobileGuestsOpen, setIsMobileGuestsOpen] = useState(false);
 
-    // -- State --
-    const [query, setQuery] = useState(searchParams.get("query")?.toString() || "");
+    const [query, setQuery] = useState(urlSearchState.query);
+    const [date, setDate] = useState<DateRange | undefined>(
+        getDateRangeFromBookingSearchState(urlSearchState)
+    );
+    const [adults, setAdults] = useState(urlSearchState.adults);
+    const [children, setChildren] = useState(urlSearchState.children);
+    const [rooms, setRooms] = useState(urlSearchState.rooms);
 
-    // Dates — parse with T12:00:00 to prevent UTC-midnight timezone shift
-    const [date, setDate] = useState<DateRange | undefined>({
-        from: searchParams.get("from") ? new Date(`${searchParams.get("from")}T12:00:00`) : undefined,
-        to: searchParams.get("to") ? new Date(`${searchParams.get("to")}T12:00:00`) : undefined,
-    });
+    useEffect(() => {
+        setQuery(urlSearchState.query);
+        setDate(getDateRangeFromBookingSearchState(urlSearchState));
+        setAdults(urlSearchState.adults);
+        setChildren(urlSearchState.children);
+        setRooms(urlSearchState.rooms);
+    }, [
+        urlSearchState.adults,
+        urlSearchState.children,
+        urlSearchState.from,
+        urlSearchState.query,
+        urlSearchState.rooms,
+        urlSearchState.to,
+    ]);
 
-    // Guests
-    const [adults, setAdults] = useState(parseInt(searchParams.get("adults") || "2"));
-    const [children, setChildren] = useState(parseInt(searchParams.get("children") || "0"));
-    const [rooms, setRooms] = useState(parseInt(searchParams.get("rooms") || "1"));
+    useEffect(() => {
+        const storedSearchState = readStoredBookingSearchState();
+        if (!storedSearchState) {
+            return;
+        }
+
+        const mergedSearchState = mergeBookingSearchState(urlSearchState, storedSearchState);
+        setQuery(mergedSearchState.query);
+        setDate(getDateRangeFromBookingSearchState(mergedSearchState));
+        setAdults(mergedSearchState.adults);
+        setChildren(mergedSearchState.children);
+        setRooms(mergedSearchState.rooms);
+
+        const params = new URLSearchParams(searchParamsString);
+        applyBookingSearchStateToParams(params, mergedSearchState);
+
+        const nextParamsString = params.toString();
+        if (nextParamsString === searchParamsString) {
+            return;
+        }
+
+        router.replace(`${pathname}${nextParamsString ? `?${nextParamsString}` : ""}`, {
+            scroll: false,
+        });
+    }, [pathname, router, searchParamsString, urlSearchState]);
+
+    const syncSearchState = (overrides?: Partial<BookingSearchState>) => {
+        const nextSearchState = normalizeBookingSearchState({
+            ...createBookingSearchState({
+                query,
+                date,
+                adults,
+                children,
+                rooms,
+            }),
+            ...(overrides ?? {}),
+        });
+
+        persistBookingSearchState(nextSearchState);
+
+        const params = new URLSearchParams(searchParamsString);
+        applyBookingSearchStateToParams(params, nextSearchState);
+
+        const nextParamsString = params.toString();
+        if (nextParamsString !== searchParamsString) {
+            router.replace(`${pathname}${nextParamsString ? `?${nextParamsString}` : ""}`, {
+                scroll: false,
+            });
+        }
+    };
 
     const handleSearch = () => {
-        const params = new URLSearchParams(searchParams);
-
-        if (query) params.set("query", query); else params.delete("query");
-
-        if (date?.from) params.set("from", format(date.from, "yyyy-MM-dd"));
-        else params.delete("from");
-
-        if (date?.to) params.set("to", format(date.to, "yyyy-MM-dd"));
-        else params.delete("to");
-
-        params.set("adults", adults.toString());
-        params.set("children", children.toString());
-        params.set("rooms", rooms.toString());
-
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+        syncSearchState();
         setIsDesktopDateOpen(false);
         setIsMobileDateOpen(false);
         setIsDesktopGuestsOpen(false);
         setIsMobileGuestsOpen(false);
     };
 
-    // 3rd-click range reset: if both from AND to are selected, next click resets to new start date
     const handleSelect = (selectedRange: DateRange | undefined) => {
         if (date?.from && date?.to && selectedRange?.from) {
-            // Both dates were already selected — user is starting a new selection
-            // react-day-picker sets selectedRange.from to the existing from and shifts to
-            // We want to reset: use the day that differs from the old range as new start
             const clickedDay = selectedRange.to || selectedRange.from;
             if (clickedDay.getTime() !== date.to.getTime()) {
                 setDate({ from: clickedDay, to: undefined });
                 return;
             }
         }
+
         setDate(selectedRange);
+    };
+
+    const handleDesktopDateOpenChange = (open: boolean) => {
+        if (!open && isDesktopDateOpen) {
+            syncSearchState();
+        }
+
+        setIsDesktopDateOpen(open);
+    };
+
+    const handleMobileDateOpenChange = (open: boolean) => {
+        if (!open && isMobileDateOpen) {
+            syncSearchState();
+        }
+
+        setIsMobileDateOpen(open);
+    };
+
+    const handleDesktopGuestsOpenChange = (open: boolean) => {
+        if (!open && isDesktopGuestsOpen) {
+            syncSearchState();
+        }
+
+        setIsDesktopGuestsOpen(open);
+    };
+
+    const handleMobileGuestsOpenChange = (open: boolean) => {
+        if (!open && isMobileGuestsOpen) {
+            syncSearchState();
+        }
+
+        setIsMobileGuestsOpen(open);
     };
 
     const nights = date?.from && date?.to ? differenceInDays(date.to, date.from) : 0;
     const totalGuests = adults + children;
+    const guestSummary = `${totalGuests} guest${totalGuests > 1 ? "s" : ""}`;
+    const roomSummary = `${rooms} room${rooms > 1 ? "s" : ""}`;
+    const guestRoomSummary = `${guestSummary} · ${roomSummary}`;
 
     return (
         <div className="w-full max-w-5xl mx-auto mb-10 px-4 md:px-0">
-            {/* Desktop / Tablet Bar */}
-            <div className="hidden md:flex items-center bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-zinc-200 dark:border-zinc-800 p-2.5 pl-10 gap-2 relative z-40 transition-all hover:shadow-[0_25px_60px_rgba(0,0,0,0.15)] group/bar">
+            <div className="hidden md:block">
+                <div className="rounded-[1.8rem] border border-zinc-200/80 bg-white/96 p-2 shadow-[0_16px_44px_rgba(15,23,42,0.09)] backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/95">
+                    <div className="overflow-hidden rounded-[1.45rem] border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+                        <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1.05fr)_minmax(0,0.9fr)_auto] items-stretch">
+                            <div className="px-5 py-4">
+                                <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+                                    Destination
+                                </label>
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-50 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
+                                        <MapPin className="h-4 w-4" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <AutocompleteSearch
+                                            value={query}
+                                            onChange={setQuery}
+                                            onSearch={handleSearch}
+                                            placeholder="Hotel name or area"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
 
-                {/* Location with Autocomplete */}
-                <div className="flex-[1.5] flex flex-col justify-center pr-4 border-r border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-[1.5rem] px-8 py-3 transition-all cursor-text group relative">
-                    <label className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 mb-1 uppercase tracking-widest">Where</label>
-                    <div className="relative">
-                        <AutocompleteSearch
-                            value={query}
-                            onChange={setQuery}
-                            onSearch={handleSearch}
-                            placeholder="Find destinations..."
-                        />
+                            <Popover open={isDesktopDateOpen} onOpenChange={handleDesktopDateOpenChange}>
+                                <PopoverTrigger asChild>
+                                    <button
+                                        type="button"
+                                        className="border-l border-zinc-200 px-5 py-4 text-left transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900/70"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-50 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
+                                                <CalendarIcon className="h-4 w-4" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <label className="mb-1 block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+                                                    Stay dates
+                                                </label>
+                                                <div>
+                                                    <div className={cn("truncate text-sm font-semibold", date?.from ? "text-zinc-900 dark:text-white" : "text-zinc-400")}>
+                                                        {date?.from
+                                                            ? date?.to
+                                                                ? `${format(date.from, "MMM dd")} - ${format(date.to, "MMM dd")}`
+                                                                : `From ${format(date.from, "MMM dd")}`
+                                                            : "Add dates"}
+                                                    </div>
+                                                    <p className="mt-1 text-[11px] font-medium text-zinc-400">
+                                                        {nights > 0 ? `${nights} night${nights > 1 ? "s" : ""}` : "Check-in and check-out"}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </PopoverTrigger>
+
+                                <PopoverContent className="w-auto overflow-hidden rounded-[1.6rem] border-zinc-200 p-0 shadow-[0_22px_60px_rgba(15,23,42,0.16)] dark:border-zinc-800" align="center" sideOffset={12}>
+                                    <div className="flex items-center justify-between border-b border-zinc-100 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900">
+                                        <div className="space-y-1">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                                                {!date?.from ? "Select Check-in" : !date?.to ? "Select Check-out" : `${nights} Nights`}
+                                            </span>
+                                            {date?.from && date?.to ? (
+                                                <p className="text-base font-semibold tracking-tight text-zinc-900 dark:text-white">
+                                                    {format(date.from, "MMM dd")} — {format(date.to, "MMM dd, yyyy")}
+                                                </p>
+                                            ) : (
+                                                <p className="text-sm font-medium text-zinc-500">Select your stay period</p>
+                                            )}
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setDate(undefined)}
+                                            className="h-8 rounded-lg px-3 text-[10px] font-black uppercase text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-white"
+                                        >
+                                            Reset
+                                        </Button>
+                                    </div>
+
+                                    <div className="bg-white px-4 py-3 dark:bg-zinc-900">
+                                        <Calendar
+                                            initialFocus
+                                            mode="range"
+                                            defaultMonth={date?.from || new Date()}
+                                            selected={date}
+                                            onSelect={handleSelect}
+                                            numberOfMonths={2}
+                                            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                            className="rounded-xl"
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center justify-between gap-6 border-t border-zinc-100 bg-zinc-50 px-6 py-4 dark:border-zinc-800 dark:bg-zinc-950">
+                                        <p className="max-w-[220px] text-[11px] font-medium leading-relaxed text-zinc-500">
+                                            Selected dates follow you into hotel detail and checkout.
+                                        </p>
+                                        <Button
+                                            className="h-11 rounded-xl bg-zinc-950 px-5 text-[11px] font-black uppercase tracking-[0.18em] text-white shadow-none transition-colors hover:bg-zinc-800 active:scale-95 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+                                            onClick={handleSearch}
+                                        >
+                                            Apply
+                                        </Button>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+
+                            <div className="border-l border-zinc-200 dark:border-zinc-800">
+                                <Popover open={isDesktopGuestsOpen} onOpenChange={handleDesktopGuestsOpenChange}>
+                                    <PopoverTrigger asChild>
+                                        <button
+                                            type="button"
+                                            className="flex h-full w-full items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/70"
+                                        >
+                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-50 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
+                                                <Users className="h-4 w-4" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <label className="mb-1 block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+                                                    Guests
+                                                </label>
+                                                <div className="truncate text-sm font-semibold text-zinc-900 dark:text-white">
+                                                    {guestRoomSummary}
+                                                </div>
+                                                <p className="mt-1 text-[11px] font-medium text-zinc-400">
+                                                    Adults, children, rooms
+                                                </p>
+                                            </div>
+                                        </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="mt-3 w-80 rounded-[1.6rem] border-zinc-200 bg-white p-5 shadow-[0_22px_60px_rgba(15,23,42,0.16)] dark:border-zinc-800 dark:bg-zinc-900" align="end" sideOffset={10}>
+                                        <div className="space-y-3">
+                                            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+                                                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-400">
+                                                    Current setup
+                                                </p>
+                                                <p className="mt-1 text-sm font-semibold text-zinc-900 dark:text-white">
+                                                    {guestRoomSummary}
+                                                </p>
+                                            </div>
+
+                                            <CounterField
+                                                label="Adults"
+                                                description="Ages 13+"
+                                                value={adults}
+                                                onDecrement={() => setAdults(Math.max(1, adults - 1))}
+                                                onIncrement={() => setAdults(Math.min(10, adults + 1))}
+                                                decrementDisabled={adults <= 1}
+                                            />
+
+                                            <CounterField
+                                                label="Children"
+                                                description="Ages 0-12"
+                                                value={children}
+                                                onDecrement={() => setChildren(Math.max(0, children - 1))}
+                                                onIncrement={() => setChildren(Math.min(10, children + 1))}
+                                                decrementDisabled={children <= 0}
+                                            />
+
+                                            <CounterField
+                                                label="Rooms"
+                                                description="Accommodation units"
+                                                value={rooms}
+                                                onDecrement={() => setRooms(Math.max(1, rooms - 1))}
+                                                onIncrement={() => setRooms(Math.min(10, rooms + 1))}
+                                                decrementDisabled={rooms <= 1}
+                                            />
+
+                                            <Button
+                                                className="mt-2 h-11 w-full rounded-xl bg-zinc-950 text-[11px] font-black uppercase tracking-[0.18em] text-white shadow-none transition-colors hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+                                                onClick={handleSearch}
+                                            >
+                                                Apply
+                                            </Button>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+
+                            <Button
+                                onClick={handleSearch}
+                                className="h-full min-w-[10rem] rounded-none bg-blue-600 px-7 text-white shadow-none transition-colors hover:bg-blue-700 active:scale-[0.98] dark:bg-blue-600 dark:text-white dark:hover:bg-blue-500"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Search className="h-4 w-4" />
+                                    <span className="text-sm font-black tracking-tight">Search</span>
+                                </div>
+                            </Button>
+                        </div>
                     </div>
-                </div>
-
-                <div className="h-12 w-px bg-zinc-100 dark:bg-zinc-800 mx-1 flex-shrink-0" />
-
-                {/* Dates Selector - Split Check-in / Check-out */}
-                <Popover open={isDesktopDateOpen} onOpenChange={setIsDesktopDateOpen}>
-                    <PopoverTrigger asChild>
-                        <button
-                            type="button"
-                            className="flex-[2] flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-[1.5rem] transition-all outline-none cursor-pointer group/dates px-2"
-                        >
-                            {/* Check-in */}
-                            <div className="flex-1 flex flex-col justify-center px-6 py-3 border-r border-transparent text-left relative">
-                                <label className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 mb-1 uppercase tracking-widest pointer-events-none">Check in</label>
-                                <div className={cn("text-sm truncate pointer-events-none font-bold", date?.from ? "text-zinc-900 dark:text-white" : "text-zinc-400")}>
-                                    {date?.from ? format(date.from, "MMM dd, yyyy") : "Add dates"}
-                                </div>
-                            </div>
-
-                            <div className="h-10 w-px bg-zinc-100 dark:bg-zinc-800 mx-1 flex-shrink-0" />
-
-                            {/* Check-out */}
-                            <div className="flex-1 flex flex-col justify-center px-6 py-3 text-left">
-                                <label className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 mb-1 uppercase tracking-widest pointer-events-none">Check out</label>
-                                <div className={cn("text-sm truncate pointer-events-none font-bold", date?.to ? "text-zinc-900 dark:text-white" : "text-zinc-400")}>
-                                    {date?.to ? format(date.to, "MMM dd, yyyy") : "Add dates"}
-                                </div>
-                            </div>
-                        </button>
-                    </PopoverTrigger>
-
-                    <PopoverContent className="w-auto p-0 shadow-[0_30px_70px_rgba(0,0,0,0.2)] border-zinc-200 dark:border-zinc-800 rounded-[2rem] overflow-hidden" align="center" sideOffset={16}>
-                        {/* Header */}
-                        <div className="px-8 py-6 bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-                            <div className="space-y-1">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">
-                                    {!date?.from ? "Select Check-in" : !date?.to ? "Select Check-out" : `${nights} Nights`}
-                                </span>
-                                {date?.from && date?.to ? (
-                                    <p className="text-zinc-900 dark:text-white text-lg font-black tracking-tight">
-                                        {format(date.from, "MMM dd")} — {format(date.to, "MMM dd, yyyy")}
-                                    </p>
-                                ) : (
-                                    <p className="text-zinc-400 text-sm font-medium">Select your stay period</p>
-                                )}
-                            </div>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setDate(undefined)}
-                                className="h-9 px-4 text-[10px] uppercase font-black text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
-                            >
-                                Reset
-                            </Button>
-                        </div>
-
-                        {/* Calendar */}
-                        <div className="px-6 py-4 bg-white dark:bg-zinc-900">
-                            <Calendar
-                                initialFocus
-                                mode="range"
-                                defaultMonth={date?.from || new Date()}
-                                selected={date}
-                                onSelect={handleSelect}
-                                numberOfMonths={2}
-                                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                                className="rounded-xl"
-                            />
-                        </div>
-
-                        {/* Footer */}
-                        <div className="p-6 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-100 dark:border-zinc-800 flex justify-between items-center gap-8">
-                            <p className="text-[11px] text-zinc-400 font-bold uppercase tracking-tight leading-relaxed max-w-[200px]">
-                                Rates shown are exclusive to COP17 delegates.
-                            </p>
-                            <Button
-                                className="rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-black uppercase tracking-widest text-[11px] h-14 shadow-2xl transition-all hover:scale-105 active:scale-95 px-8"
-                                onClick={() => setIsDesktopDateOpen(false)}
-                            >
-                                Apply Period
-                            </Button>
-                        </div>
-                    </PopoverContent>
-                </Popover>
-
-                <div className="h-12 w-px bg-zinc-100 dark:bg-zinc-800 mx-1 flex-shrink-0" />
-
-                {/* Guests Selector & Search Button */}
-                <div className="flex-[1.2] flex items-center justify-between relative pl-2 h-full gap-4 pr-1">
-                    <Popover open={isDesktopGuestsOpen} onOpenChange={setIsDesktopGuestsOpen}>
-                        <PopoverTrigger asChild>
-                            <button
-                                type="button"
-                                className="flex flex-col justify-center flex-1 px-6 py-3 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-[1.5rem] transition-all text-left outline-none relative h-full"
-                            >
-                                <label className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 mb-1 uppercase tracking-widest pointer-events-none">Who</label>
-                                <div className={cn("text-sm truncate pointer-events-none font-bold", totalGuests > 0 ? "text-zinc-900 dark:text-white" : "text-zinc-400")}>
-                                    {totalGuests} guest{totalGuests > 1 ? "s" : ""}, {rooms} room{rooms > 1 ? "s" : ""}
-                                </div>
-                            </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80 p-8 rounded-[2rem] shadow-[0_30px_70px_rgba(0,0,0,0.2)] border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 mt-4" align="end" sideOffset={10}>
-                            <div className="space-y-8">
-                                {/* Adults */}
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-1">
-                                        <span className="text-base font-black text-zinc-900 dark:text-white tracking-tight">Adults</span>
-                                        <p className="text-xs text-zinc-500 font-medium">Ages 13 or above</p>
-                                    </div>
-                                    <div className="flex items-center gap-5">
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="h-10 w-10 rounded-full border-zinc-200 dark:border-zinc-800 hover:border-zinc-900 dark:hover:border-white transition-all active:scale-90"
-                                            onClick={() => setAdults(Math.max(1, adults - 1))}
-                                            disabled={adults <= 1}
-                                        >
-                                            <Minus className="h-4 w-4" />
-                                        </Button>
-                                        <span className="w-4 text-center text-sm font-black">{adults}</span>
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="h-10 w-10 rounded-full border-zinc-200 dark:border-zinc-800 hover:border-zinc-900 dark:hover:border-white transition-all active:scale-90"
-                                            onClick={() => setAdults(Math.min(10, adults + 1))}
-                                        >
-                                            <Plus className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-
-                                {/* Children */}
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-1">
-                                        <span className="text-base font-black text-zinc-900 dark:text-white tracking-tight">Children</span>
-                                        <p className="text-xs text-zinc-500 font-medium">Ages 0 - 12</p>
-                                    </div>
-                                    <div className="flex items-center gap-5">
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="h-10 w-10 rounded-full border-zinc-200 dark:border-zinc-800 hover:border-zinc-900 dark:hover:border-white transition-all active:scale-90"
-                                            onClick={() => setChildren(Math.max(0, children - 1))}
-                                            disabled={children <= 0}
-                                        >
-                                            <Minus className="h-4 w-4" />
-                                        </Button>
-                                        <span className="w-4 text-center text-sm font-black">{children}</span>
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="h-10 w-10 rounded-full border-zinc-200 dark:border-zinc-800 hover:border-zinc-900 dark:hover:border-white transition-all active:scale-90"
-                                            onClick={() => setChildren(Math.min(10, children + 1))}
-                                        >
-                                            <Plus className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-
-                                {/* Rooms */}
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-1">
-                                        <span className="text-base font-black text-zinc-900 dark:text-white tracking-tight">Rooms</span>
-                                        <p className="text-xs text-zinc-500 font-medium">Accommodation units</p>
-                                    </div>
-                                    <div className="flex items-center gap-5">
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="h-10 w-10 rounded-full border-zinc-200 dark:border-zinc-800 hover:border-zinc-900 dark:hover:border-white transition-all active:scale-90"
-                                            onClick={() => setRooms(Math.max(1, rooms - 1))}
-                                            disabled={rooms <= 1}
-                                        >
-                                            <Minus className="h-4 w-4" />
-                                        </Button>
-                                        <span className="w-4 text-center text-sm font-black">{rooms}</span>
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="h-10 w-10 rounded-full border-zinc-200 dark:border-zinc-800 hover:border-zinc-900 dark:hover:border-white transition-all active:scale-90"
-                                            onClick={() => setRooms(Math.min(10, rooms + 1))}
-                                        >
-                                            <Plus className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-
-                                <Button
-                                    className="w-full mt-4 h-14 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 font-black uppercase tracking-widest text-[11px] shadow-2xl"
-                                    onClick={() => setIsDesktopGuestsOpen(false)}
-                                >
-                                    Done
-                                </Button>
-                            </div>
-                        </PopoverContent>
-                    </Popover>
-
-                    {/* Search Button */}
-                    <Button
-                        onClick={handleSearch}
-                        className="rounded-full h-16 w-16 md:h-16 md:w-auto md:px-10 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-[0_10px_30px_rgba(37,99,235,0.3)] transition-all hover:scale-105 active:scale-95 shrink-0"
-                    >
-                        <Search className="h-5 w-5 md:mr-3" />
-                        <span className="hidden md:inline">Search</span>
-                    </Button>
                 </div>
             </div>
 
-            {/* Mobile Bar - Redesigned Modal Trigger Style */}
-            <div className="md:hidden pt-4 pb-4">
-                <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-[0_30px_70px_rgba(0,0,0,0.15)] p-6 border border-zinc-100 dark:border-zinc-800 space-y-6 relative z-50">
-
-                    {/* Destination Input */}
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-2">
-                            <MapPin className="h-3 w-3 text-blue-500" /> Destination
-                        </label>
-                        <div className="relative bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all border border-zinc-100/50 dark:border-zinc-700/30">
-                            <AutocompleteSearch
-                                value={query}
-                                onChange={setQuery}
-                                onSearch={handleSearch}
-                                placeholder="Find your stay..."
-                            />
+            <div className="md:hidden pt-3 pb-3">
+                <div className="rounded-[1.8rem] border border-zinc-200/80 bg-white/96 p-4 shadow-[0_16px_44px_rgba(15,23,42,0.09)] backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/95">
+                    <div className="space-y-3">
+                        <div className="space-y-2">
+                            <label className="ml-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                                <MapPin className="h-3 w-3 text-zinc-500" /> Destination
+                            </label>
+                            <div className="relative rounded-[1.45rem] border border-zinc-200 bg-zinc-50 p-4 transition-colors focus-within:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/70">
+                                <AutocompleteSearch
+                                    value={query}
+                                    onChange={setQuery}
+                                    onSearch={handleSearch}
+                                    placeholder="Hotel name or area"
+                                />
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        {/* Dates Button */}
-                        <Popover open={isMobileDateOpen} onOpenChange={setIsMobileDateOpen}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    className="flex flex-col items-start justify-center h-24 rounded-2xl border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/30 shadow-none px-6 group active:scale-95 transition-all text-left gap-1.5"
-                                >
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5">
-                                        <CalendarIcon className="h-2.5 w-2.5 text-blue-500" /> Period
-                                    </span>
-                                    <span className={cn("text-xs font-black truncate w-full tracking-tight", date?.from ? "text-zinc-900 dark:text-white" : "text-zinc-400")}>
-                                        {date?.from ? (
-                                            date.to ? `${format(date.from, "MMM d")} - ${format(date.to, "MMM d")}` : `${format(date.from, "MMM d")}...`
-                                        ) : "Set dates"}
-                                    </span>
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[calc(100vw-32px)] p-0 shadow-[0_30px_70px_rgba(0,0,0,0.2)] border-zinc-200 dark:border-zinc-800 rounded-[2rem] overflow-hidden mt-2" align="center" sideOffset={10}>
-                                <div className="px-6 py-5 bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-                                    <span className="text-sm font-black uppercase tracking-widest text-zinc-900 dark:text-white">Stay Dates</span>
-                                </div>
-                                <div className="p-3 bg-white dark:bg-zinc-900 flex justify-center">
-                                    <Calendar
-                                        initialFocus
-                                        mode="range"
-                                        defaultMonth={date?.from || new Date()}
-                                        selected={date}
-                                        onSelect={handleSelect}
-                                        numberOfMonths={1}
-                                        disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                                        className="rounded-xl p-0"
-                                    />
-                                </div>
-                                <div className="p-6 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-100 dark:border-zinc-800">
-                                    <Button className="w-full rounded-2xl h-16 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest text-[11px] shadow-xl" onClick={() => setIsMobileDateOpen(false)}>
-                                        Apply Dates
+                        <div className="grid grid-cols-2 gap-3">
+                            <Popover open={isMobileDateOpen} onOpenChange={handleMobileDateOpenChange}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className="h-20 flex-col items-start justify-center gap-1 rounded-[1.45rem] border-zinc-200 bg-zinc-50 px-4 text-left shadow-none active:scale-95 dark:border-zinc-800 dark:bg-zinc-900/70"
+                                    >
+                                        <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-zinc-400">
+                                            <CalendarIcon className="h-2.5 w-2.5 text-zinc-500" /> Dates
+                                        </span>
+                                        <span className={cn("w-full truncate text-xs font-black tracking-tight", date?.from ? "text-zinc-900 dark:text-white" : "text-zinc-400")}>
+                                            {date?.from
+                                                ? date.to
+                                                    ? `${format(date.from, "MMM d")} - ${format(date.to, "MMM d")}`
+                                                    : `${format(date.from, "MMM d")}...`
+                                                : "Set dates"}
+                                        </span>
                                     </Button>
-                                </div>
-                            </PopoverContent>
-                        </Popover>
+                                </PopoverTrigger>
+                                <PopoverContent className="mt-2 w-[calc(100vw-32px)] overflow-hidden rounded-[1.6rem] border-zinc-200 p-0 shadow-[0_22px_60px_rgba(15,23,42,0.16)] dark:border-zinc-800" align="center" sideOffset={10}>
+                                    <div className="flex items-center justify-between border-b border-zinc-100 bg-white px-5 py-4 dark:border-zinc-800 dark:bg-zinc-900">
+                                        <span className="text-sm font-black uppercase tracking-widest text-zinc-900 dark:text-white">
+                                            Stay Dates
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-center bg-white p-3 dark:bg-zinc-900">
+                                        <Calendar
+                                            initialFocus
+                                            mode="range"
+                                            defaultMonth={date?.from || new Date()}
+                                            selected={date}
+                                            onSelect={handleSelect}
+                                            numberOfMonths={1}
+                                            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                            className="rounded-xl p-0"
+                                        />
+                                    </div>
+                                    <div className="border-t border-zinc-100 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                                        <Button
+                                            className="h-11 w-full rounded-xl bg-zinc-950 text-[11px] font-black uppercase tracking-[0.18em] text-white shadow-none hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+                                            onClick={handleSearch}
+                                        >
+                                            Apply
+                                        </Button>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
 
-                        {/* Guests Button */}
-                        <Popover open={isMobileGuestsOpen} onOpenChange={setIsMobileGuestsOpen}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    className="flex flex-col items-start justify-center h-24 rounded-2xl border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/30 shadow-none px-6 active:scale-95 transition-all text-left gap-1.5"
-                                >
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5">
-                                        <Users className="h-2.5 w-2.5 text-blue-500" /> Guests
-                                    </span>
-                                    <span className={cn("text-xs font-black truncate w-full tracking-tight", totalGuests > 0 ? "text-zinc-900 dark:text-white" : "text-zinc-400")}>
-                                        {totalGuests} {totalGuests > 1 ? "Travelers" : "Traveler"}
-                                    </span>
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[calc(100vw-32px)] p-8 rounded-[2rem] shadow-[0_30px_70px_rgba(0,0,0,0.2)] border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 mt-2" align="end" sideOffset={10}>
-                                <div className="space-y-8">
-                                    <div className="flex items-center justify-between">
-                                        <div className="space-y-1">
-                                            <span className="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Adults</span>
-                                            <p className="text-xs text-zinc-500 font-medium">Ages 13+</p>
-                                        </div>
-                                        <div className="flex items-center gap-5">
-                                            <Button variant="outline" size="icon" className="h-11 w-11 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90" onClick={() => setAdults(Math.max(1, adults - 1))} disabled={adults <= 1}>
-                                                <Minus className="h-4 w-4" />
-                                            </Button>
-                                            <span className="w-4 text-center text-sm font-black">{adults}</span>
-                                            <Button variant="outline" size="icon" className="h-11 w-11 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90" onClick={() => setAdults(Math.min(10, adults + 1))}>
-                                                <Plus className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <div className="space-y-1">
-                                            <span className="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Children</span>
-                                            <p className="text-xs text-zinc-500 font-medium">Ages 0-12</p>
-                                        </div>
-                                        <div className="flex items-center gap-5">
-                                            <Button variant="outline" size="icon" className="h-11 w-11 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90" onClick={() => setChildren(Math.max(0, children - 1))} disabled={children <= 0}>
-                                                <Minus className="h-4 w-4" />
-                                            </Button>
-                                            <span className="w-4 text-center text-sm font-black">{children}</span>
-                                            <Button variant="outline" size="icon" className="h-11 w-11 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90" onClick={() => setChildren(Math.min(10, children + 1))}>
-                                                <Plus className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                    <Button className="w-full h-16 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest text-[11px] shadow-xl" onClick={() => setIsMobileGuestsOpen(false)}>
-                                        Complete Selection
+                            <Popover open={isMobileGuestsOpen} onOpenChange={handleMobileGuestsOpenChange}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className="h-20 flex-col items-start justify-center gap-1 rounded-[1.45rem] border-zinc-200 bg-zinc-50 px-4 text-left shadow-none active:scale-95 dark:border-zinc-800 dark:bg-zinc-900/70"
+                                    >
+                                        <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-zinc-400">
+                                            <Users className="h-2.5 w-2.5 text-zinc-500" /> Guests
+                                        </span>
+                                        <span className={cn("w-full truncate text-xs font-black tracking-tight", totalGuests > 0 ? "text-zinc-900 dark:text-white" : "text-zinc-400")}>
+                                            {guestSummary}
+                                        </span>
+                                        <span className="text-[10px] font-medium text-zinc-400">
+                                            {roomSummary}
+                                        </span>
                                     </Button>
-                                </div>
-                            </PopoverContent>
-                        </Popover>
-                    </div>
+                                </PopoverTrigger>
+                                <PopoverContent className="mt-2 w-[calc(100vw-32px)] rounded-[1.6rem] border-zinc-200 bg-white p-5 shadow-[0_22px_60px_rgba(15,23,42,0.16)] dark:border-zinc-800 dark:bg-zinc-900" align="end" sideOffset={10}>
+                                    <div className="space-y-3">
+                                        <CounterField
+                                            label="Adults"
+                                            description="Ages 13+"
+                                            value={adults}
+                                            onDecrement={() => setAdults(Math.max(1, adults - 1))}
+                                            onIncrement={() => setAdults(Math.min(10, adults + 1))}
+                                            decrementDisabled={adults <= 1}
+                                        />
 
-                    <Button
-                        onClick={handleSearch}
-                        className="w-full rounded-2xl h-18 py-5 bg-zinc-900 dark:bg-white dark:text-zinc-950 text-white font-black uppercase tracking-[0.2em] text-xs shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3"
-                    >
-                        <Search className="h-5 w-5" /> Search Availability
-                    </Button>
+                                        <CounterField
+                                            label="Children"
+                                            description="Ages 0-12"
+                                            value={children}
+                                            onDecrement={() => setChildren(Math.max(0, children - 1))}
+                                            onIncrement={() => setChildren(Math.min(10, children + 1))}
+                                            decrementDisabled={children <= 0}
+                                        />
+
+                                        <CounterField
+                                            label="Rooms"
+                                            description="Accommodation units"
+                                            value={rooms}
+                                            onDecrement={() => setRooms(Math.max(1, rooms - 1))}
+                                            onIncrement={() => setRooms(Math.min(10, rooms + 1))}
+                                            decrementDisabled={rooms <= 1}
+                                        />
+
+                                        <Button
+                                            className="h-11 w-full rounded-xl bg-zinc-950 text-[11px] font-black uppercase tracking-[0.18em] text-white shadow-none hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+                                            onClick={handleSearch}
+                                        >
+                                            Apply
+                                        </Button>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        <Button
+                            onClick={handleSearch}
+                            className="h-14 w-full rounded-[1.45rem] bg-zinc-950 text-[11px] font-black uppercase tracking-[0.18em] text-white shadow-none transition-all active:scale-95 dark:bg-white dark:text-zinc-950"
+                        >
+                            <Search className="mr-3 h-4 w-4" />
+                            Search Stays
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
 
-export function SortDropdown() {
+function CounterField({
+    label,
+    description,
+    value,
+    onDecrement,
+    onIncrement,
+    decrementDisabled,
+}: {
+    label: string;
+    description: string;
+    value: number;
+    onDecrement: () => void;
+    onIncrement: () => void;
+    decrementDisabled: boolean;
+}) {
+    return (
+        <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+            <div className="space-y-0.5">
+                <p className="text-sm font-semibold text-zinc-900 dark:text-white">{label}</p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">{description}</p>
+            </div>
+
+            <div className="flex items-center gap-3">
+                <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 rounded-full border-zinc-200 bg-white shadow-none transition-all active:scale-90 dark:border-zinc-800 dark:bg-zinc-900"
+                    onClick={onDecrement}
+                    disabled={decrementDisabled}
+                >
+                    <Minus className="h-4 w-4" />
+                </Button>
+                <span className="min-w-6 text-center text-sm font-black text-zinc-900 dark:text-white">{value}</span>
+                <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 rounded-full border-zinc-200 bg-white shadow-none transition-all active:scale-90 dark:border-zinc-800 dark:bg-zinc-900"
+                    onClick={onIncrement}
+                >
+                    <Plus className="h-4 w-4" />
+                </Button>
+            </div>
+        </div>
+    );
+}
+
+export function SortDropdown({ compact = false }: { compact?: boolean }) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const currentSort = searchParams.get("sortBy") || "newest";
+    const compactSortLabel = {
+        newest: "Sort",
+        "price-asc": "Price",
+        "price-desc": "Price",
+        "stars-desc": "Top Rated",
+    }[currentSort] ?? "Sort";
 
     const handleSort = (val: string) => {
         const params = new URLSearchParams(searchParams);
@@ -457,8 +583,20 @@ export function SortDropdown() {
 
     return (
         <Select value={currentSort} onValueChange={handleSort}>
-            <SelectTrigger aria-label="Sort properties" className="w-[180px] h-10 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-lg">
-                <SelectValue placeholder="Sort by" />
+            <SelectTrigger
+                aria-label="Sort properties"
+                className={cn(
+                    "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900",
+                    compact
+                        ? "h-10 min-w-[5.5rem] rounded-full px-4 text-xs font-black uppercase tracking-[0.16em] shadow-none"
+                        : "h-12 w-full rounded-2xl sm:h-10 sm:w-[180px] sm:rounded-lg"
+                )}
+            >
+                {compact ? (
+                    <span className="truncate">{compactSortLabel}</span>
+                ) : (
+                    <SelectValue placeholder="Sort by" />
+                )}
             </SelectTrigger>
             <SelectContent>
                 <SelectItem value="newest">Recommended</SelectItem>
@@ -467,5 +605,5 @@ export function SortDropdown() {
                 <SelectItem value="stars-desc">Top Rated</SelectItem>
             </SelectContent>
         </Select>
-    )
+    );
 }

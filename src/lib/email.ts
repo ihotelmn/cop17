@@ -15,7 +15,7 @@ export async function sendEmail(payload: EmailPayload): Promise<{ success: boole
         console.log(`To: ${payload.to}`);
         console.log(`Subject: ${payload.subject}`);
         console.log("----------------------------------------------------");
-        return { success: true };
+        return { success: false, error: "RESEND_API_KEY is missing" };
     }
 
     try {

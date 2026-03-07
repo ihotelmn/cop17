@@ -1,360 +1,519 @@
 "use server";
 
+import { unstable_cache } from "next/cache";
+
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { calculateDistance, COP17_VENUE } from "@/lib/venue";
 import type { Hotel, Room, HotelSearchParams } from "@/types/hotel";
 
-import { unstable_cache } from "next/cache";
+function isMissingPublishedColumn(error: unknown) {
+    return typeof error === "object" && error !== null && "code" in error && (error as { code?: string }).code === "42703";
+}
+
+function isVisibleHotel(hotel: { is_published?: boolean | null } | null | undefined) {
+    return hotel?.is_published !== false;
+}
+
+function hasMeaningfulError(error: unknown) {
+    if (!(typeof error === "object" && error !== null)) {
+        return false;
+    }
+
+    const message = "message" in error ? (error as { message?: unknown }).message : undefined;
+    const code = "code" in error ? (error as { code?: unknown }).code : undefined;
+
+    return Boolean(message) || Boolean(code);
+}
+
+async function getPublishedHotelId(hotelId: string) {
+    const publicClient = getSupabaseAdmin();
+    const createQuery = (filterPublished: boolean, includePublishedColumn: boolean) => {
+        let query = publicClient
+            .from("hotels")
+            .select(includePublishedColumn ? "id, is_published" : "id")
+            .eq("id", hotelId);
+
+        if (filterPublished) {
+            query = query.eq("is_published", true);
+        }
+
+        return query;
+    };
+
+    let { data, error } = await createQuery(true, true).maybeSingle();
+
+    if (isMissingPublishedColumn(error)) {
+        ({ data, error } = await createQuery(false, false).maybeSingle());
+    }
+
+    if (error) {
+        throw error;
+    }
+
+    return isVisibleHotel(data) ? data?.id ?? null : null;
+}
 
 export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
     return unstable_cache(
         async (params?: HotelSearchParams) => {
-            const supabase = getSupabaseAdmin();
-            let queryBuilder = supabase
-                .from("hotels")
-                .select(`
-                    *,
-                    rooms (
-                        id,
-                        price_per_night,
-                        capacity,
-                        total_inventory
-                    )
-                `)
-                .order("created_at", { ascending: false });
+            try {
+                const publicClient = getSupabaseAdmin();
+                const createQuery = (filterPublished: boolean) => {
+                    let queryBuilder = publicClient
+                        .from("hotels")
+                        .select(`
+                            *,
+                            rooms (
+                                id,
+                                price_per_night,
+                                capacity,
+                                total_inventory
+                            )
+                        `)
+                        .order("created_at", { ascending: false });
 
-            // Apply Basic DB Filters
-            if (params?.query) {
-                const qLower = params.query.toLowerCase().trim();
-                const genericTerms = ['ulaanbaatar', 'улаанбаатар', 'ub', 'уб', 'ulaanbaatar, mongolia', 'улаанбаатар хот'];
+                    if (filterPublished) {
+                        queryBuilder = queryBuilder.eq("is_published", true);
+                    }
 
-                if (!genericTerms.includes(qLower)) {
-                    const q = `%${params.query}%`;
-                    queryBuilder = queryBuilder.or(`name.ilike.${q},address.ilike.${q}`);
-                }
-            }
+                    if (params?.query) {
+                        const qLower = params.query.toLowerCase().trim();
+                        const genericTerms = ["ulaanbaatar", "улаанбаатар", "ub", "уб", "ulaanbaatar, mongolia", "улаанбаатар хот"];
 
-            if (params?.stars) {
-                const stars = parseInt(params.stars);
-                if (!isNaN(stars)) {
-                    queryBuilder = queryBuilder.gte("stars", stars);
-                }
-            }
-
-            if (params?.amenities) {
-                const amenitiesList = params.amenities.split(",").filter(Boolean);
-                if (amenitiesList.length > 0) {
-                    queryBuilder = queryBuilder.contains("amenities", amenitiesList);
-                }
-            }
-
-            const { data: hotels, error } = await queryBuilder;
-
-            if (error) {
-                console.error("Error fetching hotels:", error);
-                return [];
-            }
-
-            // Process and Filter/Sort in JS
-            let results = hotels.map((h: any) => {
-                const lat = h.latitude ? Number(h.latitude) : null;
-                const lng = h.longitude ? Number(h.longitude) : null;
-
-                // STRATEGY: Use DB-cached distance first, fallback to math only if missing
-                const distance = h.cached_distance_km ?? (
-                    (lat && lng)
-                        ? calculateDistance(lat, lng, COP17_VENUE.latitude, COP17_VENUE.longitude)
-                        : null
-                );
-
-                return {
-                    ...h,
-                    amenities: Array.isArray(h.amenities)
-                        ? h.amenities.map((a: any) => typeof a === 'string' ? a : JSON.stringify(a))
-                        : [],
-                    latitude: lat,
-                    longitude: lng,
-                    distanceToVenue: distance,
-                    cached_distance_km: h.cached_distance_km,
-                    cached_drive_time_text: h.cached_drive_time_text,
-                    cached_drive_time_value: h.cached_drive_time_value,
-                    google_place_id: h.google_place_id,
-                    cached_rating: h.cached_rating,
-                    cached_review_count: h.cached_review_count,
-                    is_official_partner: !!h.is_official_partner,
-                    is_recommended: !!h.is_recommended,
-                    has_shuttle_service: !!h.has_shuttle_service,
-                    minPrice: h.rooms?.length > 0 ? Math.min(...h.rooms.map((r: any) => Number(r.price_per_night))) : null,
-                    max_capacity: h.rooms?.length > 0 ? Math.max(...h.rooms.map((r: any) => Number(r.capacity))) : 0
-                };
-            });
-
-            const totalRequired = parseInt(params?.adults || "1") + parseInt(params?.children || "0");
-
-            // First, only keep hotels that mathematically have enough total beds across all rooms
-            if (totalRequired > 1) {
-                results = results.filter((h: any) => {
-                    if (!h.rooms || h.rooms.length === 0) return false;
-                    const totalHotelCapacity = h.rooms.reduce((sum: number, r: any) => sum + (Number(r.capacity) * Number(r.total_inventory || 0)), 0);
-                    return totalHotelCapacity >= totalRequired;
-                });
-            }
-
-            // Filter by Date Availability
-            if (params?.from && params?.to) {
-                const checkIn = params.from;
-                const checkOut = params.to;
-
-                // Fetch overlapping bookings
-                const { data: overlappingBookings, error: bookingsError } = await supabase
-                    .from("bookings")
-                    .select("room_id, status, created_at")
-                    .lt("check_in_date", checkOut)
-                    .gt("check_out_date", checkIn)
-                    .in("status", ["confirmed", "pending"]);
-
-                if (!bookingsError && overlappingBookings) {
-                    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-                    // Count valid bookings per room
-                    const bookingsByRoom: Record<string, number> = {};
-                    for (const b of overlappingBookings) {
-                        const isConfirmed = b.status === "confirmed";
-                        const isRecentPending = b.status === "pending" && new Date(b.created_at) >= fifteenMinutesAgo;
-
-                        if (isConfirmed || isRecentPending) {
-                            bookingsByRoom[b.room_id] = (bookingsByRoom[b.room_id] || 0) + 1;
+                        if (!genericTerms.includes(qLower)) {
+                            const q = `%${params.query}%`;
+                            queryBuilder = queryBuilder.or(`name.ilike.${q},address.ilike.${q}`);
                         }
                     }
 
-                    results = results.map((h: any) => {
-                        if (!h.rooms || h.rooms.length === 0) return h;
+                    if (params?.stars) {
+                        const stars = parseInt(params.stars);
+                        if (!Number.isNaN(stars)) {
+                            queryBuilder = queryBuilder.gte("stars", stars);
+                        }
+                    }
 
-                        // Calculate TRUE available rooms and TRUE minPrice
-                        const availableRooms = h.rooms.map((r: any) => {
-                            const bookedCount = bookingsByRoom[r.id] || 0;
-                            const availableInventory = Math.max(0, (r.total_inventory || 0) - bookedCount);
-                            return { ...r, availableInventory };
-                        }).filter((r: any) => r.availableInventory > 0);
+                    if (params?.amenities) {
+                        const amenitiesList = params.amenities.split(",").filter(Boolean);
+                        if (amenitiesList.length > 0) {
+                            queryBuilder = queryBuilder.contains("amenities", amenitiesList);
+                        }
+                    }
 
-                        return {
-                            ...h,
-                            rooms: h.rooms.map((r: any) => ({
-                                ...r,
-                                availableInventory: Math.max(0, (r.total_inventory || 0) - (bookingsByRoom[r.id] || 0))
-                            })),
-                            minPrice: availableRooms.length > 0
-                                ? Math.min(...availableRooms.map((r: any) => Number(r.price_per_night)))
-                                : null,
-                            isFullyBooked: availableRooms.length === 0
-                        };
+                    return queryBuilder;
+                };
+
+                let { data: hotels, error } = await createQuery(true);
+
+                if (isMissingPublishedColumn(error)) {
+                    ({ data: hotels, error } = await createQuery(false));
+                }
+
+                if (error) {
+                    console.error("Error fetching hotels:", error);
+                    return [];
+                }
+
+                const visibleHotels = (hotels ?? []).filter((hotel: any) => isVisibleHotel(hotel));
+                let results = visibleHotels.map((hotel: any) => {
+                    const lat = hotel.latitude ? Number(hotel.latitude) : null;
+                    const lng = hotel.longitude ? Number(hotel.longitude) : null;
+                    const distance = hotel.cached_distance_km ?? (
+                        (lat && lng)
+                            ? calculateDistance(lat, lng, COP17_VENUE.latitude, COP17_VENUE.longitude)
+                            : null
+                    );
+
+                    return {
+                        ...hotel,
+                        amenities: Array.isArray(hotel.amenities)
+                            ? hotel.amenities.map((amenity: any) => typeof amenity === "string" ? amenity : JSON.stringify(amenity))
+                            : [],
+                        latitude: lat,
+                        longitude: lng,
+                        distanceToVenue: distance,
+                        cached_distance_km: hotel.cached_distance_km,
+                        cached_drive_time_text: hotel.cached_drive_time_text,
+                        cached_drive_time_value: hotel.cached_drive_time_value,
+                        google_place_id: hotel.google_place_id,
+                        cached_rating: hotel.cached_rating,
+                        cached_review_count: hotel.cached_review_count,
+                        is_official_partner: !!hotel.is_official_partner,
+                        is_recommended: !!hotel.is_recommended,
+                        has_shuttle_service: !!hotel.has_shuttle_service,
+                        minPrice: hotel.rooms?.length > 0 ? Math.min(...hotel.rooms.map((room: any) => Number(room.price_per_night))) : null,
+                        max_capacity: hotel.rooms?.length > 0 ? Math.max(...hotel.rooms.map((room: any) => Number(room.capacity))) : 0,
+                    };
+                });
+
+                const totalRequired = parseInt(params?.adults || "1") + parseInt(params?.children || "0");
+
+                if (totalRequired > 1) {
+                    results = results.filter((hotel: any) => {
+                        if (!hotel.rooms || hotel.rooms.length === 0) return false;
+                        const totalHotelCapacity = hotel.rooms.reduce(
+                            (sum: number, room: any) => sum + (Number(room.capacity) * Number(room.total_inventory || 0)),
+                            0
+                        );
+                        return totalHotelCapacity >= totalRequired;
                     });
-
-                    // Filter out hotels with NO available beds for the requested guest count
-                    results = results.filter((h: any) => {
-                        const totalAvailableHotelCapacity = h.rooms.reduce((sum: number, r: any) =>
-                            sum + (Number(r.capacity) * (r.availableInventory || 0)), 0);
-                        return totalAvailableHotelCapacity >= totalRequired;
-                    });
                 }
+
+                if (params?.from && params?.to && results.length > 0) {
+                    const roomIds = results.flatMap((hotel: any) => hotel.rooms?.map((room: any) => room.id) ?? []);
+
+                    if (roomIds.length > 0) {
+                        const adminClient = getSupabaseAdmin();
+                        const { data: overlappingBookings, error: bookingsError } = await adminClient
+                            .from("bookings")
+                            .select("room_id, status, created_at")
+                            .in("room_id", roomIds)
+                            .lt("check_in_date", params.to)
+                            .gt("check_out_date", params.from)
+                            .in("status", ["confirmed", "pending"]);
+
+                        if (!bookingsError && overlappingBookings) {
+                            const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+                            const bookingsByRoom: Record<string, number> = {};
+
+                            for (const booking of overlappingBookings) {
+                                const isConfirmed = booking.status === "confirmed";
+                                const isRecentPending = booking.status === "pending" && new Date(booking.created_at) >= fifteenMinutesAgo;
+
+                                if (isConfirmed || isRecentPending) {
+                                    bookingsByRoom[booking.room_id] = (bookingsByRoom[booking.room_id] || 0) + 1;
+                                }
+                            }
+
+                            results = results.map((hotel: any) => {
+                                if (!hotel.rooms || hotel.rooms.length === 0) return hotel;
+
+                                const availableRooms = hotel.rooms
+                                    .map((room: any) => {
+                                        const bookedCount = bookingsByRoom[room.id] || 0;
+                                        const availableInventory = Math.max(0, (room.total_inventory || 0) - bookedCount);
+                                        return { ...room, availableInventory };
+                                    })
+                                    .filter((room: any) => room.availableInventory > 0);
+
+                                return {
+                                    ...hotel,
+                                    rooms: hotel.rooms.map((room: any) => ({
+                                        ...room,
+                                        availableInventory: Math.max(0, (room.total_inventory || 0) - (bookingsByRoom[room.id] || 0)),
+                                    })),
+                                    minPrice: availableRooms.length > 0
+                                        ? Math.min(...availableRooms.map((room: any) => Number(room.price_per_night)))
+                                        : null,
+                                    isFullyBooked: availableRooms.length === 0,
+                                };
+                            });
+
+                            results = results.filter((hotel: any) => {
+                                const totalAvailableHotelCapacity = hotel.rooms.reduce(
+                                    (sum: number, room: any) => sum + (Number(room.capacity) * (room.availableInventory || 0)),
+                                    0
+                                );
+                                return totalAvailableHotelCapacity >= totalRequired;
+                            });
+                        }
+                    }
+                }
+
+                if (params?.minPrice) {
+                    const min = parseFloat(params.minPrice);
+                    if (!Number.isNaN(min)) {
+                        results = results.filter((hotel: any) => hotel.minPrice !== null && hotel.minPrice >= min);
+                    }
+                }
+
+                if (params?.maxPrice) {
+                    const max = parseFloat(params.maxPrice);
+                    if (!Number.isNaN(max)) {
+                        results = results.filter((hotel: any) => hotel.minPrice !== null && hotel.minPrice <= max);
+                    }
+                }
+
+                const sortBy = params?.sortBy || "newest";
+                results.sort((a: any, b: any) => {
+                    const priceA = a.minPrice ?? 99999999;
+                    const priceB = b.minPrice ?? 99999999;
+
+                    switch (sortBy) {
+                        case "price-asc":
+                            return priceA - priceB;
+                        case "price-desc":
+                            return priceB - priceA;
+                        case "stars-desc":
+                            return b.stars - a.stars;
+                        case "distance-asc":
+                            return (a.distanceToVenue ?? 9999) - (b.distanceToVenue ?? 9999);
+                        case "newest":
+                        default:
+                            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                    }
+                });
+
+                return results as (Hotel & { minPrice: number })[];
+            } catch (error) {
+                console.error("Unexpected error fetching published hotels:", error);
+                return [];
             }
-
-            // Filter by Price
-            if (params?.minPrice) {
-                const min = parseFloat(params.minPrice);
-                if (!isNaN(min)) {
-                    results = results.filter((h: any) => h.minPrice !== null && h.minPrice >= min);
-                }
-            }
-            if (params?.maxPrice) {
-                const max = parseFloat(params.maxPrice);
-                if (!isNaN(max)) {
-                    results = results.filter((h: any) => h.minPrice !== null && h.minPrice <= max);
-                }
-            }
-
-            // Sorting
-            const sortBy = params?.sortBy || 'newest';
-            results.sort((a: any, b: any) => {
-                const priceA = a.minPrice ?? 99999999;
-                const priceB = b.minPrice ?? 99999999;
-
-                switch (sortBy) {
-                    case 'price-asc':
-                        return priceA - priceB;
-                    case 'price-desc':
-                        return priceB - priceA;
-                    case 'stars-desc':
-                        return b.stars - a.stars;
-                    case 'distance-asc':
-                        return (a.distanceToVenue ?? 9999) - (b.distanceToVenue ?? 9999);
-                    case 'newest':
-                    default:
-                        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-                }
-            });
-
-            return results as (Hotel & { minPrice: number })[];
         },
-        ['published-hotels', JSON.stringify(searchParams || {})],
+        ["published-hotels", JSON.stringify(searchParams || {})],
         {
-            revalidate: 300, // 5 minutes
-            tags: ['hotels']
+            revalidate: 300,
+            tags: ["hotels"],
         }
     )(searchParams);
-}
+};
 
 export async function getPublicHotel(id: string) {
-    const supabase = getSupabaseAdmin();
+    try {
+        const supabase = getSupabaseAdmin();
+        const createQuery = (filterPublished: boolean) => {
+            let query = supabase
+                .from("hotels")
+                .select("*")
+                .eq("id", id);
 
-    // Fetch hotel with basic info
-    const { data: hotel, error } = await supabase
-        .from("hotels")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-    if (error) {
-        console.error(`Error fetching public hotel (ID: ${id}):`, error);
-        return null;
-    }
-
-    const lat = hotel.latitude ? Number(hotel.latitude) : null;
-    const lng = hotel.longitude ? Number(hotel.longitude) : null;
-
-    // Cast properties to match UI expectations
-    return {
-        ...hotel,
-        latitude: lat,
-        longitude: lng,
-        distanceToVenue: hotel.cached_distance_km ?? (
-            (lat && lng)
-                ? calculateDistance(lat, lng, COP17_VENUE.latitude, COP17_VENUE.longitude)
-                : null
-        ),
-        // Cached fields usually come automatically if they exist in DB and we select *, but let's be explicit if needed
-        cached_rating: hotel.cached_rating,
-        cached_review_count: hotel.cached_review_count,
-        google_place_id: hotel.google_place_id
-    } as Hotel;
-}
-
-export async function getPublicRooms(hotelId: string, guests?: number, from?: string, to?: string) {
-    const supabase = getSupabaseAdmin();
-
-    let query = supabase
-        .from("rooms")
-        .select("*")
-        .eq("hotel_id", hotelId);
-
-    // We shouldn't filter out rooms by capacity here because guests might want to book multiple smaller rooms.
-    // Instead, we just fetch all rooms for the hotel.
-
-    const { data: rooms, error } = await query.order("price_per_night", { ascending: true }); // Show cheapest first
-
-    if (error) {
-        console.error(`Error fetching public rooms (Hotel ID: ${hotelId}):`, error);
-        return [];
-    }
-
-    // Filter by Date Availability
-    if (from && to && rooms && rooms.length > 0) {
-        const checkIn = from;
-        const checkOut = to;
-
-        // Fetch overlapping bookings for this hotel's rooms
-        const roomIds = rooms.map(r => r.id);
-        const { data: overlappingBookings, error: bookingsError } = await supabase
-            .from("bookings")
-            .select("room_id, status, created_at")
-            .in("room_id", roomIds)
-            .lt("check_in_date", checkOut)
-            .gt("check_out_date", checkIn)
-            .in("status", ["confirmed", "pending"]);
-
-        if (!bookingsError && overlappingBookings) {
-            const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-            const bookingsByRoom: Record<string, number> = {};
-
-            for (const b of overlappingBookings) {
-                const isConfirmed = b.status === "confirmed";
-                const isRecentPending = b.status === "pending" && new Date(b.created_at) >= fifteenMinutesAgo;
-
-                if (isConfirmed || isRecentPending) {
-                    bookingsByRoom[b.room_id] = (bookingsByRoom[b.room_id] || 0) + 1;
-                }
+            if (filterPublished) {
+                query = query.eq("is_published", true);
             }
 
-            // Update remaining inventory
-            return rooms.map(r => ({
-                ...r,
-                total_inventory: Math.max(0, (r.total_inventory || 0) - (bookingsByRoom[r.id] || 0))
-            })) as Room[];
-        }
-    }
+            return query;
+        };
 
-    return rooms as Room[];
+        let { data: hotel, error } = await createQuery(true).maybeSingle();
+
+        if (isMissingPublishedColumn(error)) {
+            ({ data: hotel, error } = await createQuery(false).maybeSingle());
+        }
+
+        if (error) {
+            console.error(`Error fetching public hotel (ID: ${id}):`, error);
+            return null;
+        }
+
+        if (!hotel || !isVisibleHotel(hotel)) {
+            return null;
+        }
+
+        const lat = hotel.latitude ? Number(hotel.latitude) : null;
+        const lng = hotel.longitude ? Number(hotel.longitude) : null;
+
+        return {
+            ...hotel,
+            latitude: lat,
+            longitude: lng,
+            distanceToVenue: hotel.cached_distance_km ?? (
+                (lat && lng)
+                    ? calculateDistance(lat, lng, COP17_VENUE.latitude, COP17_VENUE.longitude)
+                    : null
+            ),
+            cached_rating: hotel.cached_rating,
+            cached_review_count: hotel.cached_review_count,
+            google_place_id: hotel.google_place_id,
+        } as Hotel;
+    } catch (error) {
+        console.error(`Unexpected error fetching public hotel (ID: ${id}):`, error);
+        return null;
+    }
+}
+
+export async function getPublicRooms(hotelId: string, _guests?: number, from?: string, to?: string) {
+    try {
+        const publicClient = getSupabaseAdmin();
+        const publishedHotelId = await getPublishedHotelId(hotelId);
+
+        if (!publishedHotelId) {
+            return [];
+        }
+
+        const { data: rooms, error } = await publicClient
+            .from("rooms")
+            .select("*")
+            .eq("hotel_id", publishedHotelId)
+            .order("price_per_night", { ascending: true });
+
+        if (error) {
+            console.error(`Error fetching public rooms (Hotel ID: ${hotelId}):`, error);
+            return [];
+        }
+
+        if (from && to && rooms && rooms.length > 0) {
+            const roomIds = rooms.map((room) => room.id);
+            const adminClient = getSupabaseAdmin();
+            const { data: overlappingBookings, error: bookingsError } = await adminClient
+                .from("bookings")
+                .select("room_id, status, created_at")
+                .in("room_id", roomIds)
+                .lt("check_in_date", to)
+                .gt("check_out_date", from)
+                .in("status", ["confirmed", "pending"]);
+
+            if (!bookingsError && overlappingBookings) {
+                const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+                const bookingsByRoom: Record<string, number> = {};
+
+                for (const booking of overlappingBookings) {
+                    const isConfirmed = booking.status === "confirmed";
+                    const isRecentPending = booking.status === "pending" && new Date(booking.created_at) >= fifteenMinutesAgo;
+
+                    if (isConfirmed || isRecentPending) {
+                        bookingsByRoom[booking.room_id] = (bookingsByRoom[booking.room_id] || 0) + 1;
+                    }
+                }
+
+                return rooms.map((room) => ({
+                    ...room,
+                    total_inventory: Math.max(0, (room.total_inventory || 0) - (bookingsByRoom[room.id] || 0)),
+                })) as Room[];
+            }
+        }
+
+        return (rooms ?? []) as Room[];
+    } catch (error) {
+        console.error(`Unexpected error fetching public rooms (Hotel ID: ${hotelId}):`, error);
+        return [];
+    }
 }
 
 export async function getPublicRoom(roomId: string) {
-    const supabase = getSupabaseAdmin();
+    try {
+        const supabase = getSupabaseAdmin();
+        const { data: room, error } = await supabase
+            .from("rooms")
+            .select(`
+                *,
+                hotel:hotels (*)
+            `)
+            .eq("id", roomId)
+            .maybeSingle();
 
-    const { data: room, error } = await supabase
-        .from("rooms")
-        .select(`
-            *,
-            hotel:hotels (*)
-        `)
-        .eq("id", roomId)
-        .single();
+        if (error) {
+            console.error(`Error fetching public room (ID: ${roomId}):`, error);
+            return null;
+        }
 
-    if (error) {
-        console.error(`Error fetching public room (ID: ${roomId}):`, error);
+        if (!room) {
+            return null;
+        }
+
+        const hotel = Array.isArray(room.hotel) ? room.hotel[0] : room.hotel;
+        if (!hotel || !isVisibleHotel(hotel)) {
+            return null;
+        }
+
+        return {
+            ...room,
+            hotel,
+        };
+    } catch (error) {
+        console.error(`Unexpected error fetching public room (ID: ${roomId}):`, error);
         return null;
     }
-
-    return room;
 }
 
 export async function getHomepageStats() {
     const supabase = getSupabaseAdmin();
 
     try {
-        // Get total hotels
-        const { count: hotelsCount, error: hotelsError } = await supabase
-            .from("hotels")
-            .select('*', { count: 'exact', head: true })
+        const createHotelsCountQuery = (filterPublished: boolean) => {
+            let query = supabase
+                .from("hotels")
+                .select("*", { count: "exact", head: true });
 
-        if (hotelsError) {
-            console.error("Supabase hotels error:", hotelsError);
-            throw hotelsError;
+            if (filterPublished) {
+                query = query.eq("is_published", true);
+            }
+
+            return query;
+        };
+
+        let { count: hotelsCount, error: hotelsError } = await createHotelsCountQuery(true);
+
+        if (isMissingPublishedColumn(hotelsError)) {
+            ({ count: hotelsCount, error: hotelsError } = await createHotelsCountQuery(false));
         }
 
-        // Get total rooms total_inventory
+        if (hotelsError) {
+            if (hasMeaningfulError(hotelsError)) {
+                console.error("Supabase hotels error:", hotelsError);
+            }
+            return {
+                hotels: 0,
+                rooms: 0,
+            };
+        }
+
+        const createHotelIdsQuery = (filterPublished: boolean, includePublishedColumn: boolean) => {
+            let query = supabase
+                .from("hotels")
+                .select(includePublishedColumn ? "id, is_published" : "id");
+
+            if (filterPublished) {
+                query = query.eq("is_published", true);
+            }
+
+            return query;
+        };
+
+        let { data: hotelIds, error: hotelIdsError } = await createHotelIdsQuery(true, true);
+
+        if (isMissingPublishedColumn(hotelIdsError)) {
+            ({ data: hotelIds, error: hotelIdsError } = await createHotelIdsQuery(false, false));
+        }
+
+        if (hotelIdsError) {
+            if (hasMeaningfulError(hotelIdsError)) {
+                console.error("Supabase hotel ids error:", hotelIdsError);
+            }
+            return {
+                hotels: hotelsCount || 0,
+                rooms: 0,
+            };
+        }
+
+        const publishedHotelIds = (hotelIds ?? [])
+            .filter((hotel) => isVisibleHotel(hotel))
+            .map((hotel) => hotel.id);
+        if (publishedHotelIds.length === 0) {
+            return { hotels: hotelsCount || 0, rooms: 0 };
+        }
+
         const { data: rooms, error: roomsError } = await supabase
             .from("rooms")
-            .select("total_inventory");
+            .select("total_inventory")
+            .in("hotel_id", publishedHotelIds);
 
         if (roomsError) {
-            console.error("Supabase rooms error:", roomsError);
-            throw roomsError;
+            if (hasMeaningfulError(roomsError)) {
+                console.error("Supabase rooms error:", roomsError);
+            }
+            return {
+                hotels: hotelsCount || 0,
+                rooms: 0,
+            };
         }
 
         let totalRooms = rooms ? rooms.reduce((sum, room) => sum + (room.total_inventory || 0), 0) : 0;
 
-        // Fallback: If inventory is 0 for all rooms (data issue), show total number of rooms instead
         if (totalRooms === 0 && rooms && rooms.length > 0) {
             totalRooms = rooms.length;
         }
 
         return {
             hotels: hotelsCount || 0,
-            rooms: totalRooms
+            rooms: totalRooms,
         };
     } catch (error) {
-        console.error("Error fetching homepage stats:", error);
+        if (hasMeaningfulError(error)) {
+            console.error("Error fetching homepage stats:", error);
+        }
         return {
             hotels: 0,
-            rooms: 0
+            rooms: 0,
         };
     }
 }
@@ -366,29 +525,40 @@ export async function getSearchSuggestions(query: string) {
     const q = `%${query}%`;
 
     try {
-        // Fetch hotels that match by name or address
-        const { data: hotels, error } = await supabase
-            .from("hotels")
-            .select("name, address")
-            .or(`name.ilike.${q},address.ilike.${q}`)
-            .limit(10);
+        const createSuggestionsQuery = (filterPublished: boolean, includePublishedColumn: boolean) => {
+            let queryBuilder = supabase
+                .from("hotels")
+                .select(includePublishedColumn ? "name, address, is_published" : "name, address")
+                .or(`name.ilike.${q},address.ilike.${q}`)
+                .limit(10);
+
+            if (filterPublished) {
+                queryBuilder = queryBuilder.eq("is_published", true);
+            }
+
+            return queryBuilder;
+        };
+
+        let { data: hotels, error } = await createSuggestionsQuery(true, true);
+
+        if (isMissingPublishedColumn(error)) {
+            ({ data: hotels, error } = await createSuggestionsQuery(false, false));
+        }
 
         if (error) throw error;
 
-        // Extract unique locations (suburbs/cities from address) and hotel names
         const suggestions = new Set<string>();
 
-        hotels.forEach(h => {
-            if (h.name.toLowerCase().includes(query.toLowerCase())) {
-                suggestions.add(h.name);
+        (hotels ?? []).filter((hotel) => isVisibleHotel(hotel)).forEach((hotel) => {
+            if (hotel.name.toLowerCase().includes(query.toLowerCase())) {
+                suggestions.add(hotel.name);
             }
 
-            if (h.address) {
-                // Try to extract the neighborhood or city (usually after the first comma or the last word)
-                const parts = h.address.split(',').map((p: string) => p.trim());
-                parts.forEach((p: string) => {
-                    if (p.toLowerCase().includes(query.toLowerCase()) && p.length > 2) {
-                        suggestions.add(p);
+            if (hotel.address) {
+                const parts = hotel.address.split(",").map((part: string) => part.trim());
+                parts.forEach((part: string) => {
+                    if (part.toLowerCase().includes(query.toLowerCase()) && part.length > 2) {
+                        suggestions.add(part);
                     }
                 });
             }

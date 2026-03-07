@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Star, MapPin, Navigation, Wifi, Car, Coffee, ArrowRight, ShieldCheck, Calendar, Users, Building2 } from "lucide-react";
+import { Star, MapPin, Navigation, Wifi, Car, Coffee, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Hotel } from "@/types/hotel";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { cn, getHotelImageUrl } from "@/lib/utils";
 import { estimateTravelTime } from "@/lib/venue";
 import {
@@ -40,7 +41,7 @@ export function HotelList({ hotels }: { hotels: (Hotel & { minPrice: number })[]
                         variant="outline"
                         size="lg"
                         onClick={() => setDisplayCount(prev => prev + 6)}
-                        className="rounded-full px-12 h-14 border-2 border-zinc-200 dark:border-zinc-800 font-bold hover:bg-zinc-900 hover:text-white dark:hover:bg-white dark:hover:text-zinc-900 transition-all shadow-lg"
+                        className="h-14 w-full rounded-2xl border-2 border-zinc-200 px-6 text-sm font-bold uppercase tracking-[0.16em] shadow-lg transition-all hover:bg-zinc-900 hover:text-white dark:border-zinc-800 dark:hover:bg-white dark:hover:text-zinc-900 sm:w-auto sm:rounded-full sm:px-12 sm:text-base sm:tracking-normal"
                     >
                         Load More Properties ({hotels.length - displayCount} left)
                     </Button>
@@ -49,8 +50,6 @@ export function HotelList({ hotels }: { hotels: (Hotel & { minPrice: number })[]
         </div>
     );
 }
-
-import { useSearchParams } from "next/navigation";
 
 function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
     const searchParams = useSearchParams();
@@ -67,9 +66,9 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
     const href = qs ? `/hotels/${hotel.id}?${qs}` : `/hotels/${hotel.id}`;
 
     return (
-        <div className="group relative flex flex-col md:flex-row overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-sm transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.12)] hover:-translate-y-1.5 dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="group relative flex flex-col overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(0,0,0,0.12)] dark:border-zinc-800 dark:bg-zinc-900 md:flex-row">
             {/* Image Section - Slider */}
-            <div className="relative w-full md:w-[280px] lg:w-[320px] aspect-[16/10] md:aspect-auto shrink-0 bg-zinc-100 dark:bg-zinc-800">
+            <div className="relative aspect-[16/10] w-full shrink-0 bg-zinc-100 dark:bg-zinc-800 md:w-[280px] md:aspect-auto lg:w-[320px]">
                 <Carousel className="w-full h-full">
                     <CarouselContent className="h-full">
                         {images.slice(0, 5).map((img, index) => (
@@ -89,22 +88,22 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
                     </CarouselContent>
                     {images.length > 1 && (
                         <>
-                            <CarouselPrevious className="left-2 bg-white/20 hover:bg-white/40 border-none h-8 w-8 text-white backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <CarouselNext className="right-2 bg-white/20 hover:bg-white/40 border-none h-8 w-8 text-white backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <CarouselPrevious className="left-2 h-9 w-9 border-none bg-white/35 text-white backdrop-blur-md transition-opacity hover:bg-white/50 md:opacity-0 md:group-hover:opacity-100" />
+                            <CarouselNext className="right-2 h-9 w-9 border-none bg-white/35 text-white backdrop-blur-md transition-opacity hover:bg-white/50 md:opacity-0 md:group-hover:opacity-100" />
                         </>
                     )}
                 </Carousel>
 
                 {/* Overlay Badges (Top Left) */}
-                <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+                <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
                     {hotel.is_official_partner && (
-                        <div className="bg-blue-600 text-white text-[8px] font-black px-2 py-1 rounded-md shadow-xl uppercase tracking-widest backdrop-blur-md bg-blue-600/90 flex items-center gap-1">
+                        <div className="flex items-center gap-1 rounded-full bg-blue-600/90 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-widest text-white shadow-xl backdrop-blur-md">
                             <ShieldCheck className="h-2.5 w-2.5" />
                             Official
                         </div>
                     )}
                     {hotel.is_recommended && (
-                        <div className="bg-white/90 dark:bg-zinc-900/90 text-zinc-900 dark:text-white text-[8px] font-black px-2 py-1 rounded-md shadow-xl uppercase tracking-widest backdrop-blur-md flex items-center gap-1 border border-white/20">
+                        <div className="flex items-center gap-1 rounded-full border border-white/20 bg-white/90 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-widest text-zinc-900 shadow-xl backdrop-blur-md dark:bg-zinc-900/90 dark:text-white">
                             <Star className="h-2.5 w-2.5 text-amber-500 fill-amber-500" />
                             Delegate Choice
                         </div>
@@ -113,7 +112,7 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
 
                 {/* Rating Badge (Bottom Right) */}
                 {hotel.cached_rating && (
-                    <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 px-2 py-1 rounded-xl bg-black/30 backdrop-blur-md border border-white/10">
+                    <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-full border border-white/10 bg-black/30 px-2.5 py-1.5 backdrop-blur-md">
                         <span className="text-[8px] font-black text-white/90 uppercase leading-none">Rating</span>
                         <div className="text-white text-[11px] font-black">
                             {hotel.cached_rating}
@@ -123,10 +122,10 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
             </div>
 
             {/* Content Section */}
-            <div className="flex flex-1 flex-col p-5 md:p-6">
+            <div className="flex flex-1 flex-col p-4 sm:p-5 md:p-6">
                 <div className="flex-1">
                     {/* Top row: Stars + Price */}
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         {hotel.stars && hotel.stars > 0 ? (
                             <div className="flex gap-0.5">
                                 {Array.from({ length: 5 }).map((_, i) => (
@@ -144,9 +143,9 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
                                 Rating not provided
                             </span>
                         )}
-                        <div className="flex flex-col items-end">
+                        <div className="flex flex-col items-start sm:items-end">
                             <div className="flex items-baseline gap-1">
-                                <span className="text-2xl font-black tracking-tighter text-zinc-900 dark:text-white">
+                                <span className="text-2xl font-black tracking-tighter text-zinc-900 dark:text-white sm:text-[1.7rem]">
                                     ${hotel.minPrice || "N/A"}
                                 </span>
                                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">/ night</span>
@@ -155,28 +154,28 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
                         </div>
                     </div>
 
-                    <h3 className="text-xl md:text-2xl font-black text-zinc-900 dark:text-white group-hover:text-blue-600 transition-colors leading-tight mb-2">
+                    <h3 className="mb-2 text-xl font-black leading-tight text-zinc-900 transition-colors group-hover:text-blue-600 dark:text-white md:text-2xl">
                         {hotel.name}
                     </h3>
 
-                    <div className="flex items-center text-sm text-zinc-500 dark:text-zinc-400 font-medium mb-4">
+                    <div className="mb-4 flex flex-wrap items-center gap-y-1 text-sm font-medium text-zinc-500 dark:text-zinc-400">
                         <MapPin className="mr-1.5 h-4 w-4 shrink-0 text-zinc-400" />
-                        <span className="line-clamp-1">{hotel.address || "Ulaanbaatar, Mongolia"}</span>
-                        <span className="mx-2 text-zinc-300">•</span>
+                        <span className="line-clamp-2 min-w-0 flex-1">{hotel.address || "Ulaanbaatar, Mongolia"}</span>
+                        <span className="mx-2 hidden text-zinc-300 sm:inline">•</span>
                         <a
                             href={`https://www.google.com/maps/search/?api=1&query=${hotel.latitude || hotel.address},${hotel.longitude || ''}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 font-bold hover:underline cursor-pointer text-xs uppercase tracking-tight"
+                            className="mt-1 text-xs font-bold uppercase tracking-tight text-blue-600 hover:underline sm:mt-0"
                         >
                             Map
                         </a>
                     </div>
 
                     {/* Amenities Badges - Cleaned Up */}
-                    <div className="flex flex-wrap gap-2 mb-6">
+                    <div className="mb-6 flex flex-wrap gap-2">
                         {hotel.amenities?.slice(0, 4).map((a, i) => (
-                            <div key={i} className="flex items-center text-[10px] font-black px-2.5 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 border border-zinc-100 dark:border-zinc-700/50 uppercase tracking-tight">
+                            <div key={i} className="flex items-center rounded-xl border border-zinc-100 bg-zinc-50 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-tight text-zinc-600 dark:border-zinc-700/50 dark:bg-zinc-800/50 dark:text-zinc-400">
                                 {a.toLowerCase().includes("wifi") && <Wifi className="h-3 w-3 mr-1.5 text-blue-500" />}
                                 {a.toLowerCase().includes("shuttle") && <Car className="h-3 w-3 mr-1.5 text-green-500" />}
                                 {a.toLowerCase().includes("breakfast") && <Coffee className="h-3 w-3 mr-1.5 text-amber-500" />}
@@ -191,22 +190,22 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
                     </div>
                 </div>
 
-                <div className="mt-auto pt-5 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                <div className="mt-auto flex flex-col gap-4 border-t border-zinc-100 pt-5 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 items-center gap-3">
                         {displayDistance != null && (
-                            <div className="flex flex-col">
-                                <div className="flex items-center text-[11px] font-black text-zinc-700 dark:text-zinc-300 uppercase tracking-tight">
+                            <div className="flex flex-col rounded-2xl bg-zinc-50 px-3 py-2 dark:bg-zinc-800/50">
+                                <div className="flex items-center text-[11px] font-black uppercase tracking-tight text-zinc-700 dark:text-zinc-300">
                                     <Navigation className="h-3 w-3 mr-1.5 text-blue-500" />
                                     {typeof displayDistance === 'number' ? displayDistance.toFixed(1) : displayDistance} km to Venue
                                 </div>
-                                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tighter ml-4.5">
+                                <span className="ml-4.5 text-[9px] font-bold uppercase tracking-tighter text-zinc-400">
                                     {displayTime} drive
                                 </span>
                             </div>
                         )}
                     </div>
 
-                    <Link href={href} className="inline-flex items-center justify-center h-11 px-8 rounded-2xl bg-zinc-900 text-white text-xs font-black uppercase tracking-widest transition-all hover:bg-blue-600 active:scale-95 shadow-xl shadow-zinc-900/10">
+                    <Link href={href} className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-zinc-900 px-8 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-zinc-900/10 transition-all hover:bg-blue-600 active:scale-95 sm:w-auto">
                         See Availability
                     </Link>
                 </div>

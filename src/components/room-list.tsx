@@ -35,23 +35,23 @@ export function RoomList({ hotelId, rooms, checkIn, checkOut }: RoomListProps) {
 
     return (
         <div className="space-y-12">
-            {rooms.map(room => (
-                <RoomCard
-                    key={room.id}
-                    // @ts-ignore
-                    room={{
-                        ...room,
-                        price: room.price_per_night,
-                        size: room.size || 0,
-                        images: cleanImages(room.images),
-                        amenities: room.amenities || []
-                    }}
-                    hotelId={hotelId}
-                    checkIn={checkIn}
-                    checkOut={checkOut}
-                />
+            {rooms.map((room, index) => (
+                <div key={room.id} id={index === 0 ? "first-room-card" : undefined} className={index === 0 ? "scroll-mt-24" : undefined}>
+                    <RoomCard
+                        // @ts-ignore
+                        room={{
+                            ...room,
+                            price: room.price_per_night,
+                            size: room.size || 0,
+                            images: cleanImages(room.images),
+                            amenities: room.amenities || []
+                        }}
+                        hotelId={hotelId}
+                        checkIn={checkIn}
+                        checkOut={checkOut}
+                    />
+                </div>
             ))}
         </div>
     )
 }
-

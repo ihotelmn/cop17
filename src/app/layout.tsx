@@ -1,21 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "COP17 Mongolia | Official Hotel Booking",
   description: "Exclusive hotel booking platform for COP17 delegates in Mongolia.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://cop17.ihotel.mn"),
   icons: {
     icon: [
       { url: "/favicon.webp", type: "image/webp" },
@@ -44,15 +34,22 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+
+  try {
+    const supabase = await createClient();
+    const authResult = await supabase.auth.getUser();
+    user = authResult.data.user;
+  } catch (error) {
+    if (!(error instanceof Error && "digest" in error && error.digest === "DYNAMIC_SERVER_USAGE")) {
+      console.error("Root layout auth bootstrap failed:", error);
+    }
+  }
 
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background text-foreground`}
+        className="antialiased min-h-screen bg-background text-foreground"
       >
         <AuthProvider initialUser={user}>
           <SiteHeader />

@@ -1,9 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
-import 'dotenv/config'; // Requires dotenv to load .env.local if running standalone, but npx tsx might not pick up .env.local automatically. I'll hardcode the keys for this specific run script since I just read them.
+import 'dotenv/config';
 
-// Manually passing the keys for the script execution to be sure
-const SUPABASE_URL = "https://ybwylibmckofuvktvihs.supabase.co";
-const SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlid3lsaWJtY2tvZnV2a3R2aWhzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDg3NDUwNiwiZXhwIjoyMDg2NDUwNTA2fQ.Kxp1nN0uXpXefVSf5JRmJMZ-sz-wG0HkQsvi_paHV-w";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SUPABASE_URL || !SERVICE_KEY) {
+    throw new Error("NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required to run this script.");
+}
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
     auth: {

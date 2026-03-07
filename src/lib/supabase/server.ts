@@ -1,11 +1,11 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { requirePublicSupabaseEnv } from "@/lib/env";
 
 export async function createClient() {
     const cookieStore = await cookies();
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-key";
+    const { url: supabaseUrl, anonKey: supabaseKey } = requirePublicSupabaseEnv();
 
     return createServerClient(
         supabaseUrl,

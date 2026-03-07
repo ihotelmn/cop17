@@ -1,9 +1,11 @@
 const { Client } = require('pg');
 require('dotenv').config({ path: '.env.local' });
 
-// We extract the connection string from the Supabase URL or use a direct postgres connection string if available.
-// Since Supabase usually provides a postgresql:// connection string in the dashboard:
-const connectionString = process.env.DATABASE_URL || 'postgres://postgres:postgres@127.0.0.1:54322/postgres'; // Default local supabase port
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+    throw new Error('DATABASE_URL is required to run this script.');
+}
 
 async function addGuestColumns() {
     const client = new Client({

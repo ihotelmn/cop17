@@ -13,6 +13,7 @@ import { HotelList } from "@/components/hotel-list";
 import { HotelSearch, SortDropdown } from "@/components/hotel-search";
 import { HotelMapWrapper as HotelMap } from "@/components/hotel-map-wrapper";
 import { FilterSidebar } from "@/components/hotels/filter-sidebar";
+import { MobileFilter } from "@/components/hotels/mobile-filter";
 
 import { getHomepageStats, getPublishedHotels } from "@/app/actions/public";
 import { HotelSections } from "@/components/hotel-sections";
@@ -30,6 +31,16 @@ type Props = {
 export default async function Home(props: Props) {
   const stats = await getHomepageStats();
   const searchParams = await props.searchParams;
+
+  const normalizedSearchParams = Object.fromEntries(
+    Object.entries(searchParams).flatMap(([key, value]) => {
+      if (Array.isArray(value)) {
+        return value[0] ? [[key, value[0]]] : [];
+      }
+
+      return value ? [[key, value]] : [];
+    })
+  );
 
   // Normalize params for hotels
   const getParam = (key: string) => {
@@ -49,6 +60,16 @@ export default async function Home(props: Props) {
   const roomsCount = getParam("rooms");
   const from = getParam("from");
   const to = getParam("to");
+  const activeFilterCount = [query, stars, amenities, minPrice, maxPrice].filter(Boolean).length;
+  const alternateView = view === "list" ? "map" : "list";
+  const alternateViewLabel = view === "list" ? "Map" : "List";
+
+  const createViewHref = (nextView: "list" | "map") => {
+    const params = new URLSearchParams(normalizedSearchParams);
+    params.set("view", nextView);
+
+    return `/?${params.toString()}`;
+  };
 
   const hotels = await getPublishedHotels({
     query,
@@ -144,26 +165,63 @@ export default async function Home(props: Props) {
             {/* Hotel List */}
             <div className="flex-1 min-w-0">
               {/* Controls: Count, View Toggle, Sort */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
-                  {hotels.length} Properties Found
-                </h2>
+              <div className="mb-6 rounded-[2rem] border border-zinc-200/80 bg-white/90 p-4 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/90 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+                <div className="hidden items-start justify-between gap-4 lg:flex">
+                  <div>
+                    <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                      {hotels.length} Properties Found
+                    </h2>
+                  </div>
+                </div>
 
-                <div className="flex items-center gap-3">
-                  <SortDropdown />
-
-                  {/* Toggle View */}
-                  <div className="flex items-center bg-white dark:bg-zinc-900 p-1 rounded-lg border border-zinc-200 dark:border-zinc-800 hidden sm:flex">
-                    <Button variant={view === "list" ? "secondary" : "ghost"} size="sm" asChild>
-                      <Link href={`/?${new URLSearchParams({ ...searchParams as Record<string, string>, view: 'list' }).toString()}`} scroll={false}>
-                        <ListIcon className="h-4 w-4 mr-2" /> List
+                <div className="mt-4 hidden items-center justify-between gap-3 lg:flex">
+                  <div className="grid grid-cols-2 items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-950 sm:flex sm:gap-1 sm:rounded-lg sm:bg-white sm:p-1 sm:dark:bg-zinc-900">
+                    <Button
+                      variant={view === "list" ? "secondary" : "ghost"}
+                      size="sm"
+                      asChild
+                      className="h-11 rounded-xl text-xs font-black uppercase tracking-[0.18em] sm:h-9 sm:rounded-md sm:text-sm sm:tracking-normal"
+                    >
+                      <Link href={createViewHref("list")} scroll={false}>
+                        <ListIcon className="mr-2 h-4 w-4" /> List
                       </Link>
                     </Button>
-                    <Button variant={view === "map" ? "secondary" : "ghost"} size="sm" asChild>
-                      <Link href={`/?${new URLSearchParams({ ...searchParams as Record<string, string>, view: 'map' }).toString()}`} scroll={false}>
-                        <MapIcon className="h-4 w-4 mr-2" /> Map
+                    <Button
+                      variant={view === "map" ? "secondary" : "ghost"}
+                      size="sm"
+                      asChild
+                      className="h-11 rounded-xl text-xs font-black uppercase tracking-[0.18em] sm:h-9 sm:rounded-md sm:text-sm sm:tracking-normal"
+                    >
+                      <Link href={createViewHref("map")} scroll={false}>
+                        <MapIcon className="mr-2 h-4 w-4" /> Map
                       </Link>
                     </Button>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <SortDropdown />
+                    <MobileFilter count={activeFilterCount} />
+                  </div>
+                </div>
+
+                <div className="mt-0 flex items-center justify-between gap-2 lg:hidden">
+                  <p className="min-w-0 text-sm font-semibold text-zinc-900 dark:text-white">
+                    {hotels.length} stays
+                  </p>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      asChild
+                      className="h-10 rounded-full border-zinc-300 px-4 text-xs font-black uppercase tracking-[0.16em] shadow-none dark:border-zinc-700"
+                    >
+                      <Link href={createViewHref(alternateView)} scroll={false}>
+                        {alternateViewLabel}
+                      </Link>
+                    </Button>
+                    <MobileFilter count={activeFilterCount} compact />
+                    <SortDropdown compact />
                   </div>
                 </div>
               </div>
@@ -177,7 +235,7 @@ export default async function Home(props: Props) {
                 ) : (
                   view === "map" ? (
                     <div className="space-y-8">
-                      <div className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm h-[600px]">
+                      <div className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm h-[420px] sm:h-[600px]">
                         <Suspense fallback={<div className="h-full bg-zinc-100 animate-pulse" />}>
                           <HotelMap hotels={hotels} query={query} />
                         </Suspense>
@@ -187,7 +245,7 @@ export default async function Home(props: Props) {
                           <div key={hotel.id} className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800">
                             <h3 className="font-bold text-zinc-900 dark:text-white">{hotel.name}</h3>
                             <p className="text-sm text-zinc-500">${hotel.minPrice}/night</p>
-                            <Link href={`/hotels/${hotel.id}${Object.keys(searchParams).length ? '?' + new URLSearchParams(searchParams as Record<string, string>).toString() : ''}`} className="text-sm text-blue-600 hover:underline mt-2 inline-block font-medium">View Details</Link>
+                            <Link href={`/hotels/${hotel.id}${Object.keys(normalizedSearchParams).length ? '?' + new URLSearchParams(normalizedSearchParams).toString() : ''}`} className="text-sm text-blue-600 hover:underline mt-2 inline-block font-medium">View Details</Link>
                           </div>
                         ))}
                       </div>

@@ -43,6 +43,11 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
     const { id } = await params;
     const resolvedParams = await searchParams;
     const { from, to } = resolvedParams;
+    const bookingSearchString = new URLSearchParams(
+        Object.entries(resolvedParams).filter(([, value]) => Boolean(value)) as [string, string][]
+    ).toString();
+    const homeHref = bookingSearchString ? `/?${bookingSearchString}` : "/";
+    const hotelsHref = bookingSearchString ? `/?${bookingSearchString}#search` : "/#search";
 
     // No default dates — if user hasn't picked dates, they stay undefined
     // This prevents fake defaults from appearing and causing sync issues
@@ -64,14 +69,14 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
     const finalCheckOut = checkOut ? new Date(`${checkOut}T12:00:00`) : undefined;
 
     return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-20">
+        <div className="min-h-screen bg-zinc-50 pb-40 dark:bg-zinc-950 lg:pb-20">
             {/* Header / Breadcrumbs */}
             <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md sticky top-0 z-40 border-b border-zinc-200 dark:border-zinc-800">
                 <div className="container mx-auto px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-400">
-                        <Link href="/" className="hover:text-blue-500 transition-colors">Home</Link>
+                        <Link href={homeHref} className="hover:text-blue-500 transition-colors">Home</Link>
                         <span>/</span>
-                        <Link href="/hotels" className="hover:text-blue-500 transition-colors">Hotels</Link>
+                        <Link href={hotelsHref} className="hover:text-blue-500 transition-colors">Hotels</Link>
                         <span>/</span>
                         <span className="text-zinc-600 dark:text-zinc-300">{hotel.name}</span>
                     </div>
@@ -196,6 +201,22 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
 
                     {/* Rooms Section */}
                     <section id="rooms" className="scroll-mt-24">
+                        <div
+                            id="mobile-search-assistant"
+                            className="mb-8 rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-xl shadow-zinc-200/40 dark:border-zinc-800 dark:bg-zinc-900/50 dark:shadow-none lg:hidden"
+                        >
+                            <div className="mb-6">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Stay Setup</p>
+                                <h3 className="mt-2 text-2xl font-black tracking-tight text-zinc-950 dark:text-white">
+                                    Adjust dates and guests before you book
+                                </h3>
+                                <p className="mt-2 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                                    Your room selection stays in view below, so you can continue without scrolling back through every card.
+                                </p>
+                            </div>
+                            <SearchForm className="space-y-4" />
+                        </div>
+
                         <div className="flex items-center justify-between mb-10 pb-6 border-b border-zinc-200 dark:border-zinc-800">
                             <div className="space-y-1">
                                 <h2 className="text-3xl font-black text-zinc-950 dark:text-white tracking-tight">Available Residences</h2>
@@ -206,15 +227,22 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
                             </div>
                         </div>
                         <RoomList hotelId={id} rooms={rooms} checkIn={finalCheckIn} checkOut={finalCheckOut} />
+                        <ReservationSummary
+                            hotelId={id}
+                            rooms={rooms}
+                            checkIn={finalCheckIn}
+                            checkOut={finalCheckOut}
+                            mode="mobile"
+                        />
                     </section>
                 </main>
 
                 {/* Sidebar Sticky Area */}
-                <aside className="lg:col-span-4 lg:block">
-                    <div className="sticky top-24 space-y-8">
+                <aside className="lg:col-span-4">
+                    <div className="space-y-8 lg:sticky lg:top-24">
 
                         {/* Search Persistence / Quick Modify */}
-                        <div className="rounded-[2.5rem] bg-white dark:bg-zinc-900 p-10 shadow-2xl shadow-zinc-200/50 dark:shadow-none border border-zinc-200 dark:border-zinc-800 overflow-hidden relative">
+                        <div className="relative hidden overflow-hidden rounded-[2.5rem] border border-zinc-200 bg-white p-10 shadow-2xl shadow-zinc-200/50 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none lg:block">
                             <div className="absolute top-0 right-0 p-12 -mr-6 -mt-6 bg-blue-600/5 rounded-full blur-3xl pointer-events-none" />
                             <h3 className="font-black text-xl text-zinc-950 dark:text-white mb-8 tracking-tight uppercase tracking-widest text-xs opacity-50">Reservation Assistant</h3>
 
@@ -250,6 +278,7 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
                                     rooms={rooms}
                                     checkIn={finalCheckIn}
                                     checkOut={finalCheckOut}
+                                    mode="desktop"
                                 />
 
                                 {hotel.website && (
@@ -265,6 +294,18 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
                                 )}
                             </div>
                         </div>
+
+                        {hotel.website && (
+                            <a
+                                href={hotel.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center w-full px-8 py-5 bg-zinc-950 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-black font-black uppercase tracking-widest text-xs rounded-2xl transition-all shadow-xl shadow-zinc-950/10 active:scale-95 group lg:hidden"
+                            >
+                                <Globe className="w-4 h-4 mr-3 group-hover:rotate-12 transition-transform" />
+                                Official Website
+                            </a>
+                        )}
 
                         {/* Direct Contact Card */}
                         <div className="p-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-[2.5rem] text-white shadow-xl shadow-blue-500/20">

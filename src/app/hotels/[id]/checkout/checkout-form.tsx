@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { Loader2, ArrowRight, CreditCard, User, Mail, Phone, Fingerprint } from "lucide-react";
+import { Loader2, ArrowRight, User, Mail, Phone, Fingerprint } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createBookingAction } from "@/app/actions/booking";
-import { cn } from "@/lib/utils";
 
 interface CheckoutFormProps {
     hotelId: string;
@@ -47,7 +46,7 @@ export function CheckoutForm({
             } else {
                 setError(result.error || "Failed to create booking");
             }
-        } catch (e) {
+        } catch {
             setError("An unexpected error occurred. Please try again.");
         } finally {
             setLoading(false);
@@ -55,8 +54,8 @@ export function CheckoutForm({
     }
 
     return (
-        <form onSubmit={onSubmit} className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={onSubmit} className="space-y-8" id="checkout-form">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
                 <div className="space-y-2">
                     <Label htmlFor="guestName" className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-500">
                         <User className="h-3.5 w-3.5" />
@@ -67,7 +66,7 @@ export function CheckoutForm({
                         name="guestName"
                         required
                         placeholder="John Doe"
-                        className="h-12 bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-800 focus:ring-blue-500"
+                        className="h-14 bg-zinc-50 text-base dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-800 focus:ring-blue-500 sm:h-12 sm:text-sm"
                     />
                 </div>
 
@@ -82,7 +81,7 @@ export function CheckoutForm({
                         type="email"
                         required
                         placeholder="john@example.com"
-                        className="h-12 bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-800 focus:ring-blue-500"
+                        className="h-14 bg-zinc-50 text-base dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-800 focus:ring-blue-500 sm:h-12 sm:text-sm"
                     />
                 </div>
 
@@ -96,7 +95,7 @@ export function CheckoutForm({
                         name="guestPassport"
                         required
                         placeholder="E12345678"
-                        className="h-12 bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-800 focus:ring-blue-500"
+                        className="h-14 bg-zinc-50 text-base dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-800 focus:ring-blue-500 sm:h-12 sm:text-sm"
                     />
                 </div>
 
@@ -110,7 +109,7 @@ export function CheckoutForm({
                         name="guestPhone"
                         required
                         placeholder="+976 9911 2233"
-                        className="h-12 bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-800 focus:ring-blue-500"
+                        className="h-14 bg-zinc-50 text-base dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-800 focus:ring-blue-500 sm:h-12 sm:text-sm"
                     />
                 </div>
             </div>
@@ -136,7 +135,7 @@ export function CheckoutForm({
             <div className="pt-6">
                 <Button
                     type="submit"
-                    className="w-full h-14 text-lg font-bold bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-500/20 rounded-xl"
+                    className="w-full h-14 rounded-2xl bg-blue-600 text-base font-bold shadow-xl shadow-blue-500/20 hover:bg-blue-700 sm:h-[3.75rem] sm:text-lg"
                     disabled={loading}
                 >
                     {loading ? (
@@ -145,7 +144,7 @@ export function CheckoutForm({
                             Securing Your Room...
                         </>
                     ) : (
-                        <span className="flex items-center gap-2">
+                        <span className="flex items-center gap-2 text-center">
                             Proceed to Payment (${totalPrice})
                             <ArrowRight className="h-5 w-5" />
                         </span>

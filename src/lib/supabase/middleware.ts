@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { requirePublicSupabaseEnv } from "@/lib/env";
 
 export async function updateSession(request: NextRequest) {
     let response = NextResponse.next({
@@ -8,14 +9,7 @@ export async function updateSession(request: NextRequest) {
         },
     });
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-    // If keys are missing in middleware, it might fail silently or crash securely
-    if (!supabaseUrl || !supabaseKey) {
-        // console.error("Middleware: Supabase keys missing");
-        return response; // Return strictly without touching session if keys missing
-    }
+    const { url: supabaseUrl, anonKey: supabaseKey } = requirePublicSupabaseEnv();
 
     const supabase = createServerClient(
         supabaseUrl,

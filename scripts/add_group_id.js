@@ -1,8 +1,15 @@
 const { Client } = require('pg');
+require('dotenv').config({ path: '.env.local' });
+
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+    throw new Error('DATABASE_URL is required to run this script.');
+}
 
 async function main() {
     const client = new Client({
-        connectionString: "postgres://postgres:Uurtsaikh2025$@db.ybwylibmckofuvktvihs.supabase.co:6543/postgres"
+        connectionString: databaseUrl
     });
 
     await client.connect();

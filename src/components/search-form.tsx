@@ -1,125 +1,248 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { format } from "date-fns"
-import { Calendar as CalendarIcon, Search, Users, MapPin, ChevronDown, Minus, Plus } from "lucide-react"
-import { DateRange } from "react-day-picker"
+import * as React from "react";
+import { differenceInDays, format } from "date-fns";
+import {
+    BedDouble,
+    Calendar as CalendarIcon,
+    ChevronDown,
+    Minus,
+    Plus,
+    Sparkles,
+    Users,
+} from "lucide-react";
+import type { DateRange } from "react-day-picker";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-} from "@/components/ui/popover"
-
-import { useSearchParams, useRouter, usePathname } from "next/navigation"
-import { differenceInDays } from "date-fns"
+} from "@/components/ui/popover";
+import {
+    applyBookingSearchStateToParams,
+    type BookingSearchState,
+    getDateRangeFromBookingSearchState,
+    mergeBookingSearchState,
+    normalizeBookingSearchState,
+    persistBookingSearchState,
+    readPartialBookingSearchState,
+    readStoredBookingSearchState,
+} from "@/lib/booking-search";
 
 export function SearchForm({ className }: React.HTMLAttributes<HTMLDivElement>) {
-    const searchParams = useSearchParams()
-    const pathname = usePathname()
-    const router = useRouter()
+    const searchParams = useSearchParams();
+    const pathname = usePathname();
+    const router = useRouter();
+    const searchParamsString = searchParams.toString();
 
-    const [isDatePopoverOpen, setIsDatePopoverOpen] = React.useState(false)
-    const [isGuestsPopoverOpen, setIsGuestsPopoverOpen] = React.useState(false)
+    const [isDatePopoverOpen, setIsDatePopoverOpen] = React.useState(false);
+    const [isGuestsPopoverOpen, setIsGuestsPopoverOpen] = React.useState(false);
+    const [isMobileViewport, setIsMobileViewport] = React.useState(false);
+    const [storedSearchState, setStoredSearchState] = React.useState<Partial<BookingSearchState> | null>(
+        () => readStoredBookingSearchState()
+    );
 
-    const fromStr = searchParams.get("from")
-    const toStr = searchParams.get("to")
+    const urlSearchState = React.useMemo(
+        () => readPartialBookingSearchState(new URLSearchParams(searchParamsString)),
+        [searchParamsString]
+    );
 
-    // Parse dates with T12:00:00 to prevent UTC-midnight timezone shift
-    // No defaults — if user hasn't selected dates, they stay empty
-    const date: DateRange | undefined = React.useMemo(() => {
-        if (!fromStr && !toStr) {
-            return undefined
+    const bookingSearchState = React.useMemo(
+        () => mergeBookingSearchState(urlSearchState, storedSearchState),
+        [storedSearchState, urlSearchState]
+    );
+
+    const date: DateRange | undefined = React.useMemo(
+        () => getDateRangeFromBookingSearchState(bookingSearchState),
+        [bookingSearchState]
+    );
+
+    const adults = bookingSearchState.adults;
+    const children = bookingSearchState.children;
+    const rooms = bookingSearchState.rooms;
+    const nights = date?.from && date?.to ? differenceInDays(date.to, date.from) : 0;
+    const totalGuests = adults + children;
+
+    React.useEffect(() => {
+        if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+            return;
         }
-        return {
-            from: fromStr ? new Date(`${fromStr}T12:00:00`) : undefined,
-            to: toStr ? new Date(`${toStr}T12:00:00`) : undefined
+
+        const mediaQuery = window.matchMedia("(max-width: 767px)");
+        const updateViewport = () => setIsMobileViewport(mediaQuery.matches);
+
+        updateViewport();
+        if (typeof mediaQuery.addEventListener === "function") {
+            mediaQuery.addEventListener("change", updateViewport);
+            return () => mediaQuery.removeEventListener("change", updateViewport);
         }
-    }, [fromStr, toStr])
 
-    const adults = parseInt(searchParams.get("adults") || "2")
-    const children = parseInt(searchParams.get("children") || "0")
+        mediaQuery.addListener(updateViewport);
 
-    const nights = date?.from && date?.to ? differenceInDays(date.to, date.from) : 0
-    const totalGuests = adults + children
+        return () => mediaQuery.removeListener(updateViewport);
+    }, []);
 
-    const updateParams = (newDate?: DateRange, newAdults?: number, newChildren?: number) => {
-        const params = new URLSearchParams(searchParams)
+    React.useEffect(() => {
+        const persistedState = readStoredBookingSearchState();
+        if (!persistedState) {
+            return;
+        }
 
-        const d = newDate !== undefined ? newDate : date
-        if (d?.from) params.set("from", format(d.from, "yyyy-MM-dd"))
-        else params.delete("from")
+        setStoredSearchState(persistedState);
 
-        if (d?.to) params.set("to", format(d.to, "yyyy-MM-dd"))
-        else params.delete("to")
+        const mergedState = mergeBookingSearchState(urlSearchState, persistedState);
+        const params = new URLSearchParams(searchParamsString);
+        applyBookingSearchStateToParams(params, mergedState);
 
-        const a = newAdults ?? adults
-        const c = newChildren ?? children
-        params.set("adults", a.toString())
-        params.set("children", c.toString())
+        const nextParamsString = params.toString();
+        if (nextParamsString === searchParamsString) {
+            return;
+        }
 
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-    }
+        router.replace(`${pathname}${nextParamsString ? `?${nextParamsString}` : ""}`, {
+            scroll: false,
+        });
+    }, [pathname, router, searchParamsString, urlSearchState]);
 
-    // 3rd-click range reset: if range is complete, next click starts a new selection
+    const updateParams = (overrides?: Partial<BookingSearchState>) => {
+        const nextSearchState = normalizeBookingSearchState({
+            ...bookingSearchState,
+            ...(overrides ?? {}),
+        });
+
+        persistBookingSearchState(nextSearchState);
+        setStoredSearchState(nextSearchState);
+
+        const params = new URLSearchParams(searchParamsString);
+        applyBookingSearchStateToParams(params, nextSearchState);
+
+        const nextParamsString = params.toString();
+        if (nextParamsString !== searchParamsString) {
+            router.replace(`${pathname}${nextParamsString ? `?${nextParamsString}` : ""}`, {
+                scroll: false,
+            });
+        }
+    };
+
     const handleDateSelect = (selectedRange: DateRange | undefined) => {
         if (date?.from && date?.to && selectedRange?.from) {
             const clickedDay = selectedRange.to || selectedRange.from;
             if (clickedDay.getTime() !== date.to.getTime()) {
-                updateParams({ from: clickedDay, to: undefined });
+                updateParams({
+                    from: format(clickedDay, "yyyy-MM-dd"),
+                    to: undefined,
+                });
                 return;
             }
         }
-        updateParams(selectedRange)
-    }
+
+        updateParams({
+            from: selectedRange?.from ? format(selectedRange.from, "yyyy-MM-dd") : undefined,
+            to: selectedRange?.to ? format(selectedRange.to, "yyyy-MM-dd") : undefined,
+        });
+    };
 
     return (
-        <div className={cn("space-y-6", className)}>
-            <div className="space-y-4">
-                {/* Location - Informational only if we are on hotel page */}
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">
-                        Current Destination
-                    </label>
-                    <div className="flex items-center gap-3 px-4 h-14 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-2xl text-sm font-bold text-zinc-900 dark:text-white">
-                        <MapPin className="h-4 w-4 text-blue-500" />
-                        <span>Ulaanbaatar, Mongolia</span>
+        <div className={cn("space-y-5", className)}>
+            <div className="overflow-hidden rounded-[2rem] border border-blue-100/80 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.18),_transparent_42%),linear-gradient(180deg,_rgba(255,255,255,0.98)_0%,_rgba(248,250,252,0.96)_100%)] p-5 shadow-[0_20px_50px_rgba(37,99,235,0.08)] dark:border-blue-900/40 dark:bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.22),_transparent_38%),linear-gradient(180deg,_rgba(24,24,27,0.98)_0%,_rgba(9,9,11,0.96)_100%)]">
+                <div className="flex items-start justify-between gap-4">
+                    <div className="max-w-xs">
+                        <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-blue-600 dark:text-blue-400">
+                            <Sparkles className="h-3 w-3" />
+                            Reservation Assistant
+                        </p>
+                        <h3 className="mt-3 text-xl font-black tracking-tight text-zinc-950 dark:text-white">
+                            Your stay details stay locked as you browse
+                        </h3>
+                        <p className="mt-2 text-sm font-medium leading-relaxed text-zinc-500 dark:text-zinc-400">
+                            Dates and guest setup now follow you between the homepage, hotel detail, and checkout.
+                        </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-right shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5">
+                        <p className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-400">Stay Mode</p>
+                        <p className="mt-1 text-sm font-black text-zinc-950 dark:text-white">
+                            {nights > 0 ? `${nights} night${nights > 1 ? "s" : ""}` : "Flexible"}
+                        </p>
                     </div>
                 </div>
 
-                {/* Date Picker */}
+                <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                    <div className="rounded-2xl border border-white/70 bg-white/80 px-4 py-3 backdrop-blur dark:border-white/10 dark:bg-white/5">
+                        <p className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-400">Dates</p>
+                        <p className="mt-1 text-sm font-black tracking-tight text-zinc-950 dark:text-white">
+                            {date?.from && date?.to
+                                ? `${format(date.from, "MMM d")} - ${format(date.to, "MMM d")}`
+                                : date?.from
+                                    ? `${format(date.from, "MMM d")} onward`
+                                    : "Not selected"}
+                        </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-white/70 bg-white/80 px-4 py-3 backdrop-blur dark:border-white/10 dark:bg-white/5">
+                        <p className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-400">Travelers</p>
+                        <p className="mt-1 text-sm font-black tracking-tight text-zinc-950 dark:text-white">
+                            {totalGuests} guest{totalGuests > 1 ? "s" : ""}
+                        </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-white/70 bg-white/80 px-4 py-3 backdrop-blur dark:border-white/10 dark:bg-white/5">
+                        <p className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-400">Room Request</p>
+                        <p className="mt-1 text-sm font-black tracking-tight text-zinc-950 dark:text-white">
+                            {rooms} room{rooms > 1 ? "s" : ""}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="space-y-4">
                 <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">
                         Stay Period
                     </label>
                     <Popover open={isDatePopoverOpen} onOpenChange={setIsDatePopoverOpen}>
                         <PopoverTrigger asChild>
-                            <button className="w-full h-16 px-5 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-2xl flex items-center justify-between group hover:border-blue-500/30 transition-all focus:outline-none">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
-                                        <CalendarIcon className="h-5 w-5 text-blue-500" />
+                            <button className="w-full rounded-[1.75rem] border border-zinc-200 bg-white px-5 py-4 text-left shadow-sm transition-all hover:border-blue-500/30 hover:shadow-md focus:outline-none dark:border-white/10 dark:bg-white/5">
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10">
+                                            <CalendarIcon className="h-5 w-5 text-blue-500" />
+                                        </div>
+                                        <div>
+                                            <span className="block text-sm font-black tracking-tight text-zinc-950 dark:text-white">
+                                                {date?.from && date?.to
+                                                    ? `${format(date.from, "MMM dd")} - ${format(date.to, "MMM dd")}`
+                                                    : "Choose check-in and check-out"}
+                                            </span>
+                                            <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
+                                                {nights > 0 ? `${nights} night stay` : "Keep this synced across the site"}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col items-start text-left">
-                                        <span className="text-sm font-black text-zinc-900 dark:text-white tracking-tight">
-                                            {date?.from && date?.to ? (
-                                                `${format(date.from, "MMM dd")} — ${format(date.to, "MMM dd")}`
-                                            ) : "Select dates"}
-                                        </span>
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                                            {nights > 0 ? `${nights} Nights stay` : "Check-in / Out"}
-                                        </span>
-                                    </div>
+                                    <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400 transition-colors group-hover:text-blue-500" />
                                 </div>
-                                <ChevronDown className="h-4 w-4 text-zinc-400 group-hover:text-blue-500 transition-colors" />
                             </button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 border-none shadow-[0_30px_70px_rgba(0,0,0,0.2)] rounded-3xl overflow-hidden" align="start" sideOffset={8}>
-                            <div className="px-6 py-4 bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Stay Selection</span>
-                                <Button variant="ghost" size="sm" onClick={() => updateParams(undefined)} className="h-8 text-[9px] font-black uppercase text-zinc-400 hover:text-red-500 rounded-lg">Reset</Button>
+                        <PopoverContent className="w-[calc(100vw-2rem)] max-w-[42rem] overflow-hidden rounded-3xl border-none p-0 shadow-[0_30px_70px_rgba(0,0,0,0.2)]" align="start" sideOffset={8}>
+                            <div className="flex items-center justify-between border-b border-zinc-100 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900">
+                                <div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Stay Selection</span>
+                                    <p className="mt-1 text-sm font-black text-zinc-950 dark:text-white">
+                                        Pick the exact dates you want to carry throughout the booking flow
+                                    </p>
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => updateParams({ from: undefined, to: undefined })}
+                                    className="h-8 rounded-lg text-[9px] font-black uppercase text-zinc-400 hover:text-red-500"
+                                >
+                                    Reset
+                                </Button>
                             </div>
                             <Calendar
                                 initialFocus
@@ -127,95 +250,136 @@ export function SearchForm({ className }: React.HTMLAttributes<HTMLDivElement>) 
                                 defaultMonth={date?.from}
                                 selected={date}
                                 onSelect={handleDateSelect}
-                                numberOfMonths={2}
-                                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                numberOfMonths={isMobileViewport ? 1 : 2}
+                                disabled={(disabledDate) => disabledDate < new Date(new Date().setHours(0, 0, 0, 0))}
                                 className="p-4"
                             />
-                            <div className="p-6 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-100 dark:border-zinc-800">
-                                <Button className="w-full h-12 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 font-black uppercase tracking-widest text-[10px] shadow-xl" onClick={() => setIsDatePopoverOpen(false)}>
-                                    Confirm Dates
+                            <div className="border-t border-zinc-100 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-950">
+                                <Button
+                                    className="h-12 w-full rounded-2xl bg-zinc-950 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-xl dark:bg-white dark:text-zinc-950"
+                                    onClick={() => setIsDatePopoverOpen(false)}
+                                >
+                                    Keep These Dates
                                 </Button>
                             </div>
                         </PopoverContent>
                     </Popover>
                 </div>
 
-                {/* Guests */}
                 <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">
-                        Accommodating
+                        Guest Setup
                     </label>
                     <Popover open={isGuestsPopoverOpen} onOpenChange={setIsGuestsPopoverOpen}>
                         <PopoverTrigger asChild>
-                            <button className="w-full h-16 px-5 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-2xl flex items-center justify-between group hover:border-blue-500/30 transition-all focus:outline-none">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
-                                        <Users className="h-5 w-5 text-blue-500" />
+                            <button className="w-full rounded-[1.75rem] border border-zinc-200 bg-white px-5 py-4 text-left shadow-sm transition-all hover:border-blue-500/30 hover:shadow-md focus:outline-none dark:border-white/10 dark:bg-white/5">
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10">
+                                            <Users className="h-5 w-5 text-blue-500" />
+                                        </div>
+                                        <div>
+                                            <span className="block text-sm font-black tracking-tight text-zinc-950 dark:text-white">
+                                                {totalGuests} traveler{totalGuests > 1 ? "s" : ""}
+                                            </span>
+                                            <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
+                                                {adults} adults, {children} children, {rooms} room{rooms > 1 ? "s" : ""}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col items-start text-left">
-                                        <span className="text-sm font-black text-zinc-900 dark:text-white tracking-tight">
-                                            {totalGuests} {totalGuests > 1 ? "Travelers" : "Traveler"}
-                                        </span>
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                                            {adults} Adults, {children} Children
-                                        </span>
-                                    </div>
+                                    <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400 transition-colors group-hover:text-blue-500" />
                                 </div>
-                                <ChevronDown className="h-4 w-4 text-zinc-400 group-hover:text-blue-500 transition-colors" />
                             </button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-72 p-6 rounded-3xl shadow-[0_30px_70px_rgba(0,0,0,0.2)] border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900" align="start" sideOffset={8}>
+                        <PopoverContent className="w-80 rounded-3xl border-zinc-200 bg-white p-6 shadow-[0_30px_70px_rgba(0,0,0,0.2)] dark:border-zinc-800 dark:bg-zinc-900" align="start" sideOffset={8}>
                             <div className="space-y-6">
-                                {/* Adults */}
+                                <div className="rounded-2xl border border-blue-100 bg-blue-50/80 px-4 py-3 dark:border-blue-900/40 dark:bg-blue-950/20">
+                                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
+                                        Synced Request
+                                    </p>
+                                    <p className="mt-1 text-sm font-black text-zinc-950 dark:text-white">
+                                        {rooms} room{rooms > 1 ? "s" : ""} requested for {totalGuests} guest{totalGuests > 1 ? "s" : ""}
+                                    </p>
+                                </div>
+
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <span className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-tight">Adults</span>
-                                        <p className="text-[10px] text-zinc-500 font-bold uppercase">Ages 13+</p>
+                                        <span className="text-sm font-black uppercase tracking-tight text-zinc-950 dark:text-white">Adults</span>
+                                        <p className="text-[10px] font-bold uppercase text-zinc-500">Ages 13+</p>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <Button
-                                            variant="outline" size="icon" className="h-9 w-9 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90 transition-all"
-                                            onClick={() => { const val = Math.max(1, adults - 1); updateParams(undefined, val); }}
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-9 w-9 rounded-full border-zinc-200 dark:border-zinc-800"
+                                            onClick={() => updateParams({ adults: Math.max(1, adults - 1) })}
                                             disabled={adults <= 1}
                                         >
                                             <Minus className="h-3.5 w-3.5" />
                                         </Button>
                                         <span className="w-4 text-center text-xs font-black">{adults}</span>
                                         <Button
-                                            variant="outline" size="icon" className="h-9 w-9 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90 transition-all"
-                                            onClick={() => { const val = Math.min(10, adults + 1); updateParams(undefined, val); }}
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-9 w-9 rounded-full border-zinc-200 dark:border-zinc-800"
+                                            onClick={() => updateParams({ adults: Math.min(10, adults + 1) })}
                                         >
                                             <Plus className="h-3.5 w-3.5" />
                                         </Button>
                                     </div>
                                 </div>
 
-                                {/* Children */}
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <span className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-tight">Children</span>
-                                        <p className="text-[10px] text-zinc-500 font-bold uppercase">Ages 0-12</p>
+                                        <span className="text-sm font-black uppercase tracking-tight text-zinc-950 dark:text-white">Children</span>
+                                        <p className="text-[10px] font-bold uppercase text-zinc-500">Ages 0-12</p>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <Button
-                                            variant="outline" size="icon" className="h-9 w-9 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90 transition-all"
-                                            onClick={() => { const val = Math.max(0, children - 1); updateParams(undefined, undefined, val); }}
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-9 w-9 rounded-full border-zinc-200 dark:border-zinc-800"
+                                            onClick={() => updateParams({ children: Math.max(0, children - 1) })}
                                             disabled={children <= 0}
                                         >
                                             <Minus className="h-3.5 w-3.5" />
                                         </Button>
                                         <span className="w-4 text-center text-xs font-black">{children}</span>
                                         <Button
-                                            variant="outline" size="icon" className="h-9 w-9 rounded-full border-zinc-200 dark:border-zinc-800 active:scale-90 transition-all"
-                                            onClick={() => { const val = Math.min(10, children + 1); updateParams(undefined, undefined, val); }}
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-9 w-9 rounded-full border-zinc-200 dark:border-zinc-800"
+                                            onClick={() => updateParams({ children: Math.min(10, children + 1) })}
                                         >
                                             <Plus className="h-3.5 w-3.5" />
                                         </Button>
                                     </div>
                                 </div>
 
-                                <Button className="w-full mt-2 h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest text-[10px] shadow-xl" onClick={() => setIsGuestsPopoverOpen(false)}>
-                                    Apply Selection
+                                <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-800/50">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-zinc-900">
+                                            <BedDouble className="h-4 w-4 text-blue-500" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">
+                                                Rooms Requested
+                                            </p>
+                                            <p className="mt-1 text-sm font-black text-zinc-950 dark:text-white">
+                                                {rooms} room{rooms > 1 ? "s" : ""}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
+                                        From homepage
+                                    </span>
+                                </div>
+
+                                <Button
+                                    className="h-12 w-full rounded-2xl bg-blue-600 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-xl hover:bg-blue-700"
+                                    onClick={() => setIsGuestsPopoverOpen(false)}
+                                >
+                                    Save Guest Setup
                                 </Button>
                             </div>
                         </PopoverContent>
@@ -223,9 +387,9 @@ export function SearchForm({ className }: React.HTMLAttributes<HTMLDivElement>) 
                 </div>
             </div>
 
-            <p className="text-[9px] text-center font-bold text-zinc-400 uppercase tracking-widest leading-relaxed px-4 opacity-80">
-                Official COP17 support is available for all bookings made through this platform.
-            </p>
+            <div className="rounded-2xl border border-zinc-200/80 bg-white/80 px-4 py-3 text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-500 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-zinc-400">
+                Your active booking dates follow you back to the homepage and forward into checkout.
+            </div>
         </div>
-    )
+    );
 }
