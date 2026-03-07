@@ -20,6 +20,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { ImageUpload } from "@/components/admin/image-upload";
 import { AmenitiesSelector } from "@/components/admin/amenities-selector";
 import { LocationPicker } from "@/components/admin/location-picker";
+import { HotelPolicyFields } from "@/components/admin/hotel-policy-fields";
 
 const initialState = { error: "", fieldErrors: {} };
 
@@ -99,6 +100,8 @@ export default function NewHotelPage() {
                             {state?.fieldErrors?.website && <p className="text-red-500 text-sm">{state.fieldErrors.website}</p>}
                         </div>
                     </div>
+
+                    <HotelPolicyFields />
 
                     {/* Address & Location */}
                     <div className="space-y-4">

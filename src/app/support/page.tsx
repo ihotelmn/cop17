@@ -38,7 +38,7 @@ const channels = [
 const faqs = [
     {
         q: "How do I modify or cancel my booking?",
-        a: "Log into your account and visit 'My Bookings' to manage your reservation. Cancellations made 7+ days before check-in receive a full refund. For same-day changes, contact our hotline directly.",
+        a: "Log into your account and visit 'My Bookings' to manage your reservation. Refunds, penalties, and change windows follow the cancellation policy configured for your hotel and stay.",
     },
     {
         q: "Is the shuttle service really free?",

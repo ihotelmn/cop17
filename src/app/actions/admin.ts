@@ -6,6 +6,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { Hotel, Room } from "@/types/hotel";
+import { DEFAULT_HOTEL_BOOKING_POLICY } from "@/lib/cancellation-policy";
 
 // No re-exports here to avoid Turbopack build errors.
 // Import types from @/types/hotel instead.
@@ -33,7 +34,37 @@ const hotelSchema = z.object({
     check_out_time: z.string().optional(),
     latitude: z.preprocess((val) => (val ? Number(val) : undefined), z.number().optional()),
     longitude: z.preprocess((val) => (val ? Number(val) : undefined), z.number().optional()),
-});
+    free_cancellation_window_hours: z.preprocess(
+        (val) => (val === "" || val == null ? DEFAULT_HOTEL_BOOKING_POLICY.freeCancellationWindowHours : Number(val)),
+        z.number().int().min(0)
+    ),
+    partial_cancellation_window_hours: z.preprocess(
+        (val) => (val === "" || val == null ? DEFAULT_HOTEL_BOOKING_POLICY.partialCancellationWindowHours : Number(val)),
+        z.number().int().min(0)
+    ),
+    partial_cancellation_penalty_percent: z.preprocess(
+        (val) => (val === "" || val == null ? DEFAULT_HOTEL_BOOKING_POLICY.partialCancellationPenaltyPercent : Number(val)),
+        z.number().int().min(0).max(100)
+    ),
+    late_cancellation_penalty_percent: z.preprocess(
+        (val) => (val === "" || val == null ? DEFAULT_HOTEL_BOOKING_POLICY.lateCancellationPenaltyPercent : Number(val)),
+        z.number().int().min(0).max(100)
+    ),
+    modification_cutoff_hours: z.preprocess(
+        (val) => (val === "" || val == null ? DEFAULT_HOTEL_BOOKING_POLICY.modificationCutoffHours : Number(val)),
+        z.number().int().min(0)
+    ),
+    cancellation_policy_notes: z.preprocess(
+        (val) => (val === "" ? undefined : val),
+        z.string().max(2000).optional()
+    ),
+}).refine(
+    (value) => value.free_cancellation_window_hours >= value.partial_cancellation_window_hours,
+    {
+        message: "Free cancellation window must be greater than or equal to the standard penalty window.",
+        path: ["partial_cancellation_window_hours"],
+    }
+);
 
 export async function getHotels() {
     const supabase = await createClient();
@@ -176,6 +207,12 @@ export async function createHotel(prevState: any, formData: FormData) {
         check_out_time: formData.get("check_out_time"),
         latitude: formData.get("latitude") ? Number(formData.get("latitude")) : undefined,
         longitude: formData.get("longitude") ? Number(formData.get("longitude")) : undefined,
+        free_cancellation_window_hours: formData.get("free_cancellation_window_hours"),
+        partial_cancellation_window_hours: formData.get("partial_cancellation_window_hours"),
+        partial_cancellation_penalty_percent: formData.get("partial_cancellation_penalty_percent"),
+        late_cancellation_penalty_percent: formData.get("late_cancellation_penalty_percent"),
+        modification_cutoff_hours: formData.get("modification_cutoff_hours"),
+        cancellation_policy_notes: formData.get("cancellation_policy_notes"),
     };
 
     const validatedFields = hotelSchema.safeParse(rawData);
@@ -248,6 +285,12 @@ export async function createHotel(prevState: any, formData: FormData) {
         check_out_time: data.check_out_time,
         latitude: data.latitude,
         longitude: data.longitude,
+        free_cancellation_window_hours: data.free_cancellation_window_hours,
+        partial_cancellation_window_hours: data.partial_cancellation_window_hours,
+        partial_cancellation_penalty_percent: data.partial_cancellation_penalty_percent,
+        late_cancellation_penalty_percent: data.late_cancellation_penalty_percent,
+        modification_cutoff_hours: data.modification_cutoff_hours,
+        cancellation_policy_notes: data.cancellation_policy_notes || null,
         ...cachedData
     });
 
@@ -359,6 +402,12 @@ export async function updateHotel(id: string, prevState: any, formData: FormData
         check_out_time: formData.get("check_out_time"),
         latitude: formData.get("latitude") ? Number(formData.get("latitude")) : undefined,
         longitude: formData.get("longitude") ? Number(formData.get("longitude")) : undefined,
+        free_cancellation_window_hours: formData.get("free_cancellation_window_hours"),
+        partial_cancellation_window_hours: formData.get("partial_cancellation_window_hours"),
+        partial_cancellation_penalty_percent: formData.get("partial_cancellation_penalty_percent"),
+        late_cancellation_penalty_percent: formData.get("late_cancellation_penalty_percent"),
+        modification_cutoff_hours: formData.get("modification_cutoff_hours"),
+        cancellation_policy_notes: formData.get("cancellation_policy_notes"),
     };
 
     const validatedFields = hotelSchema.safeParse(rawData);
@@ -434,6 +483,12 @@ export async function updateHotel(id: string, prevState: any, formData: FormData
         check_out_time: data.check_out_time,
         latitude: data.latitude,
         longitude: data.longitude,
+        free_cancellation_window_hours: data.free_cancellation_window_hours,
+        partial_cancellation_window_hours: data.partial_cancellation_window_hours,
+        partial_cancellation_penalty_percent: data.partial_cancellation_penalty_percent,
+        late_cancellation_penalty_percent: data.late_cancellation_penalty_percent,
+        modification_cutoff_hours: data.modification_cutoff_hours,
+        cancellation_policy_notes: data.cancellation_policy_notes || null,
         ...cachedData
     }).eq("id", id);
 

@@ -10,6 +10,7 @@ import { GolomtService } from "@/lib/golomt";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { revalidateTag } from "next/cache";
 import type { BookingState } from "@/types/booking";
+import { calculateBookingPolicyState } from "@/lib/cancellation-policy";
 
 // No re-exports here to avoid Turbopack build errors.
 // Import types from @/types/booking instead.
@@ -326,13 +327,7 @@ export async function getBookingDetail(bookingId: string) {
             room:rooms (
                 name,
                 price_per_night,
-                hotel:hotels (
-                    name,
-                    address,
-                    images,
-                    contact_phone,
-                    contact_email
-                )
+                hotel:hotels (*)
             )
         `)
         .eq("id", bookingId)
@@ -392,8 +387,9 @@ export async function getMyBookings() {
     return bookings;
 }
 
-export async function cancelBookingAction(bookingId: string) {
+export async function cancelBookingAction(bookingId: string, reason?: string) {
     const supabase = await createClient();
+    const adminSupabase = getSupabaseAdmin();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) return { success: false, error: "Unauthorized" };
@@ -402,7 +398,7 @@ export async function cancelBookingAction(bookingId: string) {
         // 1. Fetch booking to check ownership and status
         const { data: booking, error: fetchError } = await supabase
             .from("bookings")
-            .select("status, check_in_date, user_id, room:rooms(hotel:hotels(owner_id, name))")
+            .select("id, status, check_in_date, total_price, user_id, room:rooms(hotel:hotels(*))")
             .eq("id", bookingId)
             .eq("user_id", user.id)
             .single();
@@ -415,34 +411,69 @@ export async function cancelBookingAction(bookingId: string) {
             return { success: false, error: "Booking is already cancelled." };
         }
 
-        // 2. Update status
-        const { error: updateError } = await supabase
+        // @ts-ignore
+        const hotel = booking.room?.hotel;
+        const cancellationState = calculateBookingPolicyState(
+            hotel,
+            booking.check_in_date,
+            Number(booking.total_price || 0),
+            new Date(),
+            hotel?.check_in_time
+        );
+
+        if (!cancellationState.canCancelOnline) {
+            return {
+                success: false,
+                error: "Online cancellation is no longer available after check-in. Please contact support.",
+            };
+        }
+
+        const cancellationUpdate = {
+            status: "cancelled",
+            cancelled_at: new Date().toISOString(),
+            cancellation_reason: reason?.trim() || null,
+            cancellation_penalty_percent: cancellationState.penaltyPercent,
+            cancellation_penalty_amount: cancellationState.penaltyAmount,
+        };
+
+        // 2. Update status using admin client after ownership has already been verified.
+        let { error: updateError } = await adminSupabase
             .from("bookings")
-            .update({ status: "cancelled" })
+            .update(cancellationUpdate)
             .eq("id", bookingId);
+
+        // Backward-compatibility for environments where the tracking columns are not migrated yet.
+        if (updateError?.message?.includes("column") && updateError.message.includes("does not exist")) {
+            ({ error: updateError } = await adminSupabase
+                .from("bookings")
+                .update({ status: "cancelled" })
+                .eq("id", bookingId));
+        }
 
         if (updateError) throw updateError;
 
         // 3. Notify Hotel Owner
         // @ts-ignore
-        const ownerId = booking.room?.hotel?.owner_id;
+        const ownerId = hotel?.owner_id;
         // @ts-ignore
-        const hotelName = booking.room?.hotel?.name;
+        const hotelName = hotel?.name;
 
         if (ownerId) {
-            const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
-            const adminSupabase = getSupabaseAdmin();
-
             await adminSupabase.from("notifications").insert({
                 user_id: ownerId,
                 title: "Booking Cancelled",
-                message: `A booking for ${hotelName} has been cancelled by the guest.`,
+                message: `A booking for ${hotelName} has been cancelled by the guest. Penalty: ${cancellationState.penaltyPercent}% (${cancellationState.penaltyAmount}).`,
                 type: "booking_cancelled",
                 link: `/admin/bookings/${bookingId}`
             });
         }
 
-        return { success: true };
+        return {
+            success: true,
+            message: cancellationState.penaltyPercent === 0
+                ? "Booking cancelled with full refund eligibility."
+                : `Booking cancelled. ${cancellationState.penaltyPercent}% cancellation penalty applies.`,
+        };
     } catch (error) {
         console.error("Cancel Booking Error:", error);
         return { success: false, error: "Failed to cancel booking." };
@@ -451,6 +482,7 @@ export async function cancelBookingAction(bookingId: string) {
 
 export async function requestModificationAction(bookingId: string, message: string) {
     const supabase = await createClient();
+    const adminSupabase = getSupabaseAdmin();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) return { success: false, error: "Unauthorized" };
@@ -459,7 +491,7 @@ export async function requestModificationAction(bookingId: string, message: stri
         // 1. Verify ownership
         const { data: booking, error: fetchError } = await supabase
             .from("bookings")
-            .select("id, room:rooms(hotel:hotels(owner_id, name))")
+            .select("id, check_in_date, total_price, room:rooms(hotel:hotels(*))")
             .eq("id", bookingId)
             .eq("user_id", user.id)
             .single();
@@ -468,16 +500,30 @@ export async function requestModificationAction(bookingId: string, message: stri
             return { success: false, error: "Booking not found or access denied." };
         }
 
+        // @ts-ignore
+        const hotel = booking.room?.hotel;
+        const policyState = calculateBookingPolicyState(
+            hotel,
+            booking.check_in_date,
+            Number(booking.total_price || 0),
+            new Date(),
+            hotel?.check_in_time
+        );
+
+        if (!policyState.canRequestModification) {
+            return {
+                success: false,
+                error: `Online changes closed on ${format(policyState.modificationDeadline, "MMM d, yyyy 'at' HH:mm")}. Please contact support.`,
+            };
+        }
+
         // 2. Notify Hotel Owner about modification request
         // @ts-ignore
-        const ownerId = booking.room?.hotel?.owner_id;
+        const ownerId = hotel?.owner_id;
         // @ts-ignore
-        const hotelName = booking.room?.hotel?.name;
+        const hotelName = hotel?.name;
 
         if (ownerId) {
-            const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
-            const adminSupabase = getSupabaseAdmin();
-
             await adminSupabase.from("notifications").insert({
                 user_id: ownerId,
                 title: "Modification Request",

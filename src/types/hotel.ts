@@ -22,6 +22,12 @@ export interface Hotel {
     website?: string | null
     check_in_time?: string | null
     check_out_time?: string | null
+    free_cancellation_window_hours?: number | null
+    partial_cancellation_window_hours?: number | null
+    partial_cancellation_penalty_percent?: number | null
+    late_cancellation_penalty_percent?: number | null
+    modification_cutoff_hours?: number | null
+    cancellation_policy_notes?: string | null
     // Enrichment
     slug?: string | null
     star_rating?: number | null

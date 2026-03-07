@@ -19,7 +19,7 @@ import {
     Building2,
     ShieldCheck
 } from "lucide-react";
-import { format, differenceInDays } from "date-fns";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import Link from "next/link";
 import {
@@ -31,7 +31,9 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { calculateBookingPolicyState, formatPolicyWindow } from "@/lib/cancellation-policy";
 
 export default function BookingPortalPage() {
     const params = useParams();
@@ -40,7 +42,9 @@ export default function BookingPortalPage() {
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
     const [modMessage, setModMessage] = useState("");
+    const [cancelReason, setCancelReason] = useState("");
     const [isModDialogOpen, setIsModDialogOpen] = useState(false);
+    const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
     const bookingId = params.id as string;
 
@@ -60,10 +64,12 @@ export default function BookingPortalPage() {
 
     const handleCancel = async () => {
         setActionLoading(true);
-        const res = await cancelBookingAction(bookingId);
+        const res = await cancelBookingAction(bookingId, cancelReason);
         setActionLoading(false);
         if (res.success) {
-            toast.success("Booking cancelled successfully");
+            toast.success(res.message || "Booking cancelled successfully");
+            setCancelReason("");
+            setIsCancelDialogOpen(false);
             router.refresh();
             // Refresh local state
             const data = await getBookingDetail(bookingId);
@@ -102,8 +108,15 @@ export default function BookingPortalPage() {
     }
 
     const checkInDate = new Date(booking.check_in_date);
-    const daysUntilCheckIn = differenceInDays(checkInDate, new Date());
-    const canCancelFree = daysUntilCheckIn >= 7; // Example policy: Free cancellation if > 7 days
+    const policyState = calculateBookingPolicyState(
+        booking.room?.hotel,
+        booking.check_in_date,
+        Number(booking.total_price || 0),
+        new Date(),
+        booking.room?.hotel?.check_in_time
+    );
+    const canCancelBooking = booking.status !== "cancelled" && policyState.canCancelOnline;
+    const canRequestModification = booking.status !== "cancelled" && policyState.canRequestModification;
 
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pt-24 pb-20">
@@ -185,17 +198,25 @@ export default function BookingPortalPage() {
                                                 <div>
                                                     <h4 className="font-bold text-zinc-900 dark:text-white">Cancel Booking</h4>
                                                     <p className="text-sm text-zinc-500 mt-1">
-                                                        {canCancelFree
-                                                            ? "Free cancellation available until " + format(new Date(checkInDate.getTime() - 7 * 24 * 60 * 60 * 1000), "MMM d")
-                                                            : "Standard cancellation penalty may apply."}
+                                                        {policyState.stage === "free"
+                                                            ? `Full refund available until ${format(policyState.freeCancellationDeadline, "MMM d, yyyy 'at' HH:mm")}.`
+                                                            : policyState.stage === "partial"
+                                                                ? `${policyState.penaltyPercent}% penalty applies right now. Estimated refund: $${policyState.refundAmount}.`
+                                                                : policyState.stage === "late"
+                                                                    ? `${policyState.penaltyPercent}% late cancellation penalty applies right now.`
+                                                                    : "Online cancellation is no longer available after check-in."}
                                                     </p>
                                                 </div>
                                             </div>
 
-                                            <Dialog>
+                                            <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
                                                 <DialogTrigger asChild>
-                                                    <Button variant="destructive" className="rounded-xl h-11 px-8 font-bold whitespace-nowrap">
-                                                        Request Cancellation
+                                                    <Button
+                                                        variant="destructive"
+                                                        className="rounded-xl h-11 px-8 font-bold whitespace-nowrap"
+                                                        disabled={!canCancelBooking}
+                                                    >
+                                                        Cancel Booking
                                                     </Button>
                                                 </DialogTrigger>
                                                 <DialogContent className="rounded-3xl">
@@ -203,16 +224,36 @@ export default function BookingPortalPage() {
                                                         <DialogTitle className="text-2xl font-black">Confirm Cancellation?</DialogTitle>
                                                         <DialogDescription className="text-zinc-500">
                                                             This action will cancel your reservation at {booking.room?.hotel?.name}.
-                                                            {canCancelFree
-                                                                ? " Since you are within the free cancellation window, a full refund will be processed."
-                                                                : " Please note that standard penalties may apply based on the hotel's policy."}
+                                                            {" "}
+                                                            {policyState.penaltyPercent === 0
+                                                                ? "You are still inside the free cancellation window, so this booking remains fully refundable."
+                                                                : `Current estimated penalty is ${policyState.penaltyPercent}% ($${policyState.penaltyAmount}), leaving an estimated refund of $${policyState.refundAmount}.`}
                                                         </DialogDescription>
                                                     </DialogHeader>
+                                                    <div className="mt-4 space-y-2">
+                                                        <Label htmlFor="cancelReason" className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+                                                            Cancellation Reason (Optional)
+                                                        </Label>
+                                                        <Textarea
+                                                            id="cancelReason"
+                                                            value={cancelReason}
+                                                            onChange={(event) => setCancelReason(event.target.value)}
+                                                            placeholder="Share the reason for cancellation for the hotel team."
+                                                            className="min-h-[96px] rounded-2xl border-zinc-200 p-4 text-sm"
+                                                        />
+                                                    </div>
                                                     <DialogFooter className="mt-6 flex gap-3">
-                                                        <Button variant="ghost" disabled={actionLoading} onClick={() => { }} className="rounded-xl font-bold">Nevermind</Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            disabled={actionLoading}
+                                                            onClick={() => setIsCancelDialogOpen(false)}
+                                                            className="rounded-xl font-bold"
+                                                        >
+                                                            Nevermind
+                                                        </Button>
                                                         <Button
                                                             variant="destructive"
-                                                            disabled={actionLoading}
+                                                            disabled={actionLoading || !canCancelBooking}
                                                             onClick={handleCancel}
                                                             className="rounded-xl font-bold px-8 bg-rose-600 hover:bg-rose-700"
                                                         >
@@ -230,13 +271,21 @@ export default function BookingPortalPage() {
                                                 </div>
                                                 <div>
                                                     <h4 className="font-bold text-zinc-900 dark:text-white">Modify Booking</h4>
-                                                    <p className="text-sm text-zinc-500 mt-1">Change dates, room type or guest info.</p>
+                                                    <p className="text-sm text-zinc-500 mt-1">
+                                                        {canRequestModification
+                                                            ? `Guests can request changes until ${format(policyState.modificationDeadline, "MMM d, yyyy 'at' HH:mm")}.`
+                                                            : `Online change requests closed on ${format(policyState.modificationDeadline, "MMM d, yyyy 'at' HH:mm")}.`}
+                                                    </p>
                                                 </div>
                                             </div>
 
                                             <Dialog open={isModDialogOpen} onOpenChange={setIsModDialogOpen}>
                                                 <DialogTrigger asChild>
-                                                    <Button variant="outline" className="rounded-xl h-11 px-8 font-bold border-blue-200 text-blue-700 hover:bg-blue-100/50 transition-colors whitespace-nowrap">
+                                                    <Button
+                                                        variant="outline"
+                                                        className="rounded-xl h-11 px-8 font-bold border-blue-200 text-blue-700 hover:bg-blue-100/50 transition-colors whitespace-nowrap"
+                                                        disabled={!canRequestModification}
+                                                    >
                                                         Request Change
                                                     </Button>
                                                 </DialogTrigger>
@@ -345,21 +394,40 @@ export default function BookingPortalPage() {
                                     <div className="h-5 w-5 rounded-full bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5">
                                         <CheckCircle2 className="h-3 w-3 text-green-400" />
                                     </div>
-                                    <p className="text-zinc-300">Free cancellation available up to 7 days before check-in.</p>
+                                    <p className="text-zinc-300">
+                                        Free cancellation up to {formatPolicyWindow(policyState.policy.freeCancellationWindowHours)} before check-in.
+                                    </p>
                                 </li>
                                 <li className="flex gap-3 text-sm">
                                     <div className="h-5 w-5 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
                                         <Clock className="h-3 w-3 text-amber-400" />
                                     </div>
-                                    <p className="text-zinc-300">50% penalty for cancellations between 7 days and 48h.</p>
+                                    <p className="text-zinc-300">
+                                        {policyState.policy.partialCancellationPenaltyPercent}% penalty between {formatPolicyWindow(policyState.policy.freeCancellationWindowHours)} and {formatPolicyWindow(policyState.policy.partialCancellationWindowHours)} before check-in.
+                                    </p>
                                 </li>
                                 <li className="flex gap-3 text-sm">
                                     <div className="h-5 w-5 rounded-full bg-red-500/20 flex items-center justify-center shrink-0 mt-0.5">
                                         <XCircle className="h-3 w-3 text-red-400" />
                                     </div>
-                                    <p className="text-zinc-300">No refund for cancellations within 48h of arrival.</p>
+                                    <p className="text-zinc-300">
+                                        {policyState.policy.lateCancellationPenaltyPercent}% penalty inside the final {formatPolicyWindow(policyState.policy.partialCancellationWindowHours)} before arrival.
+                                    </p>
+                                </li>
+                                <li className="flex gap-3 text-sm">
+                                    <div className="h-5 w-5 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                                        <MessageSquare className="h-3 w-3 text-blue-400" />
+                                    </div>
+                                    <p className="text-zinc-300">
+                                        Change requests stay open until {formatPolicyWindow(policyState.policy.modificationCutoffHours)} before check-in.
+                                    </p>
                                 </li>
                             </ul>
+                            {policyState.policy.cancellationPolicyNotes && (
+                                <div className="mt-6 rounded-2xl border border-zinc-700/80 bg-white/5 p-4 text-sm text-zinc-300">
+                                    {policyState.policy.cancellationPolicyNotes}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -21,6 +21,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { ImageUpload } from "@/components/admin/image-upload";
 import { AmenitiesSelector } from "@/components/admin/amenities-selector";
 import { LocationPicker } from "@/components/admin/location-picker";
+import { HotelPolicyFields } from "@/components/admin/hotel-policy-fields";
 
 const initialState = { error: "", fieldErrors: {} };
 
@@ -152,6 +153,9 @@ export default function EditHotelForm({ hotel }: { hotel: Hotel }) {
                         {state?.fieldErrors?.check_out_time && <p className="text-red-500 text-sm">{state.fieldErrors.check_out_time}</p>}
                     </div>
                 </div>
+
+                {/* Guest Policy */}
+                <HotelPolicyFields hotel={hotel} />
 
                 {/* Address & Location */}
                 <div className="space-y-4">
