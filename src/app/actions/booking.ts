@@ -28,22 +28,27 @@ const bookingSchema = z.object({
 });
 
 function getBookingActionErrorMessage(error: unknown): string {
-    const msg = error instanceof Error ? error.message : JSON.stringify(error);
+    const errorString = error instanceof Error ? error.stack || error.message : JSON.stringify(error, Object.getOwnPropertyNames(error));
+
+    // Log to server console
+    console.error("FULL BOOKING ERROR:", error);
+
+    const msg = error instanceof Error ? error.message : (typeof error === 'string' ? error : JSON.stringify(error));
 
     if (
         msg.includes("ENCRYPTION_KEY") ||
         msg.includes("Supabase Admin keys are missing") ||
         msg.includes("Missing required environment variable")
     ) {
-        console.error("CRITICAL CONFIG ERROR:", msg);
-        return `Booking service configuration error: ${msg}. Please ensure all environment variables are set in production.`;
+        return `Configuration Error: ${msg}. Check Vercel Env Vars.`;
     }
 
     if (msg.includes("column") && msg.includes("does not exist")) {
-        return `Database schema mismatch: ${msg}. Please run pending migrations.`;
+        return `Database Schema Error: ${msg}. Migration required.`;
     }
 
-    return msg || "An unexpected error occurred. Please try again.";
+    // Return the full detail to the user for debugging
+    return `Server Error: ${msg} | Detailed: ${errorString.substring(0, 300)}`;
 }
 
 export async function createBookingAction(prevState: BookingState, formData: FormData): Promise<BookingState> {
