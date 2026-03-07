@@ -28,11 +28,7 @@ const bookingSchema = z.object({
 });
 
 function getBookingActionErrorMessage(error: unknown): string {
-    if (!(error instanceof Error)) {
-        return "An unexpected error occurred. Please try again.";
-    }
-
-    const msg = error.message;
+    const msg = error instanceof Error ? error.message : JSON.stringify(error);
 
     if (
         msg.includes("ENCRYPTION_KEY") ||
@@ -41,6 +37,10 @@ function getBookingActionErrorMessage(error: unknown): string {
     ) {
         console.error("CRITICAL CONFIG ERROR:", msg);
         return `Booking service configuration error: ${msg}. Please ensure all environment variables are set in production.`;
+    }
+
+    if (msg.includes("column") && msg.includes("does not exist")) {
+        return `Database schema mismatch: ${msg}. Please run pending migrations.`;
     }
 
     return msg || "An unexpected error occurred. Please try again.";

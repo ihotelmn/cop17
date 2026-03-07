@@ -25,7 +25,7 @@ interface CheckStatusResponse {
 
 const GOLOMT_ENDPOINT = process.env.GOLOMT_ENDPOINT || 'https://ecommerce.golomtbank.com/api'; // Example
 const MERCHANT_ID = process.env.GOLOMT_MERCHANT_ID || 'TEST_MERCHANT';
-const SECRET_KEY = process.env.GOLOMT_SECRET_KEY || 'TEST_SECRET';
+const SECRET_KEY = process.env.GOLOMT_SECRET_TOKEN || 'TEST_SECRET';
 
 export const GolomtService = {
     /**
