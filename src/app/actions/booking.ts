@@ -27,6 +27,22 @@ const bookingSchema = z.object({
     specialRequests: z.string().nullable().optional(),
 });
 
+function getBookingActionErrorMessage(error: unknown): string {
+    if (!(error instanceof Error)) {
+        return "An unexpected error occurred. Please try again.";
+    }
+
+    if (
+        error.message.includes("ENCRYPTION_KEY") ||
+        error.message.includes("Supabase Admin keys are missing") ||
+        error.message.includes("Missing required environment variable")
+    ) {
+        return "Booking service is temporarily unavailable. Please contact support.";
+    }
+
+    return error.message || "An unexpected error occurred. Please try again.";
+}
+
 export async function createBookingAction(prevState: BookingState, formData: FormData): Promise<BookingState> {
     try {
         const supabase = await createClient();
@@ -204,7 +220,7 @@ export async function createBookingAction(prevState: BookingState, formData: For
 
     } catch (error) {
         console.error("Booking Logic Error:", error);
-        return { error: "An unexpected error occurred. Please try again." };
+        return { error: getBookingActionErrorMessage(error) };
     }
 }
 

@@ -46,8 +46,12 @@ export function CheckoutForm({
             } else {
                 setError(result.error || "Failed to create booking");
             }
-        } catch {
-            setError("An unexpected error occurred. Please try again.");
+        } catch (caughtError) {
+            setError(
+                caughtError instanceof Error
+                    ? caughtError.message
+                    : "An unexpected error occurred. Please try again."
+            );
         } finally {
             setLoading(false);
         }

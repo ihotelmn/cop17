@@ -1,16 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { encrypt, decrypt } from './encryption'
 
-// Mock Web Crypto API for Node.js environment in tests
-import { webcrypto } from 'node:crypto'
 process.env.ENCRYPTION_KEY = '12345678901234567890123456789012'
-
-if (!global.crypto) {
-    Object.defineProperty(globalThis, 'crypto', {
-        value: webcrypto,
-        configurable: true,
-    })
-}
 
 describe('Encryption Utility', () => {
     it('should encrypt and decrypt data correctly', async () => {

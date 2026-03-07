@@ -1,11 +1,12 @@
 import "server-only";
+import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { requireEnv } from "@/lib/env";
 
 const ALGORITHM = "aes-256-gcm";
-const IV_LENGTH = 16; // AES block size
+const IV_LENGTH = 12;
+const AUTH_TAG_LENGTH = 16;
 
-// Helper to convert string to buffer (using Web Crypto API in Node/Next Edge)
-async function getKey() {
+function getKeyBuffer() {
     const encryptionKey = requireEnv("ENCRYPTION_KEY");
     if (!encryptionKey || encryptionKey.length !== 32) {
         throw new Error(
@@ -13,57 +14,39 @@ async function getKey() {
             "Generate one with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex').slice(0,32))\""
         );
     }
-    const encoder = new TextEncoder();
-    const keyMaterial = await crypto.subtle.importKey(
-        "raw",
-        encoder.encode(encryptionKey),
-        "AES-GCM",
-        false,
-        ["encrypt", "decrypt"]
-    );
-    return keyMaterial;
+
+    return Buffer.from(encryptionKey, "utf8");
 }
 
 export async function encrypt(text: string): Promise<string> {
-    const key = await getKey();
-    const iv = crypto.getRandomValues(new Uint8Array(12)); // 12 bytes recommended for GCM
-    const encodedText = new TextEncoder().encode(text);
+    const key = getKeyBuffer();
+    const iv = randomBytes(IV_LENGTH);
+    const cipher = createCipheriv(ALGORITHM, key, iv);
 
-    const encryptedContent = await crypto.subtle.encrypt(
-        {
-            name: "AES-GCM",
-            iv: iv,
-        },
-        key,
-        encodedText
-    );
+    const encrypted = Buffer.concat([
+        cipher.update(text, "utf8"),
+        cipher.final(),
+    ]);
 
-    // Combine IV and encrypted data, encode as Base64
-    const encryptedArray = new Uint8Array(encryptedContent);
-    const combined = new Uint8Array(iv.length + encryptedArray.length);
-    combined.set(iv);
-    combined.set(encryptedArray, iv.length);
+    const authTag = cipher.getAuthTag();
 
-    return Buffer.from(combined).toString("base64");
+    return Buffer.concat([iv, authTag, encrypted]).toString("base64");
 }
 
 export async function decrypt(encryptedText: string): Promise<string> {
-    const key = await getKey();
-    const combined = new Uint8Array(Buffer.from(encryptedText, "base64"));
+    const key = getKeyBuffer();
+    const combined = Buffer.from(encryptedText, "base64");
+    const iv = combined.subarray(0, IV_LENGTH);
+    const authTag = combined.subarray(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH);
+    const data = combined.subarray(IV_LENGTH + AUTH_TAG_LENGTH);
 
-    // Extract IV
-    const iv = combined.slice(0, 12);
-    // Extract encrypted content
-    const data = combined.slice(12);
+    const decipher = createDecipheriv(ALGORITHM, key, iv);
+    decipher.setAuthTag(authTag);
 
-    const decryptedContent = await crypto.subtle.decrypt(
-        {
-            name: "AES-GCM",
-            iv: iv,
-        },
-        key,
-        data
-    );
+    const decrypted = Buffer.concat([
+        decipher.update(data),
+        decipher.final(),
+    ]);
 
-    return new TextDecoder().decode(decryptedContent);
+    return decrypted.toString("utf8");
 }
