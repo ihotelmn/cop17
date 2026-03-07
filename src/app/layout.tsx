@@ -23,6 +23,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { OrganizersSection } from "@/components/organizers-section";
 import { Toaster } from "sonner";
+import { Suspense } from "react";
 
 import { createClient } from "@/lib/supabase/server";
 import PageTransition from "@/components/page-transition";
@@ -52,7 +53,9 @@ export default async function RootLayout({
         className="antialiased min-h-screen bg-background text-foreground"
       >
         <AuthProvider initialUser={user}>
-          <SiteHeader />
+          <Suspense fallback={<div className="h-16 bg-zinc-950/90 border-b border-white/10" />}>
+            <SiteHeader />
+          </Suspense>
           <main className="min-h-screen pt-16">
 
             <PageTransition>{children}</PageTransition>
