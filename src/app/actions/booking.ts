@@ -48,7 +48,7 @@ function getBookingActionErrorMessage(error: unknown): string {
     }
 
     // Return the full detail to the user for debugging
-    return `Server Error: ${msg} | Detailed: ${errorString.substring(0, 300)}`;
+    return `Server Error [VER-307]: ${msg} | Detailed: ${errorString.substring(0, 300)}`;
 }
 
 export async function createBookingAction(prevState: BookingState, formData: FormData): Promise<BookingState> {
