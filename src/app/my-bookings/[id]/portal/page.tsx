@@ -22,6 +22,7 @@ import {
 import { format } from "date-fns";
 import { toast } from "sonner";
 import Link from "next/link";
+import { getHotelImageUrl } from "@/lib/utils";
 import {
     Dialog,
     DialogContent,
@@ -108,12 +109,15 @@ export default function BookingPortalPage() {
     }
 
     const checkInDate = new Date(booking.check_in_date);
+    const rawHotel = booking.room?.hotel;
+    const hotel = Array.isArray(rawHotel) ? rawHotel[0] : rawHotel;
+
     const policyState = calculateBookingPolicyState(
-        booking.room?.hotel,
+        hotel,
         booking.check_in_date,
         Number(booking.total_price || 0),
         new Date(),
-        booking.room?.hotel?.check_in_time
+        hotel?.check_in_time
     );
     const canCancelBooking = booking.status !== "cancelled" && policyState.canCancelOnline;
     const canRequestModification = booking.status !== "cancelled" && policyState.canRequestModification;
@@ -144,8 +148,8 @@ export default function BookingPortalPage() {
 
                             <div className="relative aspect-video rounded-2xl overflow-hidden mb-8 bg-zinc-100 group">
                                 <img
-                                    src={booking.room?.hotel?.images?.[0] || "/placeholder-hotel.jpg"}
-                                    alt={booking.room?.hotel?.name}
+                                    src={getHotelImageUrl(hotel?.images?.[0])}
+                                    alt={hotel?.name}
                                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                 />
                                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6">
@@ -223,7 +227,7 @@ export default function BookingPortalPage() {
                                                     <DialogHeader>
                                                         <DialogTitle className="text-2xl font-black">Confirm Cancellation?</DialogTitle>
                                                         <DialogDescription className="text-zinc-500">
-                                                            This action will cancel your reservation at {booking.room?.hotel?.name}.
+                                                            This action will cancel your reservation at {hotel?.name}.
                                                             {" "}
                                                             {policyState.penaltyPercent === 0
                                                                 ? "You are still inside the free cancellation window, so this booking remains fully refundable."

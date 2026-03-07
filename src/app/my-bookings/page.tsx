@@ -7,6 +7,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
+import { getHotelImageUrl } from "@/lib/utils";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -54,8 +55,9 @@ export default async function MyBookingsPage() {
                 ) : (
                     <div className="grid gap-8">
                         {bookings.map((booking: any) => {
-                            const hotel = booking.room?.hotel;
-                            const hotelImage = hotel?.images?.[0] || "/placeholder-hotel.jpg";
+                            const rawHotel = booking.room?.hotel;
+                            const hotel = Array.isArray(rawHotel) ? rawHotel[0] : rawHotel;
+                            const hotelImage = hotel?.images?.[0] || null;
                             const checkIn = format(new Date(booking.check_in_date), "MMM d, yyyy");
                             const checkOut = format(new Date(booking.check_out_date), "MMM d, yyyy");
                             const hotelName = hotel?.name || "Unknown Hotel";
@@ -70,7 +72,7 @@ export default async function MyBookingsPage() {
                                 <div key={booking.id} className="group bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col md:flex-row">
                                     <div className="relative w-full md:w-64 h-56 md:h-auto shrink-0 bg-zinc-100 overflow-hidden">
                                         <img
-                                            src={hotelImage}
+                                            src={getHotelImageUrl(hotelImage)}
                                             alt={hotelName}
                                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                                         />
