@@ -2,10 +2,11 @@ import { getUsers, deleteUser } from "@/app/actions/super-admin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash, Shield, ShieldAlert, User } from "lucide-react";
+import { Plus, Trash, Shield, ShieldAlert, User, Mail, Building2, Calendar } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { UserRoleSelector } from "@/components/admin/user-role-selector";
 
 export default async function UsersPage() {
     const users = await getUsers();
@@ -60,12 +61,22 @@ export default async function UsersPage() {
                                                 {user.full_name || "N/A"}
                                             </div>
                                         </TableCell>
-                                        <TableCell className="text-zinc-300">{user.email}</TableCell>
-                                        <TableCell>
-                                            <RoleBadge role={user.role} />
+                                        <TableCell className="text-zinc-300">
+                                            <div className="flex items-center gap-1.5 opacity-60">
+                                                <Mail className="h-3 w-3" />
+                                                <span className="text-xs">{user.email}</span>
+                                            </div>
                                         </TableCell>
-                                        <TableCell className="text-zinc-300">{user.organization || "-"}</TableCell>
-                                        <TableCell className="text-zinc-400 text-xs">
+                                        <TableCell>
+                                            <UserRoleSelector userId={user.id} currentRole={user.role} />
+                                        </TableCell>
+                                        <TableCell className="text-zinc-300">
+                                            <div className="flex items-center gap-1.5 opacity-60">
+                                                <Building2 className="h-3 w-3" />
+                                                <span className="text-xs">{user.organization || "No Org"}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-zinc-400 text-[10px] font-mono tracking-tighter uppercase whitespace-nowrap">
                                             {format(new Date(user.created_at), "MMM d, yyyy")}
                                         </TableCell>
                                         <TableCell className="text-right">
@@ -95,35 +106,3 @@ export default async function UsersPage() {
     );
 }
 
-function RoleBadge({ role }: { role: string }) {
-    const styles: Record<string, string> = {
-        super_admin: "bg-red-900/30 text-red-400 border-red-900/50 hover:bg-red-900/40",
-        admin: "bg-red-900/30 text-red-400 border-red-900/50 hover:bg-red-900/40",
-        hotel_admin: "bg-purple-900/30 text-purple-400 border-purple-900/50 hover:bg-purple-900/40",
-        vip: "bg-amber-900/30 text-amber-400 border-amber-900/50 hover:bg-amber-900/40",
-        guest: "bg-blue-900/30 text-blue-400 border-blue-900/50 hover:bg-blue-900/40",
-    };
-    const icon: Record<string, React.ReactNode> = {
-        super_admin: <ShieldAlert className="mr-1 h-3 w-3" />,
-        admin: <ShieldAlert className="mr-1 h-3 w-3" />,
-        hotel_admin: <Shield className="mr-1 h-3 w-3" />,
-        vip: <Shield className="mr-1 h-3 w-3" />,
-        guest: <User className="mr-1 h-3 w-3" />,
-    };
-    const labels: Record<string, string> = {
-        super_admin: "Super Admin",
-        admin: "Admin",
-        hotel_admin: "Hotel Admin",
-        vip: "VIP",
-        guest: "Guest",
-    };
-
-    const className = styles[role] || "bg-zinc-800 text-zinc-400";
-
-    return (
-        <Badge variant="outline" className={`${className} px-2 py-0.5`}>
-            {icon[role]}
-            {labels[role] || role}
-        </Badge>
-    );
-}

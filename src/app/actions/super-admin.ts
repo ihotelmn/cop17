@@ -15,7 +15,7 @@ const userSchema = z.object({
     email: z.string().email(),
     password: z.string().min(6),
     fullName: z.string().min(2),
-    role: z.enum(["super_admin", "admin", "guest", "liaison"]).default("admin"),
+    role: z.enum(["super_admin", "admin", "guest", "liaison", "vip"]).default("admin"),
     organization: z.string().optional(),
 });
 
@@ -123,6 +123,40 @@ export async function deleteUser(userId: string) {
     } catch (error) {
         console.error("Delete User Error:", error);
         return { error: "Failed to delete user" };
+    }
+}
+
+export async function updateUserRole(userId: string, role: string) {
+    try {
+        const currentUser = await requireRole(["super_admin"]);
+        const adminClient = getSupabaseAdmin();
+
+        // 1. Update Profile Table
+        const { error: profileError } = await adminClient
+            .from("profiles")
+            .update({ role })
+            .eq("id", userId);
+
+        if (profileError) throw profileError;
+
+        // 2. Update Auth Metadata (for session consistency)
+        const { error: authError } = await adminClient.auth.admin.updateUserById(userId, {
+            user_metadata: { role }
+        });
+
+        if (authError) throw authError;
+
+        // 3. Log Audit
+        await logAction(currentUser.id, "UPDATE_USER_ROLE", {
+            targetUserId: userId,
+            newRole: role
+        });
+
+        revalidatePath("/admin/users");
+        return { success: true };
+    } catch (error: any) {
+        console.error("Update Role Error:", error);
+        return { success: false, error: error.message || "Failed to update role" };
     }
 }
 

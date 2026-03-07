@@ -271,7 +271,8 @@ export async function confirmBookingAction(groupId: string, silent: boolean = fa
                     name,
                     hotel:hotels (
                         name,
-                        contact_email
+                        contact_email,
+                        owner_id
                     )
                 ),
                 user_id,
@@ -290,6 +291,21 @@ export async function confirmBookingAction(groupId: string, silent: boolean = fa
         // 3. Determine Email/Name from Booking (already has guest info)
         const finalEmail = booking.guest_email;
         const finalName = booking.guest_name || "Guest";
+
+        // @ts-ignore
+        const ownerId = booking.room?.hotel?.owner_id;
+        // @ts-ignore
+        const hotelNameForNotif = booking.room?.hotel?.name || "COP17 Hotel";
+
+        if (ownerId) {
+            await adminSupabase.from("notifications").insert({
+                user_id: ownerId,
+                title: "Booking Confirmed & Paid",
+                message: `Payment confirmed for booking at ${hotelNameForNotif}. Guest: ${finalName}`,
+                type: "booking_confirmed",
+                link: `/admin/bookings`
+            });
+        }
 
         if (finalEmail) {
             const datesStr = `${format(new Date(booking.check_in_date), "MMM d")} - ${format(new Date(booking.check_out_date), "MMM d, yyyy")}`;

@@ -29,7 +29,7 @@ export function SiteHeader() {
 
     // Hide auth section on login/signup pages to avoid "ghost session" confusion
     const showUserContent = Boolean(user) && !isAuthPage;
-    const isAdminUser = !!user && (user.role === "admin" || user.role === "super_admin");
+    const isAdminUser = !!user && (user.role === "admin" || user.role === "super_admin" || user.role === "liaison");
 
 
     return (

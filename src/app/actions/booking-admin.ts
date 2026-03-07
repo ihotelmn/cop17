@@ -427,8 +427,18 @@ export async function getBookingDetails(bookingId: string) {
             guestPhone = "[Decryption Failed]";
         }
 
-        // @ts-ignore
-        const guestName = profile?.full_name || "Guest";
+        // Fetch guest name from profile or fallback to guest_name field
+        let guestName = booking.guest_name || "Guest";
+        if (booking.user_id) {
+            const { data: guestProfile } = await supabase
+                .from("profiles")
+                .select("full_name")
+                .eq("id", booking.user_id)
+                .single();
+            if (guestProfile?.full_name) {
+                guestName = guestProfile.full_name;
+            }
+        }
 
         return {
             success: true,

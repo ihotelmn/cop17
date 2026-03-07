@@ -15,6 +15,7 @@ import {
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
 
 interface Notification {
     id: string;
@@ -41,12 +42,21 @@ export function NotificationBell({ userId }: { userId: string }) {
 
         if (data) {
             setNotifications(data);
-            setUnreadCount(data.filter(n => !n.is_read).length);
         }
+    };
+
+    const fetchUnreadCount = async () => {
+        const { count } = await supabase
+            .from("notifications")
+            .select("*", { count: 'exact', head: true })
+            .eq("user_id", userId)
+            .eq("is_read", false);
+        setUnreadCount(count || 0);
     };
 
     useEffect(() => {
         fetchNotifications();
+        fetchUnreadCount();
 
         const channel = supabase
             .channel('notifications-bell')
@@ -143,7 +153,7 @@ export function NotificationBell({ userId }: { userId: string }) {
                                         {notification.title}
                                     </span>
                                     <span className="text-[10px] text-zinc-400">
-                                        {new Date(notification.created_at).toLocaleDateString()}
+                                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                                     </span>
                                 </div>
                                 <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2">

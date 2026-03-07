@@ -9,7 +9,7 @@ interface User {
     id: string;
     email: string;
     full_name?: string;
-    role: "super_admin" | "admin" | "vip" | "guest";
+    role: "super_admin" | "admin" | "liaison" | "vip" | "guest";
 }
 
 interface AuthContextType {

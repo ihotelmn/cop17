@@ -49,13 +49,15 @@ export default function NewUserPage() {
                     <div className="space-y-2">
                         <Label htmlFor="role" className="text-zinc-300">Role</Label>
                         <Select name="role" defaultValue="admin">
-                            <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                            <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white shadow-inner">
                                 <SelectValue placeholder="Select a role" />
                             </SelectTrigger>
-                            <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
-                                <SelectItem value="admin">Tour Company (Hotel Admin)</SelectItem>
-                                <SelectItem value="super_admin">Super Admin (Platform Owner)</SelectItem>
-                                <SelectItem value="guest">Guest</SelectItem>
+                            <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                                <SelectItem value="super_admin" className="focus:bg-zinc-800">Super Admin (Platform Owner)</SelectItem>
+                                <SelectItem value="admin" className="focus:bg-zinc-800">Hotel Admin (Property Manager)</SelectItem>
+                                <SelectItem value="liaison" className="focus:bg-zinc-800">Liaison (Group Coordinator)</SelectItem>
+                                <SelectItem value="vip" className="focus:bg-zinc-800">VIP Guest</SelectItem>
+                                <SelectItem value="guest" className="focus:bg-zinc-800">Regular Guest</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
