@@ -10,7 +10,7 @@ function isMissingPublishedColumn(error: unknown) {
     return typeof error === "object" && error !== null && "code" in error && (error as { code?: string }).code === "42703";
 }
 
-function isVisibleHotel(hotel: { is_published?: boolean | null } | null | undefined) {
+function isVisibleHotel(hotel: any) {
     return hotel?.is_published !== false;
 }
 
@@ -30,7 +30,7 @@ async function getPublishedHotelId(hotelId: string) {
     const createQuery = (filterPublished: boolean, includePublishedColumn: boolean) => {
         let query = publicClient
             .from("hotels")
-            .select(includePublishedColumn ? "id, is_published" : "id")
+            .select((includePublishedColumn ? "id, is_published" : "id") as any)
             .eq("id", hotelId);
 
         if (filterPublished) {
@@ -50,7 +50,7 @@ async function getPublishedHotelId(hotelId: string) {
         throw error;
     }
 
-    return isVisibleHotel(data) ? data?.id ?? null : null;
+    return isVisibleHotel(data) ? (data as any)?.id ?? null : null;
 }
 
 export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
@@ -450,7 +450,7 @@ export async function getHomepageStats() {
         const createHotelIdsQuery = (filterPublished: boolean, includePublishedColumn: boolean) => {
             let query = supabase
                 .from("hotels")
-                .select(includePublishedColumn ? "id, is_published" : "id");
+                .select((includePublishedColumn ? "id, is_published" : "id") as any);
 
             if (filterPublished) {
                 query = query.eq("is_published", true);
@@ -477,7 +477,7 @@ export async function getHomepageStats() {
 
         const publishedHotelIds = (hotelIds ?? [])
             .filter((hotel) => isVisibleHotel(hotel))
-            .map((hotel) => hotel.id);
+            .map((hotel: any) => hotel.id);
         if (publishedHotelIds.length === 0) {
             return { hotels: hotelsCount || 0, rooms: 0 };
         }
@@ -528,7 +528,7 @@ export async function getSearchSuggestions(query: string) {
         const createSuggestionsQuery = (filterPublished: boolean, includePublishedColumn: boolean) => {
             let queryBuilder = supabase
                 .from("hotels")
-                .select(includePublishedColumn ? "name, address, is_published" : "name, address")
+                .select((includePublishedColumn ? "name, address, is_published" : "name, address") as any)
                 .or(`name.ilike.${q},address.ilike.${q}`)
                 .limit(10);
 
@@ -549,7 +549,7 @@ export async function getSearchSuggestions(query: string) {
 
         const suggestions = new Set<string>();
 
-        (hotels ?? []).filter((hotel) => isVisibleHotel(hotel)).forEach((hotel) => {
+        (hotels ?? []).filter((hotel) => isVisibleHotel(hotel)).forEach((hotel: any) => {
             if (hotel.name.toLowerCase().includes(query.toLowerCase())) {
                 suggestions.add(hotel.name);
             }
