@@ -2,6 +2,7 @@
 
 import { unstable_cache } from "next/cache";
 
+import { normalizeHotelForPublic } from "@/lib/hotel-display";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { calculateDistance, COP17_VENUE } from "@/lib/venue";
 import type { Hotel, Room, HotelSearchParams } from "@/types/hotel";
@@ -82,7 +83,7 @@ export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
 
                         if (!genericTerms.includes(qLower)) {
                             const q = `%${params.query}%`;
-                            queryBuilder = queryBuilder.or(`name.ilike.${q},address.ilike.${q}`);
+                            queryBuilder = queryBuilder.or(`name.ilike.${q},name_en.ilike.${q},address.ilike.${q},address_en.ilike.${q}`);
                         }
                     }
 
@@ -124,7 +125,7 @@ export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
                             : null
                     );
 
-                    return {
+                    return normalizeHotelForPublic({
                         ...hotel,
                         amenities: Array.isArray(hotel.amenities)
                             ? hotel.amenities.map((amenity: any) => typeof amenity === "string" ? amenity : JSON.stringify(amenity))
@@ -143,14 +144,15 @@ export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
                         has_shuttle_service: !!hotel.has_shuttle_service,
                         minPrice: hotel.rooms?.length > 0 ? Math.min(...hotel.rooms.map((room: any) => Number(room.price_per_night))) : null,
                         max_capacity: hotel.rooms?.length > 0 ? Math.max(...hotel.rooms.map((room: any) => Number(room.capacity))) : 0,
-                    };
+                    });
                 });
 
                 const totalRequired = parseInt(params?.adults || "1") + parseInt(params?.children || "0");
 
                 if (totalRequired > 1) {
                     results = results.filter((hotel: any) => {
-                        if (!hotel.rooms || hotel.rooms.length === 0) return false;
+                        // Keep hotels without sourced room rows visible until inventory is backfilled.
+                        if (!hotel.rooms || hotel.rooms.length === 0) return true;
                         const totalHotelCapacity = hotel.rooms.reduce(
                             (sum: number, room: any) => sum + (Number(room.capacity) * Number(room.total_inventory || 0)),
                             0
@@ -302,7 +304,7 @@ export async function getPublicHotel(id: string) {
         const lat = hotel.latitude ? Number(hotel.latitude) : null;
         const lng = hotel.longitude ? Number(hotel.longitude) : null;
 
-        return {
+        return normalizeHotelForPublic({
             ...hotel,
             latitude: lat,
             longitude: lng,
@@ -314,7 +316,7 @@ export async function getPublicHotel(id: string) {
             cached_rating: hotel.cached_rating,
             cached_review_count: hotel.cached_review_count,
             google_place_id: hotel.google_place_id,
-        } as Hotel;
+        }) as Hotel;
     } catch (error) {
         console.error(`Unexpected error fetching public hotel (ID: ${id}):`, error);
         return null;
@@ -407,7 +409,7 @@ export async function getPublicRoom(roomId: string) {
 
         return {
             ...room,
-            hotel,
+            hotel: normalizeHotelForPublic(hotel),
         };
     } catch (error) {
         console.error(`Unexpected error fetching public room (ID: ${roomId}):`, error);
@@ -528,8 +530,8 @@ export async function getSearchSuggestions(query: string) {
         const createSuggestionsQuery = (filterPublished: boolean, includePublishedColumn: boolean) => {
             let queryBuilder = supabase
                 .from("hotels")
-                .select((includePublishedColumn ? "name, address, is_published" : "name, address") as any)
-                .or(`name.ilike.${q},address.ilike.${q}`)
+                .select((includePublishedColumn ? "name, name_en, address, address_en, is_published" : "name, name_en, address, address_en") as any)
+                .or(`name.ilike.${q},name_en.ilike.${q},address.ilike.${q},address_en.ilike.${q}`)
                 .limit(10);
 
             if (filterPublished) {
@@ -550,12 +552,14 @@ export async function getSearchSuggestions(query: string) {
         const suggestions = new Set<string>();
 
         (hotels ?? []).filter((hotel) => isVisibleHotel(hotel)).forEach((hotel: any) => {
-            if (hotel.name.toLowerCase().includes(query.toLowerCase())) {
-                suggestions.add(hotel.name);
+            const normalizedHotel = normalizeHotelForPublic(hotel);
+
+            if (normalizedHotel.name.toLowerCase().includes(query.toLowerCase())) {
+                suggestions.add(normalizedHotel.name);
             }
 
-            if (hotel.address) {
-                const parts = hotel.address.split(",").map((part: string) => part.trim());
+            if (normalizedHotel.address) {
+                const parts = normalizedHotel.address.split(",").map((part: string) => part.trim());
                 parts.forEach((part: string) => {
                     if (part.toLowerCase().includes(query.toLowerCase()) && part.length > 2) {
                         suggestions.add(part);

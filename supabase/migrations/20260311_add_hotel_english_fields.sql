@@ -1,0 +1,4 @@
+ALTER TABLE public.hotels
+ADD COLUMN IF NOT EXISTS name_en TEXT,
+ADD COLUMN IF NOT EXISTS address_en TEXT,
+ADD COLUMN IF NOT EXISTS description_en TEXT;

@@ -4,6 +4,14 @@ import pandas as pd
 import psycopg2
 from dotenv import load_dotenv
 
+from cop17_data_paths import read_table_frame
+from room_source_utils import (
+    derive_room_inventory,
+    infer_room_capacity,
+    pick_room_description,
+    pick_room_name,
+)
+
 load_dotenv('.env.local')
 
 db_url = os.environ.get("DATABASE_URL")
@@ -13,16 +21,17 @@ if not db_url:
 if "sslmode=" not in db_url and "supabase.co" in db_url:
     db_url += "?sslmode=require"
 
-parquet_file = '/Users/erkardo/Desktop/COP17_Data/forcop17/pms/pms.room_types/1/part-00000-cc7bc1d1-e8c5-4052-a172-69d236397fba-c000.gz.parquet'
-df = pd.read_parquet(parquet_file)
+df = read_table_frame("pms", "room_types")
+df_physical_rooms = read_table_frame("pms", "rooms")
+inventory_counts = df_physical_rooms.groupby("room_type_id").size().to_dict()
 
 print(f"Total authentic rooms raw count: {len(df)}")
 df = df.dropna(subset=['name', 'hotel_id'])
 
 records = []
 for idx, row in df.iterrows():
-    name = str(row['name']).strip()
-    description = str(row['description']) if pd.notna(row['description']) else None
+    name = pick_room_name(row)
+    description = pick_room_description(row)
     
     # Prices: 1 USD = ~3400 MNT
     price_raw = row['default_price']
@@ -30,9 +39,7 @@ for idx, row in df.iterrows():
     price_usd = price_mnt / 3400.0
     price_usd = round(price_usd, 2)
     
-    # Capacity
-    occupancy_raw = row['occupancy']
-    capacity = int(float(occupancy_raw)) if pd.notna(occupancy_raw) else 1
+    capacity = infer_room_capacity(row)
     
     # Hardcode room type if missing actual category logic
     room_type = "Standard"
@@ -73,14 +80,15 @@ for idx, row in df.iterrows():
     ns_hotel = uuid.NAMESPACE_OID
     new_hotel_id = str(uuid.uuid5(ns_hotel, f"hotel_{hotel_id_raw}"))
     old_room_id = str(row['id'])
-    if price_mnt <= 0:
+    total_inventory = derive_room_inventory(row, inventory_counts.get(row['id'], 0))
+    if price_mnt <= 0 or total_inventory <= 0:
         continue
-    
+
     new_room_id = str(uuid.uuid5(ns_hotel, f"room_{old_room_id}"))
 
     records.append((
         new_room_id, new_hotel_id, name, description, room_type,
-        price_usd, capacity, amenities, images_list, size, created_at
+        price_usd, capacity, amenities, images_list, size, created_at, total_inventory
     ))
 
 print(f"Total formatted rooms: {len(records)}")
@@ -95,9 +103,9 @@ try:
     # DO UPDATE ON CONFLICT to overwrite the old broken `pms_old` data
     insert_query = """
     INSERT INTO public.rooms (
-        id, hotel_id, name, description, type, price_per_night, capacity, amenities, images, size, created_at
+        id, hotel_id, name, description, type, price_per_night, capacity, amenities, images, size, created_at, total_inventory
     ) VALUES (
-        %s, %s, %s, %s, %s, %s, %s, %s::text[], %s::text[], %s, %s
+        %s, %s, %s, %s, %s, %s, %s, %s::text[], %s::text[], %s, %s, %s
     ) ON CONFLICT (id) DO UPDATE SET
         name = EXCLUDED.name,
         description = EXCLUDED.description,
@@ -105,7 +113,8 @@ try:
         price_per_night = EXCLUDED.price_per_night,
         capacity = EXCLUDED.capacity,
         images = EXCLUDED.images,
-        size = EXCLUDED.size;
+        size = EXCLUDED.size,
+        total_inventory = EXCLUDED.total_inventory;
     """
     
     valid_records = [r for r in records if r[1] in valid_hotel_ids]

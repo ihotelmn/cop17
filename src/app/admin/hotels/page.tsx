@@ -1,7 +1,9 @@
 import { getHotels, deleteHotel } from "@/app/actions/admin";
+import { HotelPublishToggle } from "@/components/admin/hotel-publish-toggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { getPreferredHotelAddress, getPreferredHotelName } from "@/lib/hotel-display";
 import { Plus, Pencil, Trash } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -36,89 +38,102 @@ export default async function HotelsAdminPage() {
                                 <TableHead className="text-zinc-400">Name</TableHead>
                                 <TableHead className="text-zinc-400">Location</TableHead>
                                 <TableHead className="text-zinc-400">Stars</TableHead>
+                                <TableHead className="text-zinc-400">Status</TableHead>
                                 <TableHead className="text-zinc-400 text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {hotels.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                                         No hotels found. Add one to get started.
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                hotels.map((hotel) => (
-                                    <TableRow key={hotel.id} className="border-zinc-800 hover:bg-zinc-800/50">
-                                        <TableCell className="font-medium text-white flex items-center gap-3">
-                                            {hotel.images && hotel.images[0] && (
-                                                <div className="relative h-10 w-16 overflow-hidden rounded">
-                                                    <Image
-                                                        src={hotel.images[0].startsWith('http') ? hotel.images[0] : `https://api.myhotel.mn/image?path=${hotel.images[0]}`}
-                                                        alt={hotel.name}
-                                                        fill
-                                                        sizes="64px"
-                                                        className="object-cover"
-                                                        unoptimized
-                                                    />
-                                                </div>
-                                            )}
-                                            {hotel.name}
-                                        </TableCell>
-                                        <TableCell className="text-zinc-300">{hotel.address || "N/A"}</TableCell>
-                                        <TableCell className="text-zinc-300">
-                                            {hotel.stars && hotel.stars > 0 ? (
-                                                <span className="inline-flex items-center bg-amber-900/30 text-amber-500 text-xs px-2 py-1 rounded">
-                                                    {hotel.stars} Stars
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center bg-zinc-800 text-zinc-500 text-xs px-2 py-1 rounded">
-                                                    N/A
-                                                </span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 text-zinc-400 hover:text-white"
-                                                    asChild
-                                                >
-                                                    <Link href={`/admin/hotels/${hotel.id}/edit`}>
-                                                        <Pencil className="h-4 w-4" />
-                                                        <span className="sr-only">Edit</span>
-                                                    </Link>
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 text-amber-500 hover:text-amber-400 hover:bg-amber-900/20"
-                                                    asChild
-                                                    title="Manage Rooms"
-                                                >
-                                                    <Link href={`/admin/hotels/${hotel.id}`}>
-                                                        <Plus className="h-4 w-4" />
-                                                        <span className="sr-only">Manage Rooms</span>
-                                                    </Link>
-                                                </Button>
-                                                <form action={async () => {
-                                                    "use server";
-                                                    await deleteHotel(hotel.id);
-                                                }}>
+                                hotels.map((hotel) => {
+                                    const displayName = getPreferredHotelName(hotel);
+                                    const displayAddress = getPreferredHotelAddress(hotel);
+
+                                    return (
+                                        <TableRow key={hotel.id} className="border-zinc-800 hover:bg-zinc-800/50">
+                                            <TableCell className="font-medium text-white flex items-center gap-3">
+                                                {hotel.images && hotel.images[0] && (
+                                                    <div className="relative h-10 w-16 overflow-hidden rounded">
+                                                        <Image
+                                                            src={hotel.images[0].startsWith('http') ? hotel.images[0] : `https://api.myhotel.mn/image?path=${hotel.images[0]}`}
+                                                            alt={displayName}
+                                                            fill
+                                                            sizes="64px"
+                                                            className="object-cover"
+                                                            unoptimized
+                                                        />
+                                                    </div>
+                                                )}
+                                                {displayName}
+                                            </TableCell>
+                                            <TableCell className="text-zinc-300">{displayAddress || "Ulaanbaatar, Mongolia"}</TableCell>
+                                            <TableCell className="text-zinc-300">
+                                                {hotel.stars && hotel.stars > 0 ? (
+                                                    <span className="inline-flex items-center bg-amber-900/30 text-amber-500 text-xs px-2 py-1 rounded">
+                                                        {hotel.stars} Stars
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center bg-zinc-800 text-zinc-500 text-xs px-2 py-1 rounded">
+                                                        N/A
+                                                    </span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="text-zinc-300">
+                                                <HotelPublishToggle
+                                                    hotelId={hotel.id}
+                                                    hotelName={displayName}
+                                                    initialPublished={hotel.is_published !== false}
+                                                />
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex justify-end gap-2">
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                                                        type="submit"
+                                                        className="h-8 w-8 text-zinc-400 hover:text-white"
+                                                        asChild
                                                     >
-                                                        <Trash className="h-4 w-4" />
-                                                        <span className="sr-only">Delete</span>
+                                                        <Link href={`/admin/hotels/${hotel.id}/edit`}>
+                                                            <Pencil className="h-4 w-4" />
+                                                            <span className="sr-only">Edit</span>
+                                                        </Link>
                                                     </Button>
-                                                </form>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-amber-500 hover:text-amber-400 hover:bg-amber-900/20"
+                                                        asChild
+                                                        title="Manage Rooms"
+                                                    >
+                                                        <Link href={`/admin/hotels/${hotel.id}`}>
+                                                            <Plus className="h-4 w-4" />
+                                                            <span className="sr-only">Manage Rooms</span>
+                                                        </Link>
+                                                    </Button>
+                                                    <form action={async () => {
+                                                        "use server";
+                                                        await deleteHotel(hotel.id);
+                                                    }}>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                                                            type="submit"
+                                                        >
+                                                            <Trash className="h-4 w-4" />
+                                                            <span className="sr-only">Delete</span>
+                                                        </Button>
+                                                    </form>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })
                             )}
                         </TableBody>
                     </Table>

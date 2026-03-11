@@ -6,8 +6,11 @@
 export interface Hotel {
     id: string
     name: string
+    name_en?: string | null
     description: string | null
+    description_en?: string | null
     address: string | null
+    address_en?: string | null
     stars: number
     amenities: string[] | null
     images: string[] | null

@@ -1,7 +1,8 @@
 import { getHotel, getRooms, deleteRoom } from "@/app/actions/admin";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { getPreferredHotelAddress, getPreferredHotelName } from "@/lib/hotel-display";
 import { Plus, Trash, ArrowLeft, Pencil } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -15,6 +16,9 @@ export default async function HotelDetailsPage({ params }: { params: Promise<{ i
         notFound();
     }
 
+    const displayName = getPreferredHotelName(hotel);
+    const displayAddress = getPreferredHotelAddress(hotel) ?? "Ulaanbaatar, Mongolia";
+
     return (
         <div className="space-y-8">
             {/* Header */}
@@ -26,8 +30,8 @@ export default async function HotelDetailsPage({ params }: { params: Promise<{ i
                         </Link>
                     </Button>
                     <div>
-                        <h2 className="text-3xl font-bold tracking-tight text-white">{hotel.name}</h2>
-                        <p className="text-muted-foreground">{hotel.address} • {hotel.stars} Stars</p>
+                        <h2 className="text-3xl font-bold tracking-tight text-white">{displayName}</h2>
+                        <p className="text-muted-foreground">{displayAddress} • {hotel.stars} Stars</p>
                     </div>
                 </div>
                 <Button asChild variant="outline">

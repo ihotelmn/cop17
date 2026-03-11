@@ -338,6 +338,45 @@ export async function deleteHotel(id: string) {
     (revalidateTag as any)("hotels");
 }
 
+export async function updateHotelPublishedStatus(id: string, isPublished: boolean) {
+    const supabase = await createClient();
+    const adminClient = getSupabaseAdmin();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Unauthorized" };
+
+    const { data: profile } = await adminClient
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+    if (!profile) return { error: "Profile not found" };
+
+    let query = supabase
+        .from("hotels")
+        .update({ is_published: isPublished })
+        .eq("id", id);
+
+    if (profile.role !== "super_admin") {
+        query = query.eq("owner_id", user.id);
+    }
+
+    const { error } = await query;
+
+    if (error) {
+        console.error("Error updating hotel published status:", error);
+        return { error: "Failed to update hotel status" };
+    }
+
+    revalidatePath("/admin/hotels", "page");
+    revalidatePath("/", "page");
+    revalidatePath("/hotels", "page");
+    (revalidateTag as any)("hotels");
+
+    return { success: true };
+}
+
 export async function getHotel(id: string) {
     console.log("getHotel called with ID:", id);
     const supabase = await createClient();

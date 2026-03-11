@@ -7,6 +7,8 @@ import json
 from psycopg2.extras import execute_batch
 from dotenv import load_dotenv
 
+from cop17_data_paths import resolve_schema_dir
+
 load_dotenv('.env.local')
 
 db_url = os.environ.get("DATABASE_URL")
@@ -21,7 +23,7 @@ def safe_int(v, default=0):
     try: return int(float(v))
     except: return default
 
-base = '/Users/erkardo/Desktop/COP17_Data/forcop17/pms'
+base = str(resolve_schema_dir("pms"))
 
 # 1. Load Amenities
 amenity_map = {}
@@ -87,6 +89,7 @@ print(f"Total authentic hotels to migrate: {len(df_hotels)}")
 records = []
 for idx, row in df_hotels.iterrows():
     name = str(row['name']).strip()
+    name_en = str(row['name_en']).strip() if pd.notna(row.get('name_en')) and str(row.get('name_en')).strip() != '' else None
     old_id = row['id']
     
     desc = str(row['introduction']) if pd.notna(row['introduction']) else str(row['description'])
@@ -94,6 +97,11 @@ for idx, row in df_hotels.iterrows():
         desc = None
         
     address = str(row['address']) if pd.notna(row['address']) else None
+    address_en = str(row['address_en']) if pd.notna(row.get('address_en')) and str(row.get('address_en')).strip() != '' else None
+
+    desc_en = str(row['description_en']) if pd.notna(row.get('description_en')) else None
+    if pd.isna(desc_en) or desc_en == 'nan' or desc_en == 'None' or str(desc_en).strip() == '':
+        desc_en = None
     
     stars_raw = row['star_rating']
     stars = 0
@@ -164,7 +172,7 @@ for idx, row in df_hotels.iterrows():
         continue
 
     records.append((
-        hotel_id, name, desc, address, stars, amenities, images_list, created_at,
+        hotel_id, name, name_en, desc, desc_en, address, address_en, stars, amenities, images_list, created_at,
         lat, lng, cached_rating, cached_review_count
     ))
 
@@ -176,15 +184,18 @@ try:
     
     insert_query = """
     INSERT INTO public.hotels (
-        id, name, description, address, stars, amenities, images, created_at,
+        id, name, name_en, description, description_en, address, address_en, stars, amenities, images, created_at,
         latitude, longitude, cached_rating, cached_review_count
     ) VALUES (
-        %s, %s, %s, %s, %s, %s::text[], %s::text[], %s,
+        %s, %s, %s, %s, %s, %s, %s, %s, %s::text[], %s::text[], %s,
         %s, %s, %s, %s
     ) ON CONFLICT (id) DO UPDATE SET
         name = EXCLUDED.name,
+        name_en = EXCLUDED.name_en,
         description = EXCLUDED.description,
+        description_en = EXCLUDED.description_en,
         address = EXCLUDED.address,
+        address_en = EXCLUDED.address_en,
         stars = EXCLUDED.stars,
         amenities = EXCLUDED.amenities,
         images = EXCLUDED.images,

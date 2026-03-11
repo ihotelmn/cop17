@@ -146,11 +146,15 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
                         <div className="flex flex-col items-start sm:items-end">
                             <div className="flex items-baseline gap-1">
                                 <span className="text-2xl font-black tracking-tighter text-zinc-900 dark:text-white sm:text-[1.7rem]">
-                                    ${hotel.minPrice || "N/A"}
+                                    {hotel.minPrice != null ? `$${hotel.minPrice}` : "On request"}
                                 </span>
-                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">/ night</span>
+                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">
+                                    {hotel.minPrice != null ? "/ night" : ""}
+                                </span>
                             </div>
-                            <span className="text-[9px] text-green-600 font-bold uppercase tracking-tight">Includes taxes & fees</span>
+                            <span className="text-[9px] text-green-600 font-bold uppercase tracking-tight">
+                                {hotel.minPrice != null ? "Includes taxes & fees" : "Inventory on request"}
+                            </span>
                         </div>
                     </div>
 

@@ -6,6 +6,8 @@ import psycopg2
 from psycopg2.extras import execute_batch
 from dotenv import load_dotenv
 
+from cop17_data_paths import read_table_frame
+
 load_dotenv('.env.local')
 
 db_url = os.environ.get("DATABASE_URL")
@@ -17,8 +19,7 @@ if not db_url:
 if "sslmode=" not in db_url and "supabase.co" in db_url:
     db_url += "?sslmode=require"
 
-parquet_file = '/Users/erkardo/Desktop/COP17_Data/forcop17/trans_api/trans_api.users/1/part-00000-00354a3e-120f-4423-a775-7c96e9f0a9ae-c000.gz.parquet'
-df = pd.read_parquet(parquet_file)
+df = read_table_frame("trans_api", "users")
 
 df = df[['email', 'name', 'password', 'created_at', 'updated_at']]
 df = df.dropna(subset=['email', 'password'])

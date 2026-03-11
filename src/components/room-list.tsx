@@ -19,14 +19,14 @@ export function RoomList({ hotelId, rooms, checkIn, checkOut }: RoomListProps) {
                     <Info className="w-8 h-8" />
                 </div>
                 <div>
-                    <h3 className="text-xl font-black text-zinc-950 dark:text-white uppercase tracking-widest text-xs mb-2">No Availability Found</h3>
-                    <p className="text-zinc-500 font-medium">We couldn't find any rooms matching your current dates. Try adjusting your search criteria.</p>
+                    <h3 className="text-xl font-black text-zinc-950 dark:text-white uppercase tracking-widest text-xs mb-2">Inventory On Request</h3>
+                    <p className="text-zinc-500 font-medium">This hotel is visible on the platform, but live room inventory has not been loaded yet for your selected dates.</p>
                 </div>
             </div>
         );
     }
 
-    const cleanImages = (images: any): string[] => {
+    const cleanImages = (images: unknown): string[] => {
         if (!images) return [];
         if (Array.isArray(images)) return images;
         if (typeof images === 'string') return [images];
@@ -35,23 +35,30 @@ export function RoomList({ hotelId, rooms, checkIn, checkOut }: RoomListProps) {
 
     return (
         <div className="space-y-12">
-            {rooms.map((room, index) => (
-                <div key={room.id} id={index === 0 ? "first-room-card" : undefined} className={index === 0 ? "scroll-mt-24" : undefined}>
-                    <RoomCard
-                        // @ts-ignore
-                        room={{
-                            ...room,
-                            price: room.price_per_night,
-                            size: room.size || 0,
-                            images: cleanImages(room.images),
-                            amenities: room.amenities || []
-                        }}
-                        hotelId={hotelId}
-                        checkIn={checkIn}
-                        checkOut={checkOut}
-                    />
-                </div>
-            ))}
+            {rooms.map((room, index) => {
+                const roomForCard = {
+                    id: room.id,
+                    name: room.name,
+                    description: room.description || "",
+                    price: room.price_per_night,
+                    capacity: room.capacity,
+                    size: room.size || 0,
+                    amenities: room.amenities || [],
+                    images: cleanImages(room.images),
+                    total_inventory: room.total_inventory,
+                };
+
+                return (
+                    <div key={room.id} id={index === 0 ? "first-room-card" : undefined} className={index === 0 ? "scroll-mt-24" : undefined}>
+                        <RoomCard
+                            room={roomForCard}
+                            hotelId={hotelId}
+                            checkIn={checkIn}
+                            checkOut={checkOut}
+                        />
+                    </div>
+                );
+            })}
         </div>
     )
 }
