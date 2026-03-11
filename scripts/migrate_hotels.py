@@ -8,6 +8,7 @@ from psycopg2.extras import execute_batch
 from dotenv import load_dotenv
 
 from cop17_data_paths import resolve_schema_dir
+from hotel_geo_utils import sanitize_hotel_coordinates
 
 load_dotenv('.env.local')
 
@@ -133,6 +134,15 @@ for idx, row in df_hotels.iterrows():
             if 41 <= v_lat <= 52: lat = v_lat
             if 87 <= v_lng <= 120: lng = v_lng
         except: pass
+
+    lat, lng = sanitize_hotel_coordinates(
+        lat,
+        lng,
+        name,
+        name_en,
+        address,
+        address_en,
+    )
             
     # 4. Images
     images_list = []

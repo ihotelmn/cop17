@@ -169,7 +169,7 @@ export default function HotelMap({ hotels, query }: { hotels: (Hotel & { minPric
 
                         {showVenueInfo && (
                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-56 bg-zinc-900 text-white rounded-lg shadow-2xl p-4 z-[110] border border-red-500/30">
-                                <p className="font-bold text-[10px] uppercase tracking-wider text-red-500 mb-1">Official Convention Center</p>
+                                <p className="font-bold text-[10px] uppercase tracking-wider text-red-500 mb-1">Official COP17 Venue</p>
                                 <p className="text-sm font-bold leading-tight mb-2">{COP17_VENUE.name}</p>
                                 <p className="text-[10px] text-zinc-400 leading-tight">{COP17_VENUE.address}</p>
                                 <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-zinc-900 rotate-45 border-r border-b border-red-500/30"></div>

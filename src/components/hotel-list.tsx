@@ -8,7 +8,8 @@ import type { Hotel } from "@/types/hotel";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { cn, getHotelImageUrl } from "@/lib/utils";
-import { estimateTravelTime } from "@/lib/venue";
+import { isVipPartnerHotel } from "@/lib/vip-partners";
+import { getHotelDisplayDistance, getHotelDisplayDriveTime } from "@/lib/hotel-distance";
 import {
     Carousel,
     CarouselContent,
@@ -53,14 +54,15 @@ export function HotelList({ hotels }: { hotels: (Hotel & { minPrice: number })[]
 
 function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
     const searchParams = useSearchParams();
+    const isVipPartner = isVipPartnerHotel(hotel);
     // Images fallback
     const images = hotel.images && hotel.images.length > 0
         ? hotel.images
         : ["https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2940"];
 
     // Use cached real data
-    const displayDistance = hotel.cached_distance_km || hotel.distanceToVenue;
-    const displayTime = hotel.cached_drive_time_text || (hotel.distanceToVenue ? `~${estimateTravelTime(hotel.distanceToVenue, 'driving')}` : null);
+    const displayDistance = getHotelDisplayDistance(hotel);
+    const displayTime = getHotelDisplayDriveTime(hotel, hotel.cached_drive_time_text);
 
     const qs = searchParams.toString();
     const href = qs ? `/hotels/${hotel.id}?${qs}` : `/hotels/${hotel.id}`;
@@ -96,10 +98,10 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
 
                 {/* Overlay Badges (Top Left) */}
                 <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
-                    {hotel.is_official_partner && (
+                    {isVipPartner && (
                         <div className="flex items-center gap-1 rounded-full bg-blue-600/90 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-widest text-white shadow-xl backdrop-blur-md">
                             <ShieldCheck className="h-2.5 w-2.5" />
-                            Official
+                            VIP
                         </div>
                     )}
                     {hotel.is_recommended && (

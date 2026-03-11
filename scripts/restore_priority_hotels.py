@@ -8,6 +8,7 @@ from psycopg2.extras import execute_batch
 from dotenv import load_dotenv
 
 from cop17_data_paths import read_table_frame
+from hotel_geo_utils import sanitize_hotel_coordinates
 from room_source_utils import (
     derive_room_inventory,
     infer_room_capacity,
@@ -57,6 +58,10 @@ SOURCE_OVERRIDES = {
         "website": "https://www.shangri-la.com/ulaanbaatar/shangrila/",
         "contact_phone": "+976 7010 1919",
         "publish": False,
+    },
+    717: {
+        "website": "https://www.thecorporatehotel.com/",
+        "contact_phone": "+976 11 312255",
     },
     719: {
         "name_en": "Zolo Hotel",
@@ -299,6 +304,15 @@ def source_hotel_record(row, override=None, hotel_id=None):
     except Exception:
         latitude = None
         longitude = None
+
+    latitude, longitude = sanitize_hotel_coordinates(
+        latitude,
+        longitude,
+        name,
+        name_en,
+        address,
+        address_en,
+    )
 
     return (
         hotel_id,

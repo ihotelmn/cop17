@@ -18,6 +18,10 @@ import { MobileFilter } from "@/components/hotels/mobile-filter";
 import { getHomepageStats, getPublishedHotels } from "@/app/actions/public";
 import { HotelSections } from "@/components/hotel-sections";
 import type { Metadata } from "next";
+import { getHotelDisplayDistance } from "@/lib/hotel-distance";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: "Official Accommodation Booking | COP17 Mongolia",
@@ -247,6 +251,11 @@ export default async function Home(props: Props) {
                             <p className="text-sm text-zinc-500">
                               {hotel.minPrice != null ? `$${hotel.minPrice}/night` : "Inventory on request"}
                             </p>
+                            {getHotelDisplayDistance(hotel) != null && (
+                              <p className="mt-1 text-sm font-semibold text-zinc-600 dark:text-zinc-300">
+                                {getHotelDisplayDistance(hotel)!.toFixed(1)} km to Venue
+                              </p>
+                            )}
                             <Link href={`/hotels/${hotel.id}${Object.keys(normalizedSearchParams).length ? '?' + new URLSearchParams(normalizedSearchParams).toString() : ''}`} className="text-sm text-blue-600 hover:underline mt-2 inline-block font-medium">View Details</Link>
                           </div>
                         ))}

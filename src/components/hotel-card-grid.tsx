@@ -6,17 +6,20 @@ import { useSearchParams } from "next/navigation";
 import { Star, MapPin, Navigation, ShieldCheck } from "lucide-react";
 import type { Hotel } from "@/types/hotel";
 import { cn, getHotelImageUrl } from "@/lib/utils";
+import { isVipPartnerHotel } from "@/lib/vip-partners";
+import { getHotelDisplayDistance } from "@/lib/hotel-distance";
 
 export function HotelCardGrid({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
     const searchParams = useSearchParams();
     const paramsString = searchParams.toString();
     const href = paramsString ? `/hotels/${hotel.id}?${paramsString}` : `/hotels/${hotel.id}`;
+    const isVipPartner = isVipPartnerHotel(hotel);
 
     const images = hotel.images && hotel.images.length > 0
         ? hotel.images
         : ["https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2940"];
 
-    const displayDistance = hotel.cached_distance_km || hotel.distanceToVenue;
+    const displayDistance = getHotelDisplayDistance(hotel);
 
     return (
         <Link href={href} className="group block h-full w-full">
@@ -34,10 +37,10 @@ export function HotelCardGrid({ hotel }: { hotel: (Hotel & { minPrice: number })
 
                     {/* High-End Badges Overlay (Top Left) */}
                     <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
-                        {hotel.is_official_partner && (
+                        {isVipPartner && (
                             <div className="bg-blue-600 text-white text-[9px] font-black px-2.5 py-1.5 rounded-lg shadow-xl uppercase tracking-widest backdrop-blur-md bg-blue-600/90 flex items-center gap-1.5">
                                 <ShieldCheck className="h-3 w-3" />
-                                Official Partner
+                                VIP
                             </div>
                         )}
                         {hotel.is_recommended && (

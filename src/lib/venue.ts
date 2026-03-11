@@ -1,8 +1,8 @@
 export const COP17_VENUE = {
-    name: "UG Arena (Main Convention Center)",
-    latitude: 47.9044,
-    longitude: 106.8837,
-    address: "Dundgol Street, Ulaanbaatar"
+    name: "National Garden Park",
+    latitude: 47.9003129,
+    longitude: 106.9440115,
+    address: "National Park, BZD - 26 khoroo, Ulaanbaatar"
 };
 
 // Haversine formula to calculate distance in km

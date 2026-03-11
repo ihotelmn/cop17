@@ -1,7 +1,5 @@
 "use server";
 
-import { unstable_cache } from "next/cache";
-
 import { normalizeHotelForPublic } from "@/lib/hotel-display";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { calculateDistance, COP17_VENUE } from "@/lib/venue";
@@ -55,219 +53,211 @@ async function getPublishedHotelId(hotelId: string) {
 }
 
 export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
-    return unstable_cache(
-        async (params?: HotelSearchParams) => {
-            try {
-                const publicClient = getSupabaseAdmin();
-                const createQuery = (filterPublished: boolean) => {
-                    let queryBuilder = publicClient
-                        .from("hotels")
-                        .select(`
-                            *,
-                            rooms (
-                                id,
-                                price_per_night,
-                                capacity,
-                                total_inventory
-                            )
-                        `)
-                        .order("created_at", { ascending: false });
+    try {
+        const params = searchParams;
+        const publicClient = getSupabaseAdmin();
+        const createQuery = (filterPublished: boolean) => {
+            let queryBuilder = publicClient
+                .from("hotels")
+                .select(`
+                    *,
+                    rooms (
+                        id,
+                        price_per_night,
+                        capacity,
+                        total_inventory
+                    )
+                `)
+                .order("created_at", { ascending: false });
 
-                    if (filterPublished) {
-                        queryBuilder = queryBuilder.eq("is_published", true);
-                    }
+            if (filterPublished) {
+                queryBuilder = queryBuilder.eq("is_published", true);
+            }
 
-                    if (params?.query) {
-                        const qLower = params.query.toLowerCase().trim();
-                        const genericTerms = ["ulaanbaatar", "улаанбаатар", "ub", "уб", "ulaanbaatar, mongolia", "улаанбаатар хот"];
+            if (params?.query) {
+                const qLower = params.query.toLowerCase().trim();
+                const genericTerms = ["ulaanbaatar", "улаанбаатар", "ub", "уб", "ulaanbaatar, mongolia", "улаанбаатар хот"];
 
-                        if (!genericTerms.includes(qLower)) {
-                            const q = `%${params.query}%`;
-                            queryBuilder = queryBuilder.or(`name.ilike.${q},name_en.ilike.${q},address.ilike.${q},address_en.ilike.${q}`);
-                        }
-                    }
-
-                    if (params?.stars) {
-                        const stars = parseInt(params.stars);
-                        if (!Number.isNaN(stars)) {
-                            queryBuilder = queryBuilder.gte("stars", stars);
-                        }
-                    }
-
-                    if (params?.amenities) {
-                        const amenitiesList = params.amenities.split(",").filter(Boolean);
-                        if (amenitiesList.length > 0) {
-                            queryBuilder = queryBuilder.contains("amenities", amenitiesList);
-                        }
-                    }
-
-                    return queryBuilder;
-                };
-
-                let { data: hotels, error } = await createQuery(true);
-
-                if (isMissingPublishedColumn(error)) {
-                    ({ data: hotels, error } = await createQuery(false));
+                if (!genericTerms.includes(qLower)) {
+                    const q = `%${params.query}%`;
+                    queryBuilder = queryBuilder.or(`name.ilike.${q},name_en.ilike.${q},address.ilike.${q},address_en.ilike.${q}`);
                 }
+            }
 
-                if (error) {
-                    console.error("Error fetching hotels:", error);
-                    return [];
+            if (params?.stars) {
+                const stars = parseInt(params.stars);
+                if (!Number.isNaN(stars)) {
+                    queryBuilder = queryBuilder.gte("stars", stars);
                 }
+            }
 
-                const visibleHotels = (hotels ?? []).filter((hotel: any) => isVisibleHotel(hotel));
-                let results = visibleHotels.map((hotel: any) => {
-                    const lat = hotel.latitude ? Number(hotel.latitude) : null;
-                    const lng = hotel.longitude ? Number(hotel.longitude) : null;
-                    const distance = hotel.cached_distance_km ?? (
-                        (lat && lng)
-                            ? calculateDistance(lat, lng, COP17_VENUE.latitude, COP17_VENUE.longitude)
-                            : null
-                    );
+            if (params?.amenities) {
+                const amenitiesList = params.amenities.split(",").filter(Boolean);
+                if (amenitiesList.length > 0) {
+                    queryBuilder = queryBuilder.contains("amenities", amenitiesList);
+                }
+            }
 
-                    return normalizeHotelForPublic({
-                        ...hotel,
-                        amenities: Array.isArray(hotel.amenities)
-                            ? hotel.amenities.map((amenity: any) => typeof amenity === "string" ? amenity : JSON.stringify(amenity))
-                            : [],
-                        latitude: lat,
-                        longitude: lng,
-                        distanceToVenue: distance,
-                        cached_distance_km: hotel.cached_distance_km,
-                        cached_drive_time_text: hotel.cached_drive_time_text,
-                        cached_drive_time_value: hotel.cached_drive_time_value,
-                        google_place_id: hotel.google_place_id,
-                        cached_rating: hotel.cached_rating,
-                        cached_review_count: hotel.cached_review_count,
-                        is_official_partner: !!hotel.is_official_partner,
-                        is_recommended: !!hotel.is_recommended,
-                        has_shuttle_service: !!hotel.has_shuttle_service,
-                        minPrice: hotel.rooms?.length > 0 ? Math.min(...hotel.rooms.map((room: any) => Number(room.price_per_night))) : null,
-                        max_capacity: hotel.rooms?.length > 0 ? Math.max(...hotel.rooms.map((room: any) => Number(room.capacity))) : 0,
+            return queryBuilder;
+        };
+
+        let { data: hotels, error } = await createQuery(true);
+
+        if (isMissingPublishedColumn(error)) {
+            ({ data: hotels, error } = await createQuery(false));
+        }
+
+        if (error) {
+            console.error("Error fetching hotels:", error);
+            return [];
+        }
+
+        const visibleHotels = (hotels ?? []).filter((hotel: any) => isVisibleHotel(hotel));
+        let results = visibleHotels.map((hotel: any) => {
+            const lat = hotel.latitude ? Number(hotel.latitude) : null;
+            const lng = hotel.longitude ? Number(hotel.longitude) : null;
+            const distance = hotel.cached_distance_km ?? (
+                (lat && lng)
+                    ? calculateDistance(lat, lng, COP17_VENUE.latitude, COP17_VENUE.longitude)
+                    : null
+            );
+
+            return normalizeHotelForPublic({
+                ...hotel,
+                amenities: Array.isArray(hotel.amenities)
+                    ? hotel.amenities.map((amenity: any) => typeof amenity === "string" ? amenity : JSON.stringify(amenity))
+                    : [],
+                latitude: lat,
+                longitude: lng,
+                distanceToVenue: distance,
+                cached_distance_km: hotel.cached_distance_km,
+                cached_drive_time_text: hotel.cached_drive_time_text,
+                cached_drive_time_value: hotel.cached_drive_time_value,
+                google_place_id: hotel.google_place_id,
+                cached_rating: hotel.cached_rating,
+                cached_review_count: hotel.cached_review_count,
+                is_official_partner: !!hotel.is_official_partner,
+                is_recommended: !!hotel.is_recommended,
+                has_shuttle_service: !!hotel.has_shuttle_service,
+                minPrice: hotel.rooms?.length > 0 ? Math.min(...hotel.rooms.map((room: any) => Number(room.price_per_night))) : null,
+                max_capacity: hotel.rooms?.length > 0 ? Math.max(...hotel.rooms.map((room: any) => Number(room.capacity))) : 0,
+            });
+        });
+
+        const totalRequired = parseInt(params?.adults || "1") + parseInt(params?.children || "0");
+
+        if (totalRequired > 1) {
+            results = results.filter((hotel: any) => {
+                // Keep hotels without sourced room rows visible until inventory is backfilled.
+                if (!hotel.rooms || hotel.rooms.length === 0) return true;
+                const totalHotelCapacity = hotel.rooms.reduce(
+                    (sum: number, room: any) => sum + (Number(room.capacity) * Number(room.total_inventory || 0)),
+                    0
+                );
+                return totalHotelCapacity >= totalRequired;
+            });
+        }
+
+        if (params?.from && params?.to && results.length > 0) {
+            const roomIds = results.flatMap((hotel: any) => hotel.rooms?.map((room: any) => room.id) ?? []);
+
+            if (roomIds.length > 0) {
+                const adminClient = getSupabaseAdmin();
+                const { data: overlappingBookings, error: bookingsError } = await adminClient
+                    .from("bookings")
+                    .select("room_id, status, created_at")
+                    .in("room_id", roomIds)
+                    .lt("check_in_date", params.to)
+                    .gt("check_out_date", params.from)
+                    .in("status", ["confirmed", "pending"]);
+
+                if (!bookingsError && overlappingBookings) {
+                    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+                    const bookingsByRoom: Record<string, number> = {};
+
+                    for (const booking of overlappingBookings) {
+                        const isConfirmed = booking.status === "confirmed";
+                        const isRecentPending = booking.status === "pending" && new Date(booking.created_at) >= fifteenMinutesAgo;
+
+                        if (isConfirmed || isRecentPending) {
+                            bookingsByRoom[booking.room_id] = (bookingsByRoom[booking.room_id] || 0) + 1;
+                        }
+                    }
+
+                    results = results.map((hotel: any) => {
+                        if (!hotel.rooms || hotel.rooms.length === 0) return hotel;
+
+                        const availableRooms = hotel.rooms
+                            .map((room: any) => {
+                                const bookedCount = bookingsByRoom[room.id] || 0;
+                                const availableInventory = Math.max(0, (room.total_inventory || 0) - bookedCount);
+                                return { ...room, availableInventory };
+                            })
+                            .filter((room: any) => room.availableInventory > 0);
+
+                        return {
+                            ...hotel,
+                            rooms: hotel.rooms.map((room: any) => ({
+                                ...room,
+                                availableInventory: Math.max(0, (room.total_inventory || 0) - (bookingsByRoom[room.id] || 0)),
+                            })),
+                            minPrice: availableRooms.length > 0
+                                ? Math.min(...availableRooms.map((room: any) => Number(room.price_per_night)))
+                                : null,
+                            isFullyBooked: availableRooms.length === 0,
+                        };
                     });
-                });
 
-                const totalRequired = parseInt(params?.adults || "1") + parseInt(params?.children || "0");
-
-                if (totalRequired > 1) {
                     results = results.filter((hotel: any) => {
-                        // Keep hotels without sourced room rows visible until inventory is backfilled.
-                        if (!hotel.rooms || hotel.rooms.length === 0) return true;
-                        const totalHotelCapacity = hotel.rooms.reduce(
-                            (sum: number, room: any) => sum + (Number(room.capacity) * Number(room.total_inventory || 0)),
+                        const totalAvailableHotelCapacity = hotel.rooms.reduce(
+                            (sum: number, room: any) => sum + (Number(room.capacity) * (room.availableInventory || 0)),
                             0
                         );
-                        return totalHotelCapacity >= totalRequired;
+                        return totalAvailableHotelCapacity >= totalRequired;
                     });
                 }
-
-                if (params?.from && params?.to && results.length > 0) {
-                    const roomIds = results.flatMap((hotel: any) => hotel.rooms?.map((room: any) => room.id) ?? []);
-
-                    if (roomIds.length > 0) {
-                        const adminClient = getSupabaseAdmin();
-                        const { data: overlappingBookings, error: bookingsError } = await adminClient
-                            .from("bookings")
-                            .select("room_id, status, created_at")
-                            .in("room_id", roomIds)
-                            .lt("check_in_date", params.to)
-                            .gt("check_out_date", params.from)
-                            .in("status", ["confirmed", "pending"]);
-
-                        if (!bookingsError && overlappingBookings) {
-                            const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-                            const bookingsByRoom: Record<string, number> = {};
-
-                            for (const booking of overlappingBookings) {
-                                const isConfirmed = booking.status === "confirmed";
-                                const isRecentPending = booking.status === "pending" && new Date(booking.created_at) >= fifteenMinutesAgo;
-
-                                if (isConfirmed || isRecentPending) {
-                                    bookingsByRoom[booking.room_id] = (bookingsByRoom[booking.room_id] || 0) + 1;
-                                }
-                            }
-
-                            results = results.map((hotel: any) => {
-                                if (!hotel.rooms || hotel.rooms.length === 0) return hotel;
-
-                                const availableRooms = hotel.rooms
-                                    .map((room: any) => {
-                                        const bookedCount = bookingsByRoom[room.id] || 0;
-                                        const availableInventory = Math.max(0, (room.total_inventory || 0) - bookedCount);
-                                        return { ...room, availableInventory };
-                                    })
-                                    .filter((room: any) => room.availableInventory > 0);
-
-                                return {
-                                    ...hotel,
-                                    rooms: hotel.rooms.map((room: any) => ({
-                                        ...room,
-                                        availableInventory: Math.max(0, (room.total_inventory || 0) - (bookingsByRoom[room.id] || 0)),
-                                    })),
-                                    minPrice: availableRooms.length > 0
-                                        ? Math.min(...availableRooms.map((room: any) => Number(room.price_per_night)))
-                                        : null,
-                                    isFullyBooked: availableRooms.length === 0,
-                                };
-                            });
-
-                            results = results.filter((hotel: any) => {
-                                const totalAvailableHotelCapacity = hotel.rooms.reduce(
-                                    (sum: number, room: any) => sum + (Number(room.capacity) * (room.availableInventory || 0)),
-                                    0
-                                );
-                                return totalAvailableHotelCapacity >= totalRequired;
-                            });
-                        }
-                    }
-                }
-
-                if (params?.minPrice) {
-                    const min = parseFloat(params.minPrice);
-                    if (!Number.isNaN(min)) {
-                        results = results.filter((hotel: any) => hotel.minPrice !== null && hotel.minPrice >= min);
-                    }
-                }
-
-                if (params?.maxPrice) {
-                    const max = parseFloat(params.maxPrice);
-                    if (!Number.isNaN(max)) {
-                        results = results.filter((hotel: any) => hotel.minPrice !== null && hotel.minPrice <= max);
-                    }
-                }
-
-                const sortBy = params?.sortBy || "newest";
-                results.sort((a: any, b: any) => {
-                    const priceA = a.minPrice ?? 99999999;
-                    const priceB = b.minPrice ?? 99999999;
-
-                    switch (sortBy) {
-                        case "price-asc":
-                            return priceA - priceB;
-                        case "price-desc":
-                            return priceB - priceA;
-                        case "stars-desc":
-                            return b.stars - a.stars;
-                        case "distance-asc":
-                            return (a.distanceToVenue ?? 9999) - (b.distanceToVenue ?? 9999);
-                        case "newest":
-                        default:
-                            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-                    }
-                });
-
-                return results as (Hotel & { minPrice: number })[];
-            } catch (error) {
-                console.error("Unexpected error fetching published hotels:", error);
-                return [];
             }
-        },
-        ["published-hotels", JSON.stringify(searchParams || {})],
-        {
-            revalidate: 300,
-            tags: ["hotels"],
         }
-    )(searchParams);
+
+        if (params?.minPrice) {
+            const min = parseFloat(params.minPrice);
+            if (!Number.isNaN(min)) {
+                results = results.filter((hotel: any) => hotel.minPrice !== null && hotel.minPrice >= min);
+            }
+        }
+
+        if (params?.maxPrice) {
+            const max = parseFloat(params.maxPrice);
+            if (!Number.isNaN(max)) {
+                results = results.filter((hotel: any) => hotel.minPrice !== null && hotel.minPrice <= max);
+            }
+        }
+
+        const sortBy = params?.sortBy || "newest";
+        results.sort((a: any, b: any) => {
+            const priceA = a.minPrice ?? 99999999;
+            const priceB = b.minPrice ?? 99999999;
+
+            switch (sortBy) {
+                case "price-asc":
+                    return priceA - priceB;
+                case "price-desc":
+                    return priceB - priceA;
+                case "stars-desc":
+                    return b.stars - a.stars;
+                case "distance-asc":
+                    return (a.distanceToVenue ?? 9999) - (b.distanceToVenue ?? 9999);
+                case "newest":
+                default:
+                    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            }
+        });
+
+        return results as (Hotel & { minPrice: number })[];
+    } catch (error) {
+        console.error("Unexpected error fetching published hotels:", error);
+        return [];
+    }
 };
 
 export async function getPublicHotel(id: string) {
