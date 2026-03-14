@@ -7,8 +7,7 @@ import { SingleHotelMapWrapper } from "@/components/single-hotel-map";
 import { getPublicHotel, getPublicRooms } from "@/app/actions/public";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
-import type { Metadata, ResolvingMetadata } from "next";
+import type { Metadata } from "next";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -16,8 +15,7 @@ interface PageProps {
 }
 
 export async function generateMetadata(
-    { params }: PageProps,
-    parent: ResolvingMetadata
+    { params }: PageProps
 ): Promise<Metadata> {
     const { id } = await params;
     const hotel = await getPublicHotel(id);
@@ -239,35 +237,35 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
 
                 {/* Sidebar Sticky Area */}
                 <aside className="lg:col-span-4">
-                    <div className="space-y-8 lg:sticky lg:top-24">
+                    <div className="space-y-6 lg:sticky lg:top-20">
 
                         {/* Search Persistence / Quick Modify */}
-                        <div id="reservation-assistant" className="relative hidden overflow-hidden rounded-[2.5rem] border border-zinc-200 bg-white p-10 shadow-2xl shadow-zinc-200/50 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none lg:block">
+                        <div id="reservation-assistant" className="relative hidden overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-7 shadow-2xl shadow-zinc-200/50 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none lg:block">
                             <div className="absolute top-0 right-0 p-12 -mr-6 -mt-6 bg-blue-600/5 rounded-full blur-3xl pointer-events-none" />
-                            <h3 className="font-black text-xl text-zinc-950 dark:text-white mb-8 tracking-tight uppercase tracking-widest text-xs opacity-50">Reservation Assistant</h3>
+                            <h3 className="mb-4 text-xs font-black uppercase tracking-[0.22em] text-zinc-400">Reservation Assistant</h3>
 
-                            <div className="space-y-8 relative z-10">
-                                <SearchForm />
+                            <div className="relative z-10 space-y-5">
+                                <SearchForm compact />
 
-                                <div className="pt-8 border-t border-zinc-100 dark:border-zinc-800 grid grid-cols-2 gap-4">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 mb-2">
+                                <div className="grid grid-cols-2 gap-3 border-t border-zinc-100 pt-5 dark:border-zinc-800">
+                                    <div className="space-y-2">
+                                        <div className="mb-1 flex items-center gap-2">
                                             <Clock className="w-3.5 h-3.5 text-blue-500" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Policy</span>
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">Check-In</p>
-                                            <p className="text-xl font-black text-zinc-900 dark:text-white">{hotel.check_in_time?.substring(0, 5) || "14:00"}</p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Check-In</p>
+                                            <p className="text-lg font-black text-zinc-900 dark:text-white">{hotel.check_in_time?.substring(0, 5) || "14:00"}</p>
                                         </div>
                                     </div>
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 mb-2">
+                                    <div className="space-y-2">
+                                        <div className="mb-1 flex items-center gap-2">
                                             <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Ready</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Checkout</span>
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">Check-Out</p>
-                                            <p className="text-xl font-black text-zinc-900 dark:text-white">{hotel.check_out_time?.substring(0, 5) || "11:00"}</p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Check-Out</p>
+                                            <p className="text-lg font-black text-zinc-900 dark:text-white">{hotel.check_out_time?.substring(0, 5) || "11:00"}</p>
                                         </div>
                                     </div>
                                 </div>

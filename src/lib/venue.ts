@@ -1,7 +1,7 @@
 export const COP17_VENUE = {
     name: "National Garden Park",
-    latitude: 47.9003129,
-    longitude: 106.9440115,
+    latitude: 47.901572,
+    longitude: 106.955349,
     address: "National Park, BZD - 26 khoroo, Ulaanbaatar"
 };
 

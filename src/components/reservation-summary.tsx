@@ -83,6 +83,11 @@ export function ReservationSummary({ hotelId, rooms, checkIn, checkOut, mode = "
     const totalPrice = hasDates
         ? selectedRooms.reduce((sum: number, room) => sum + (room.price_per_night * room.quantity * nights), 0)
         : 0;
+    const selectedRoomsLabel = selectedRooms
+        .slice(0, 2)
+        .map((room) => `${room.quantity}x ${room.name.replace(/standart/ig, "Standard")}`)
+        .join(", ");
+    const remainingSelectedRooms = Math.max(0, selectedRooms.length - 2);
 
     const checkoutParams = new URLSearchParams(searchParams.toString());
     if (!checkoutParams.has("from") && fromParam) checkoutParams.set("from", fromParam);
@@ -160,8 +165,8 @@ export function ReservationSummary({ hotelId, rooms, checkIn, checkOut, mode = "
         }
 
         return (
-            <div className="pt-8 border-t border-zinc-100 dark:border-zinc-800">
-                <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200/50 bg-zinc-50 p-6 dark:border-zinc-700/50 dark:bg-zinc-800/50">
+            <div className="border-t border-zinc-100 pt-6 dark:border-zinc-800">
+                <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200/50 bg-zinc-50 p-5 dark:border-zinc-700/50 dark:bg-zinc-800/50">
                     <div className="flex items-center gap-4 text-zinc-500">
                         <Info className="h-5 w-5 shrink-0" />
                         <p className="text-sm font-medium">Select your preferred rooms from the list to proceed to booking.</p>
@@ -184,22 +189,18 @@ export function ReservationSummary({ hotelId, rooms, checkIn, checkOut, mode = "
         return (
             <>
                 {showDesktopSummary && (
-                    <div className="animate-in slide-in-from-bottom-4 fade-in border-t border-zinc-100 pt-8 duration-500 dark:border-zinc-800">
-                        <h4 className="mb-4 text-[10px] font-black uppercase tracking-widest text-zinc-400">Selected Inventory</h4>
-                        <div className="mb-6 space-y-3">
-                            {selectedRooms.map((room) => (
-                                <div key={room.id} className="flex items-center justify-between rounded-xl border border-blue-100/50 bg-blue-50/50 p-3 text-sm dark:border-blue-800/20 dark:bg-blue-900/10">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/50">
-                                            <span className="text-xs font-bold">{room.quantity}x</span>
-                                        </div>
-                                        <span className="max-w-[150px] truncate font-bold capitalize text-zinc-900 dark:text-zinc-100">{room.name.replace(/standart/ig, "Standard")}</span>
-                                    </div>
-                                    <span className="font-bold text-zinc-400">—</span>
-                                </div>
-                            ))}
+                    <div className="animate-in slide-in-from-bottom-4 fade-in border-t border-zinc-100 pt-5 duration-500 dark:border-zinc-800">
+                        <div className="rounded-[1.5rem] border border-zinc-200/70 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Selected Rooms</p>
+                            <p className="mt-2 text-sm font-black text-zinc-950 dark:text-white">
+                                {selectedRoomsLabel}
+                                {remainingSelectedRooms > 0 ? ` +${remainingSelectedRooms} more` : ""}
+                            </p>
+                            <p className="mt-1 text-xs font-bold text-zinc-500 dark:text-zinc-400">
+                                {totalRooms} room{totalRooms > 1 ? "s" : ""} selected
+                            </p>
                         </div>
-                        <div className="flex items-center gap-3 rounded-2xl border border-amber-200/50 bg-amber-50 p-4 text-amber-700 dark:border-amber-800/30 dark:bg-amber-900/20 dark:text-amber-400">
+                        <div className="mt-3 flex items-center gap-3 rounded-2xl border border-amber-200/50 bg-amber-50 p-4 text-amber-700 dark:border-amber-800/30 dark:bg-amber-900/20 dark:text-amber-400">
                             <Info className="h-5 w-5 shrink-0" />
                             <p className="text-xs font-bold">Please select your stay dates above to see pricing and proceed to booking.</p>
                         </div>
@@ -222,38 +223,30 @@ export function ReservationSummary({ hotelId, rooms, checkIn, checkOut, mode = "
     return (
         <>
             {showDesktopSummary && (
-                <div className="animate-in slide-in-from-bottom-4 fade-in border-t border-zinc-100 pt-8 duration-500 dark:border-zinc-800">
-                    <h4 className="mb-4 text-[10px] font-black uppercase tracking-widest text-zinc-400">Selected Inventory</h4>
-
-                    <div className="mb-6 space-y-3">
-                        {selectedRooms.map((room) => (
-                            <div key={room.id} className="flex items-center justify-between rounded-xl border border-blue-100/50 bg-blue-50/50 p-3 text-sm dark:border-blue-800/20 dark:bg-blue-900/10">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/50">
-                                        <span className="text-xs font-bold">{room.quantity}x</span>
-                                    </div>
-                                    <span className="max-w-[150px] truncate font-bold capitalize text-zinc-900 dark:text-zinc-100">{room.name.replace(/standart/ig, "Standard")}</span>
-                                </div>
-                                <span className="font-bold text-zinc-900 dark:text-zinc-100">${room.price_per_night * room.quantity * nights}</span>
+                <div className="animate-in slide-in-from-bottom-4 fade-in border-t border-zinc-100 pt-5 duration-500 dark:border-zinc-800">
+                    <div className="rounded-[1.5rem] border border-zinc-200/70 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Ready To Continue</p>
+                                <p className="mt-2 truncate text-sm font-black text-zinc-950 dark:text-white">
+                                    {selectedRoomsLabel}
+                                    {remainingSelectedRooms > 0 ? ` +${remainingSelectedRooms} more` : ""}
+                                </p>
+                                <p className="mt-1 text-xs font-bold text-zinc-500 dark:text-zinc-400">
+                                    {totalRooms} room{totalRooms > 1 ? "s" : ""} • {nights} night{nights > 1 ? "s" : ""}
+                                </p>
                             </div>
-                        ))}
-                    </div>
-
-                    <div className="mb-8 flex items-end justify-between">
-                        <div>
-                            <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-zinc-400">Estimated Total</p>
-                            <p className="text-xs font-bold text-zinc-500">{totalRooms} Rooms, {nights} Nights</p>
-                        </div>
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-3xl font-black tracking-tighter text-blue-600 dark:text-blue-400">${totalPrice}</span>
-                            <span className="text-xs font-black uppercase tracking-widest text-zinc-400">USD</span>
+                            <div className="text-right">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Estimated Total</p>
+                                <p className="mt-1 text-2xl font-black tracking-tighter text-blue-600 dark:text-blue-400">${totalPrice}</p>
+                            </div>
                         </div>
                     </div>
 
-                    <Button asChild className="group h-18 w-full rounded-2.5xl bg-blue-600 text-xs font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-blue-600/20 transition-all hover:bg-blue-700 active:scale-[0.97]">
+                    <Button asChild className="group mt-4 h-14 w-full rounded-2xl bg-blue-600 text-[11px] font-black uppercase tracking-[0.18em] text-white shadow-xl shadow-blue-600/20 transition-all hover:bg-blue-700 active:scale-[0.97]">
                         <Link href={checkoutHref}>
-                            Proceed to Secure Booking
-                            <ArrowRight className="ml-4 h-5 w-5 transition-transform group-hover:translate-x-2" />
+                            Continue
+                            <ArrowRight className="ml-3 h-4 w-4 transition-transform group-hover:translate-x-1" />
                         </Link>
                     </Button>
                 </div>

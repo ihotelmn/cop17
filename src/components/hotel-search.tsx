@@ -369,7 +369,7 @@ export function HotelSearch() {
 
                             <Button
                                 onClick={handleSearch}
-                                className="h-full min-w-[10rem] rounded-none bg-blue-600 px-7 text-white shadow-none transition-colors hover:bg-blue-700 active:scale-[0.98] dark:bg-blue-600 dark:text-white dark:hover:bg-blue-500"
+                                className="h-full min-w-[10rem] rounded-l-none rounded-r-[1.35rem] bg-blue-600 px-7 text-white shadow-none transition-colors hover:bg-blue-700 active:scale-[0.98] dark:bg-blue-600 dark:text-white dark:hover:bg-blue-500"
                             >
                                 <div className="flex items-center gap-3">
                                     <Search className="h-4 w-4" />
