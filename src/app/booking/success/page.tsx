@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
 import { PrintButton } from "@/components/booking/print-button";
 import { cn, getHotelImageUrl } from "@/lib/utils";
+import { getPreferredHotelAddress, getPreferredHotelName } from "@/lib/hotel-display";
 
 export const dynamic = "force-dynamic";
 
@@ -64,7 +65,8 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
         const firstBooking = bookings[0];
         // @ts-ignore
         const hotel = firstBooking.room?.hotel;
-        const hotelName = hotel?.name || "The Hotel";
+        const hotelName = hotel ? getPreferredHotelName(hotel) : "The Hotel";
+        const hotelAddress = hotel ? (getPreferredHotelAddress(hotel) || "Address not available") : "Address not available";
 
         const checkInDate = new Date(firstBooking.check_in_date);
         const checkOutDate = new Date(firstBooking.check_out_date);
@@ -113,7 +115,7 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
                                         <h2 className="text-2xl font-black leading-tight mb-2">{hotelName}</h2>
                                         <div className="flex items-center text-sm text-zinc-500 italic">
                                             <MapPin className="h-4 w-4 mr-1.5 shrink-0" />
-                                            {hotel?.address || "Address not available"}
+                                            {hotelAddress}
                                         </div>
                                     </div>
                                     {hotel?.images?.[0] && (

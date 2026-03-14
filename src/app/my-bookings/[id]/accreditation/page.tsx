@@ -14,6 +14,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { format } from "date-fns";
 import { notFound } from "next/navigation";
+import { getPreferredHotelName } from "@/lib/hotel-display";
 
 export default async function AccreditationPage({
     params
@@ -38,6 +39,7 @@ export default async function AccreditationPage({
     }
 
     const documents = await getDocumentsByBookingAction(bookingId);
+    const hotelName = getPreferredHotelName(booking.hotel);
 
     const passportDoc = documents.find(d => d.type === 'passport');
     const visaDoc = documents.find(d => d.type === 'visa');
@@ -59,7 +61,7 @@ export default async function AccreditationPage({
                             Accreditation & Docs
                         </h1>
                         <p className="text-lg text-zinc-500 dark:text-zinc-400">
-                            Required documents for your stay at <span className="text-zinc-900 dark:text-white font-bold">{booking.hotel.name}</span>
+                            Required documents for your stay at <span className="text-zinc-900 dark:text-white font-bold">{hotelName}</span>
                         </p>
                     </div>
 

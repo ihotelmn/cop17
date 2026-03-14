@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import { Printer, ShieldCheck, MapPin, Phone, Mail } from "lucide-react";
 import { PrintTrigger } from "./print-trigger";
+import { getPreferredHotelAddress, getPreferredHotelName } from "@/lib/hotel-display";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,8 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
     }
 
     const hotel = booking.room.hotel;
+    const hotelName = getPreferredHotelName(hotel);
+    const hotelAddress = getPreferredHotelAddress(hotel) || "Ulaanbaatar, Mongolia";
     const checkIn = new Date(booking.check_in_date);
     const checkOut = new Date(booking.check_out_date);
     const nights = Math.max(1, Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)));
@@ -58,10 +61,10 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
                     <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-4">Hotel Details</h3>
                     <div className="space-y-4">
                         <div>
-                            <p className="text-lg font-bold">{hotel.name}</p>
+                            <p className="text-lg font-bold">{hotelName}</p>
                             <div className="flex items-start gap-2 text-sm text-zinc-500 mt-1">
                                 <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
-                                <span>{hotel.address}</span>
+                                <span>{hotelAddress}</span>
                             </div>
                         </div>
                         <div className="flex flex-col gap-1 text-sm text-zinc-500">

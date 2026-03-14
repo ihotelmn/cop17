@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { getHotelImageUrl } from "@/lib/utils";
+import { getPreferredHotelAddress, getPreferredHotelName } from "@/lib/hotel-display";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -60,9 +61,9 @@ export default async function MyBookingsPage() {
                             const hotelImage = hotel?.images?.[0] || null;
                             const checkIn = format(new Date(booking.check_in_date), "MMM d, yyyy");
                             const checkOut = format(new Date(booking.check_out_date), "MMM d, yyyy");
-                            const hotelName = hotel?.name || "Unknown Hotel";
+                            const hotelName = hotel ? getPreferredHotelName(hotel) : "Unknown Hotel";
                             const roomName = booking.room?.name || "Unknown Room";
-                            const address = hotel?.address || "Ulaanbaatar, Mongolia";
+                            const address = hotel ? (getPreferredHotelAddress(hotel) || "Ulaanbaatar, Mongolia") : "Ulaanbaatar, Mongolia";
 
                             const directionsUrl = hotel?.latitude && hotel?.longitude
                                 ? `https://www.google.com/maps/dir/?api=1&destination=${hotel.latitude},${hotel.longitude}`

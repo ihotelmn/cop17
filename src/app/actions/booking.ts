@@ -52,6 +52,64 @@ function getBookingActionErrorMessage(error: unknown): string {
     return `Server Error [VER-307]: ${msg} | Detailed: ${errorString.substring(0, 300)}`;
 }
 
+type BookingNotificationPayload = {
+    title: string;
+    message: string;
+    type: string;
+    link: string;
+};
+
+async function getBookingNotificationRecipientIds(
+    adminSupabase: ReturnType<typeof getSupabaseAdmin>,
+    ownerId?: string | null
+) {
+    const recipientIds = new Set<string>();
+
+    if (ownerId) {
+        recipientIds.add(ownerId);
+    }
+
+    const { data: admins, error } = await adminSupabase
+        .from("profiles")
+        .select("id")
+        .in("role", ["admin", "super_admin", "liaison"]);
+
+    if (error) {
+        console.error("Notification recipient lookup failed:", error);
+    }
+
+    for (const admin of admins || []) {
+        if (admin.id) {
+            recipientIds.add(admin.id);
+        }
+    }
+
+    return Array.from(recipientIds);
+}
+
+async function createBookingNotifications(
+    adminSupabase: ReturnType<typeof getSupabaseAdmin>,
+    ownerId: string | null | undefined,
+    payload: BookingNotificationPayload
+) {
+    const recipientIds = await getBookingNotificationRecipientIds(adminSupabase, ownerId);
+
+    if (recipientIds.length === 0) {
+        return;
+    }
+
+    const { error } = await adminSupabase.from("notifications").insert(
+        recipientIds.map((userId) => ({
+            user_id: userId,
+            ...payload,
+        }))
+    );
+
+    if (error) {
+        console.error("Notification insert failed:", error);
+    }
+}
+
 export async function createBookingAction(prevState: BookingState, formData: FormData): Promise<BookingState> {
     try {
         const supabase = await createClient();
@@ -191,15 +249,12 @@ export async function createBookingAction(prevState: BookingState, formData: For
         }
 
         // --- NOTIFICATION LOGIC ---
-        if (ownerId && hotelName) {
-            await adminSupabase.from("notifications").insert({
-                user_id: ownerId,
-                title: "New Booking Received!",
-                message: `New multi-room booking at ${hotelName} for ${nights} nights.`,
-                type: "booking_new",
-                link: `/admin/bookings` // Grouped booking link
-            });
-        }
+        await createBookingNotifications(adminSupabase, ownerId, {
+            title: "New Booking Received!",
+            message: `New multi-room booking at ${hotelName || "COP17 Hotel"} for ${nights} nights.`,
+            type: "booking_new",
+            link: `/admin/bookings`,
+        });
 
         // 4. Initiate Payment (Golomt Bank)
         try {
@@ -297,15 +352,12 @@ export async function confirmBookingAction(groupId: string, silent: boolean = fa
         // @ts-ignore
         const hotelNameForNotif = booking.room?.hotel?.name || "COP17 Hotel";
 
-        if (ownerId) {
-            await adminSupabase.from("notifications").insert({
-                user_id: ownerId,
-                title: "Booking Confirmed & Paid",
-                message: `Payment confirmed for booking at ${hotelNameForNotif}. Guest: ${finalName}`,
-                type: "booking_confirmed",
-                link: `/admin/bookings`
-            });
-        }
+        await createBookingNotifications(adminSupabase, ownerId, {
+            title: "Booking Confirmed & Paid",
+            message: `Payment confirmed for booking at ${hotelNameForNotif}. Guest: ${finalName}`,
+            type: "booking_confirmed",
+            link: `/admin/bookings`,
+        });
 
         if (finalEmail) {
             const datesStr = `${format(new Date(booking.check_in_date), "MMM d")} - ${format(new Date(booking.check_out_date), "MMM d, yyyy")}`;
@@ -474,15 +526,12 @@ export async function cancelBookingAction(bookingId: string, reason?: string) {
         // @ts-ignore
         const hotelName = hotel?.name;
 
-        if (ownerId) {
-            await adminSupabase.from("notifications").insert({
-                user_id: ownerId,
-                title: "Booking Cancelled",
-                message: `A booking for ${hotelName} has been cancelled by the guest. Penalty: ${cancellationState.penaltyPercent}% (${cancellationState.penaltyAmount}).`,
-                type: "booking_cancelled",
-                link: `/admin/bookings/${bookingId}`
-            });
-        }
+        await createBookingNotifications(adminSupabase, ownerId, {
+            title: "Booking Cancelled",
+            message: `A booking for ${hotelName || "COP17 Hotel"} has been cancelled by the guest. Penalty: ${cancellationState.penaltyPercent}% (${cancellationState.penaltyAmount}).`,
+            type: "booking_cancelled",
+            link: `/admin/bookings/${bookingId}`,
+        });
 
         return {
             success: true,
@@ -539,18 +588,12 @@ export async function requestModificationAction(bookingId: string, message: stri
         // @ts-ignore
         const hotelName = hotel?.name;
 
-        if (ownerId) {
-            await adminSupabase.from("notifications").insert({
-                user_id: ownerId,
-                title: "Modification Request",
-                message: `Guest requested changes for booking at ${hotelName}: ${message}`,
-                type: "booking_modification",
-                link: `/admin/bookings/${bookingId}`
-            });
-
-            // Also maybe log this in a separate 'audit' or 'requests' table if needed, 
-            // but for Prototype notifications are enough.
-        }
+        await createBookingNotifications(adminSupabase, ownerId, {
+            title: "Modification Request",
+            message: `Guest requested changes for booking at ${hotelName || "COP17 Hotel"}: ${message}`,
+            type: "booking_modification",
+            link: `/admin/bookings/${bookingId}`,
+        });
 
         return { success: true };
     } catch (error) {

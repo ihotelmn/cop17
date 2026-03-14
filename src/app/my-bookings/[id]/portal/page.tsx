@@ -35,6 +35,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { calculateBookingPolicyState, formatPolicyWindow } from "@/lib/cancellation-policy";
+import { getPreferredHotelAddress, getPreferredHotelName } from "@/lib/hotel-display";
 
 export default function BookingPortalPage() {
     const params = useParams();
@@ -119,6 +120,8 @@ export default function BookingPortalPage() {
         new Date(),
         hotel?.check_in_time
     );
+    const hotelName = hotel ? getPreferredHotelName(hotel) : "Unknown Hotel";
+    const hotelAddress = hotel ? (getPreferredHotelAddress(hotel) || "Ulaanbaatar, Mongolia") : "Ulaanbaatar, Mongolia";
     const canCancelBooking = booking.status !== "cancelled" && policyState.canCancelOnline;
     const canRequestModification = booking.status !== "cancelled" && policyState.canRequestModification;
 
@@ -149,14 +152,14 @@ export default function BookingPortalPage() {
                             <div className="relative aspect-video rounded-2xl overflow-hidden mb-8 bg-zinc-100 group">
                                 <img
                                     src={getHotelImageUrl(hotel?.images?.[0])}
-                                    alt={hotel?.name}
+                                    alt={hotelName}
                                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                 />
                                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6">
-                                    <h2 className="text-2xl font-bold text-white mb-1">{booking.room?.hotel?.name}</h2>
+                                    <h2 className="text-2xl font-bold text-white mb-1">{hotelName}</h2>
                                     <div className="flex items-center gap-2 text-white/80 text-sm">
                                         <MapPin className="h-4 w-4" />
-                                        <span>{booking.room?.hotel?.address}</span>
+                                        <span>{hotelAddress}</span>
                                     </div>
                                 </div>
                             </div>
@@ -227,7 +230,7 @@ export default function BookingPortalPage() {
                                                     <DialogHeader>
                                                         <DialogTitle className="text-2xl font-black">Confirm Cancellation?</DialogTitle>
                                                         <DialogDescription className="text-zinc-500">
-                                                            This action will cancel your reservation at {hotel?.name}.
+                                                            This action will cancel your reservation at {hotelName}.
                                                             {" "}
                                                             {policyState.penaltyPercent === 0
                                                                 ? "You are still inside the free cancellation window, so this booking remains fully refundable."

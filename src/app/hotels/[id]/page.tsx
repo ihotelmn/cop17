@@ -1,5 +1,5 @@
 import { ImageGallery } from "@/components/image-gallery";
-import { Star, MapPin, ShieldCheck, Mail, Phone, Globe, Info, Clock, CheckCircle2 } from "lucide-react";
+import { Star, MapPin, ShieldCheck, Mail, Phone, Info, Clock, CheckCircle2 } from "lucide-react";
 import { RoomList } from "@/components/room-list";
 import { SearchForm } from "@/components/search-form";
 import { ReservationSummary } from "@/components/reservation-summary";
@@ -278,32 +278,8 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
                                     checkOut={finalCheckOut}
                                     mode="desktop"
                                 />
-
-                                {hotel.website && (
-                                    <a
-                                        href={hotel.website}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center justify-center w-full px-8 py-5 bg-zinc-950 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-black font-black uppercase tracking-widest text-xs rounded-2xl transition-all shadow-xl shadow-zinc-950/10 active:scale-95 group"
-                                    >
-                                        <Globe className="w-4 h-4 mr-3 group-hover:rotate-12 transition-transform" />
-                                        Official Website
-                                    </a>
-                                )}
                             </div>
                         </div>
-
-                        {hotel.website && (
-                            <a
-                                href={hotel.website}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center w-full px-8 py-5 bg-zinc-950 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-black font-black uppercase tracking-widest text-xs rounded-2xl transition-all shadow-xl shadow-zinc-950/10 active:scale-95 group lg:hidden"
-                            >
-                                <Globe className="w-4 h-4 mr-3 group-hover:rotate-12 transition-transform" />
-                                Official Website
-                            </a>
-                        )}
 
                         {/* Direct Contact Card */}
                         <div className="p-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-[2.5rem] text-white shadow-xl shadow-blue-500/20">
