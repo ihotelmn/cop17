@@ -19,8 +19,8 @@ export function RoomList({ hotelId, rooms, checkIn, checkOut }: RoomListProps) {
                     <Info className="w-8 h-8" />
                 </div>
                 <div>
-                    <h3 className="text-xl font-black text-zinc-950 dark:text-white uppercase tracking-widest text-xs mb-2">Inventory On Request</h3>
-                    <p className="text-zinc-500 font-medium">This hotel is visible on the platform, but live room inventory has not been loaded yet for your selected dates.</p>
+                    <h3 className="text-xl font-black text-zinc-950 dark:text-white uppercase tracking-widest text-xs mb-2">No Rooms Available</h3>
+                    <p className="text-zinc-500 font-medium">No rooms are currently available for the selected dates and guest count. Adjust your search above and try again.</p>
                 </div>
             </div>
         );

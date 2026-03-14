@@ -242,7 +242,7 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
                     <div className="space-y-8 lg:sticky lg:top-24">
 
                         {/* Search Persistence / Quick Modify */}
-                        <div className="relative hidden overflow-hidden rounded-[2.5rem] border border-zinc-200 bg-white p-10 shadow-2xl shadow-zinc-200/50 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none lg:block">
+                        <div id="reservation-assistant" className="relative hidden overflow-hidden rounded-[2.5rem] border border-zinc-200 bg-white p-10 shadow-2xl shadow-zinc-200/50 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none lg:block">
                             <div className="absolute top-0 right-0 p-12 -mr-6 -mt-6 bg-blue-600/5 rounded-full blur-3xl pointer-events-none" />
                             <h3 className="font-black text-xl text-zinc-950 dark:text-white mb-8 tracking-tight uppercase tracking-widest text-xs opacity-50">Reservation Assistant</h3>
 

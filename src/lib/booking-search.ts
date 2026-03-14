@@ -19,6 +19,8 @@ type SearchParamsReader = {
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const DEFAULT_BOOKING_SEARCH_STATE: BookingSearchState = {
     query: "",
+    from: "2026-08-17",
+    to: "2026-08-28",
     adults: 2,
     children: 0,
     rooms: 1,
@@ -108,8 +110,8 @@ export function normalizeBookingSearchState(
 ): BookingSearchState {
     return {
         query: cleanText(state?.query) ?? DEFAULT_BOOKING_SEARCH_STATE.query,
-        from: cleanDate(state?.from),
-        to: cleanDate(state?.to),
+        from: cleanDate(state?.from) ?? DEFAULT_BOOKING_SEARCH_STATE.from,
+        to: cleanDate(state?.to) ?? DEFAULT_BOOKING_SEARCH_STATE.to,
         adults: cleanNumber(
             state?.adults,
             DEFAULT_BOOKING_SEARCH_STATE.adults,

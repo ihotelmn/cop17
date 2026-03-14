@@ -6,10 +6,13 @@ import { differenceInDays } from "date-fns";
 import { ArrowRight, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import type { Room } from "@/types/hotel";
+
+type SelectedRoom = Room & { quantity: number };
 
 interface ReservationSummaryProps {
     hotelId: string;
-    rooms: any[];
+    rooms: Room[];
     checkIn?: Date;
     checkOut?: Date;
     mode?: "desktop" | "mobile" | "both";
@@ -19,6 +22,7 @@ export function ReservationSummary({ hotelId, rooms, checkIn, checkOut, mode = "
     const searchParams = useSearchParams();
     const showDesktopSummary = mode !== "mobile";
     const showMobileSummary = mode !== "desktop";
+
     const scrollToRooms = useCallback(() => {
         if (typeof document === "undefined") {
             return;
@@ -36,6 +40,24 @@ export function ReservationSummary({ hotelId, rooms, checkIn, checkOut, mode = "
         }
 
         roomsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, []);
+    const scrollToSearch = useCallback(() => {
+        if (typeof document === "undefined") {
+            return;
+        }
+
+        const mobileAssistant = document.getElementById("mobile-search-assistant");
+        if (mobileAssistant && mobileAssistant.offsetParent !== null) {
+            mobileAssistant.scrollIntoView({ behavior: "smooth", block: "start" });
+            return;
+        }
+
+        const desktopAssistant = document.getElementById("reservation-assistant");
+        if (!desktopAssistant || desktopAssistant.offsetParent === null) {
+            return;
+        }
+
+        desktopAssistant.scrollIntoView({ behavior: "smooth", block: "start" });
     }, []);
 
     // Use URL params as single source of truth for dates
@@ -55,17 +77,22 @@ export function ReservationSummary({ hotelId, rooms, checkIn, checkOut, mode = "
             acc.push({ ...room, quantity: qty });
         }
         return acc;
-    }, [] as any[]);
+    }, [] as SelectedRoom[]);
 
-    const totalRooms = selectedRooms.reduce((sum: number, room: any) => sum + room.quantity, 0);
+    const totalRooms = selectedRooms.reduce((sum: number, room) => sum + room.quantity, 0);
     const totalPrice = hasDates
-        ? selectedRooms.reduce((sum: number, room: any) => sum + (room.price_per_night * room.quantity * nights), 0)
+        ? selectedRooms.reduce((sum: number, room) => sum + (room.price_per_night * room.quantity * nights), 0)
         : 0;
 
     const checkoutParams = new URLSearchParams(searchParams.toString());
     if (!checkoutParams.has("from") && fromParam) checkoutParams.set("from", fromParam);
     if (!checkoutParams.has("to") && toParam) checkoutParams.set("to", toParam);
     const checkoutHref = `/hotels/${hotelId}/checkout?${checkoutParams.toString()}`;
+
+    if (rooms.length === 0) {
+        return null;
+    }
+
     const mobileBar = showMobileSummary ? (
         <div
             className="fixed inset-x-0 bottom-0 z-50 px-4 lg:hidden"
@@ -134,9 +161,19 @@ export function ReservationSummary({ hotelId, rooms, checkIn, checkOut, mode = "
 
         return (
             <div className="pt-8 border-t border-zinc-100 dark:border-zinc-800">
-                <div className="flex items-center gap-4 rounded-2xl border border-zinc-200/50 bg-zinc-50 p-6 text-zinc-500 dark:border-zinc-700/50 dark:bg-zinc-800/50">
-                    <Info className="h-5 w-5 shrink-0" />
-                    <p className="text-sm font-medium">Select your preferred rooms from the list to see your reservation summary and proceed to booking.</p>
+                <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200/50 bg-zinc-50 p-6 dark:border-zinc-700/50 dark:bg-zinc-800/50">
+                    <div className="flex items-center gap-4 text-zinc-500">
+                        <Info className="h-5 w-5 shrink-0" />
+                        <p className="text-sm font-medium">Select your preferred rooms from the list to proceed to booking.</p>
+                    </div>
+                    <Button
+                        type="button"
+                        onClick={scrollToRooms}
+                        className="h-14 w-full rounded-2xl bg-blue-600 text-[11px] font-black uppercase tracking-[0.16em] text-white shadow-xl shadow-blue-600/20 hover:bg-blue-700"
+                    >
+                        Choose Room
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
                 </div>
             </div>
         );
@@ -150,7 +187,7 @@ export function ReservationSummary({ hotelId, rooms, checkIn, checkOut, mode = "
                     <div className="animate-in slide-in-from-bottom-4 fade-in border-t border-zinc-100 pt-8 duration-500 dark:border-zinc-800">
                         <h4 className="mb-4 text-[10px] font-black uppercase tracking-widest text-zinc-400">Selected Inventory</h4>
                         <div className="mb-6 space-y-3">
-                            {selectedRooms.map((room: any) => (
+                            {selectedRooms.map((room) => (
                                 <div key={room.id} className="flex items-center justify-between rounded-xl border border-blue-100/50 bg-blue-50/50 p-3 text-sm dark:border-blue-800/20 dark:bg-blue-900/10">
                                     <div className="flex items-center gap-3">
                                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/50">
@@ -166,6 +203,15 @@ export function ReservationSummary({ hotelId, rooms, checkIn, checkOut, mode = "
                             <Info className="h-5 w-5 shrink-0" />
                             <p className="text-xs font-bold">Please select your stay dates above to see pricing and proceed to booking.</p>
                         </div>
+                        <Button
+                            type="button"
+                            onClick={scrollToSearch}
+                            variant="outline"
+                            className="mt-4 h-14 w-full rounded-2xl border-amber-300 bg-white text-[11px] font-black uppercase tracking-[0.16em] text-amber-700 hover:bg-amber-50 dark:border-amber-700/60 dark:bg-transparent dark:text-amber-400 dark:hover:bg-amber-900/10"
+                        >
+                            Set Dates To Continue
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
                     </div>
                 )}
                 {mobileBar}
@@ -180,7 +226,7 @@ export function ReservationSummary({ hotelId, rooms, checkIn, checkOut, mode = "
                     <h4 className="mb-4 text-[10px] font-black uppercase tracking-widest text-zinc-400">Selected Inventory</h4>
 
                     <div className="mb-6 space-y-3">
-                        {selectedRooms.map((room: any) => (
+                        {selectedRooms.map((room) => (
                             <div key={room.id} className="flex items-center justify-between rounded-xl border border-blue-100/50 bg-blue-50/50 p-3 text-sm dark:border-blue-800/20 dark:bg-blue-900/10">
                                 <div className="flex items-center gap-3">
                                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/50">

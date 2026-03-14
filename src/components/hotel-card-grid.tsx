@@ -82,13 +82,17 @@ export function HotelCardGrid({ hotel }: { hotel: (Hotel & { minPrice: number })
                                 />
                             ))}
                         </div>
-                        <div className="flex items-baseline gap-0.5">
-                            <span className="text-base font-black tracking-tighter text-zinc-900 dark:text-white">
-                                {hotel.minPrice != null ? `$${hotel.minPrice}` : "On request"}
-                            </span>
-                            <span className="text-[9px] font-medium text-zinc-500 uppercase">
-                                {hotel.minPrice != null ? "/night" : ""}
-                            </span>
+                        <div className="min-h-[1.5rem]">
+                            {hotel.minPrice != null && (
+                                <div className="flex items-baseline gap-0.5">
+                                    <span className="text-base font-black tracking-tighter text-zinc-900 dark:text-white">
+                                        {`$${hotel.minPrice}`}
+                                    </span>
+                                    <span className="text-[9px] font-medium text-zinc-500 uppercase">
+                                        /night
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     </div>
 

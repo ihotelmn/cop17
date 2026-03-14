@@ -192,9 +192,9 @@ export function HotelSearch() {
         <div className="w-full max-w-5xl mx-auto mb-10 px-4 md:px-0">
             <div className="hidden md:block">
                 <div className="rounded-[1.8rem] border border-zinc-200/80 bg-white/96 p-2 shadow-[0_16px_44px_rgba(15,23,42,0.09)] backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/95">
-                    <div className="overflow-hidden rounded-[1.45rem] border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+                    <div className="overflow-visible rounded-[1.45rem] border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
                         <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1.05fr)_minmax(0,0.9fr)_auto] items-stretch">
-                            <div className="px-5 py-4">
+                            <div className="relative z-20 px-5 py-4">
                                 <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
                                     Destination
                                 </label>

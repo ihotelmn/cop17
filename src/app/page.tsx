@@ -248,9 +248,11 @@ export default async function Home(props: Props) {
                         {hotels.map(hotel => (
                           <div key={hotel.id} className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800">
                             <h3 className="font-bold text-zinc-900 dark:text-white">{hotel.name}</h3>
-                            <p className="text-sm text-zinc-500">
-                              {hotel.minPrice != null ? `$${hotel.minPrice}/night` : "Inventory on request"}
-                            </p>
+                            {hotel.minPrice != null && (
+                              <p className="text-sm text-zinc-500">
+                                {`$${hotel.minPrice}/night`}
+                              </p>
+                            )}
                             {getHotelDisplayDistance(hotel) != null && (
                               <p className="mt-1 text-sm font-semibold text-zinc-600 dark:text-zinc-300">
                                 {getHotelDisplayDistance(hotel)!.toFixed(1)} km to Venue
