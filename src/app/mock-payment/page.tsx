@@ -2,12 +2,9 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState, Suspense } from "react";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ShieldCheck } from "lucide-react";
-
-import { confirmBookingAction } from "@/app/actions/booking";
 
 function MockPaymentContent() {
     const searchParams = useSearchParams();
@@ -17,25 +14,16 @@ function MockPaymentContent() {
     const invoiceId = searchParams.get("invoiceId");
     const amount = searchParams.get("amount");
     const txnId = searchParams.get("txnId");
+    const callbackUrl = searchParams.get("callbackUrl");
     const returnUrl = searchParams.get("returnUrl");
 
     const handlePayment = async () => {
         setProcessing(true);
-
-        // 1. Confirm the booking on the server
-        if (txnId) {
-            try {
-                await confirmBookingAction(txnId);
-            } catch (error) {
-                console.error("Payment confirmation failed on server:", error);
-                // Optionally handle error UI here, but for mock we proceed
-            }
-        }
-
-        // 2. Simulate bank processing time
         await new Promise(resolve => setTimeout(resolve, 1500));
 
-        if (returnUrl) {
+        if (callbackUrl) {
+            window.location.assign(callbackUrl);
+        } else if (returnUrl) {
             router.push(returnUrl);
         } else {
             router.push("/");

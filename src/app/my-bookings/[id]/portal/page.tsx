@@ -22,7 +22,6 @@ import {
 import { format } from "date-fns";
 import { toast } from "sonner";
 import Link from "next/link";
-import { getHotelImageUrl } from "@/lib/utils";
 import {
     Dialog,
     DialogContent,
@@ -36,6 +35,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { calculateBookingPolicyState, formatPolicyWindow } from "@/lib/cancellation-policy";
 import { getPreferredHotelAddress, getPreferredHotelName } from "@/lib/hotel-display";
+import { FallbackImage } from "@/components/ui/fallback-image";
 
 export default function BookingPortalPage() {
     const params = useParams();
@@ -150,10 +150,12 @@ export default function BookingPortalPage() {
                             </div>
 
                             <div className="relative aspect-video rounded-2xl overflow-hidden mb-8 bg-zinc-100 group">
-                                <img
-                                    src={getHotelImageUrl(hotel?.images?.[0])}
+                                <FallbackImage
+                                    src={hotel?.images?.[0]}
                                     alt={hotelName}
                                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                    loading="lazy"
+                                    decoding="async"
                                 />
                                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6">
                                     <h2 className="text-2xl font-bold text-white mb-1">{hotelName}</h2>

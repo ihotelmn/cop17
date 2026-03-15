@@ -1,13 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Star, MapPin, Navigation, Wifi, Car, Coffee, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Hotel } from "@/types/hotel";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { cn, getHotelImageUrl } from "@/lib/utils";
+import { cn, HOTEL_IMAGE_PLACEHOLDER } from "@/lib/utils";
 import { isVipPartnerHotel } from "@/lib/vip-partners";
 import { getHotelDisplayDistance, getHotelDisplayDriveTime } from "@/lib/hotel-distance";
 import {
@@ -17,6 +16,7 @@ import {
     CarouselNext,
     CarouselPrevious,
 } from "@/components/ui/carousel";
+import { FallbackImage } from "@/components/ui/fallback-image";
 
 export function HotelList({ hotels }: { hotels: (Hotel & { minPrice: number })[] }) {
     const [displayCount, setDisplayCount] = useState(6);
@@ -58,7 +58,7 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
     // Images fallback
     const images = hotel.images && hotel.images.length > 0
         ? hotel.images
-        : ["https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2940"];
+        : [HOTEL_IMAGE_PLACEHOLDER];
 
     // Use cached real data
     const displayDistance = getHotelDisplayDistance(hotel);
@@ -76,13 +76,12 @@ function HotelCard({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
                         {images.slice(0, 5).map((img, index) => (
                             <CarouselItem key={index} className="h-full">
                                 <div className="relative w-full h-full">
-                                    <Image
-                                        src={getHotelImageUrl(img)}
+                                    <FallbackImage
+                                        src={img}
                                         alt={hotel.name}
-                                        fill
-                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 320px, 320px"
-                                        className="object-cover transition-transform duration-700 group-hover:scale-105"
-                                        unoptimized
+                                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                        loading="lazy"
+                                        decoding="async"
                                     />
                                 </div>
                             </CarouselItem>

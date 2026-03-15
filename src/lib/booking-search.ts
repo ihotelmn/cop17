@@ -43,6 +43,21 @@ function cleanDate(value: unknown): string | undefined {
     return DATE_PATTERN.test(value) ? value : undefined;
 }
 
+function normalizeDateOrder(from?: string, to?: string) {
+    if (!from || !to) {
+        return { from, to };
+    }
+
+    if (from <= to) {
+        return { from, to };
+    }
+
+    return {
+        from: to,
+        to: from,
+    };
+}
+
 function cleanNumber(
     value: unknown,
     fallback: number,
@@ -82,12 +97,14 @@ export function readPartialBookingSearchState(
         state.query = query;
     }
 
-    if (from) {
-        state.from = from;
+    const normalizedDates = normalizeDateOrder(from, to);
+
+    if (normalizedDates.from) {
+        state.from = normalizedDates.from;
     }
 
-    if (to) {
-        state.to = to;
+    if (normalizedDates.to) {
+        state.to = normalizedDates.to;
     }
 
     if (adults !== null) {
@@ -108,10 +125,15 @@ export function readPartialBookingSearchState(
 export function normalizeBookingSearchState(
     state?: Partial<BookingSearchState> | null
 ): BookingSearchState {
+    const normalizedDates = normalizeDateOrder(
+        cleanDate(state?.from) ?? DEFAULT_BOOKING_SEARCH_STATE.from,
+        cleanDate(state?.to) ?? DEFAULT_BOOKING_SEARCH_STATE.to
+    );
+
     return {
         query: cleanText(state?.query) ?? DEFAULT_BOOKING_SEARCH_STATE.query,
-        from: cleanDate(state?.from) ?? DEFAULT_BOOKING_SEARCH_STATE.from,
-        to: cleanDate(state?.to) ?? DEFAULT_BOOKING_SEARCH_STATE.to,
+        from: normalizedDates.from,
+        to: normalizedDates.to,
         adults: cleanNumber(
             state?.adults,
             DEFAULT_BOOKING_SEARCH_STATE.adults,
@@ -146,15 +168,42 @@ export function mergeBookingSearchState(
 export function hasActiveBookingSearchState(
     state?: Partial<BookingSearchState> | null
 ): boolean {
-    const normalized = normalizeBookingSearchState(state);
+    const hasExplicitAdults = state?.adults !== undefined && state?.adults !== null;
+    const hasExplicitChildren = state?.children !== undefined && state?.children !== null;
+    const hasExplicitRooms = state?.rooms !== undefined && state?.rooms !== null;
+
+    const normalizedAdults = hasExplicitAdults
+        ? cleanNumber(state?.adults, DEFAULT_BOOKING_SEARCH_STATE.adults, 1, 10)
+        : DEFAULT_BOOKING_SEARCH_STATE.adults;
+    const normalizedChildren = hasExplicitChildren
+        ? cleanNumber(state?.children, DEFAULT_BOOKING_SEARCH_STATE.children, 0, 10)
+        : DEFAULT_BOOKING_SEARCH_STATE.children;
+    const normalizedRooms = hasExplicitRooms
+        ? cleanNumber(state?.rooms, DEFAULT_BOOKING_SEARCH_STATE.rooms, 1, 10)
+        : DEFAULT_BOOKING_SEARCH_STATE.rooms;
 
     return Boolean(
-        normalized.query ||
-        normalized.from ||
-        normalized.to ||
-        normalized.adults !== DEFAULT_BOOKING_SEARCH_STATE.adults ||
-        normalized.children !== DEFAULT_BOOKING_SEARCH_STATE.children ||
-        normalized.rooms !== DEFAULT_BOOKING_SEARCH_STATE.rooms
+        cleanText(state?.query) ||
+        cleanDate(state?.from) ||
+        cleanDate(state?.to) ||
+        (hasExplicitAdults && normalizedAdults !== DEFAULT_BOOKING_SEARCH_STATE.adults) ||
+        (hasExplicitChildren && normalizedChildren !== DEFAULT_BOOKING_SEARCH_STATE.children) ||
+        (hasExplicitRooms && normalizedRooms !== DEFAULT_BOOKING_SEARCH_STATE.rooms)
+    );
+}
+
+function isDefaultOnlyBookingSearchState(
+    state?: Partial<BookingSearchState> | null
+): boolean {
+    const normalized = normalizeBookingSearchState(state);
+
+    return (
+        normalized.query === DEFAULT_BOOKING_SEARCH_STATE.query &&
+        normalized.from === DEFAULT_BOOKING_SEARCH_STATE.from &&
+        normalized.to === DEFAULT_BOOKING_SEARCH_STATE.to &&
+        normalized.adults === DEFAULT_BOOKING_SEARCH_STATE.adults &&
+        normalized.children === DEFAULT_BOOKING_SEARCH_STATE.children &&
+        normalized.rooms === DEFAULT_BOOKING_SEARCH_STATE.rooms
     );
 }
 
@@ -266,6 +315,11 @@ export function readStoredBookingSearchState(): Partial<BookingSearchState> | nu
 
         const normalized = normalizeBookingSearchState(parsed);
 
+        if (isDefaultOnlyBookingSearchState(normalized)) {
+            window.sessionStorage.removeItem(BOOKING_SEARCH_STORAGE_KEY);
+            return null;
+        }
+
         return hasActiveBookingSearchState(normalized) ? normalized : null;
     } catch {
         return null;
@@ -282,7 +336,7 @@ export function persistBookingSearchState(
     try {
         const normalized = normalizeBookingSearchState(state);
 
-        if (!hasActiveBookingSearchState(normalized)) {
+        if (!hasActiveBookingSearchState(normalized) || isDefaultOnlyBookingSearchState(normalized)) {
             window.sessionStorage.removeItem(BOOKING_SEARCH_STORAGE_KEY);
             return;
         }

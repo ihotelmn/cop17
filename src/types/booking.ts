@@ -28,6 +28,11 @@ export interface BookingAdmin {
     checkOut: string
     rawStatus: string
     createdAt: string
+    cancellationReason?: string | null
+    cancelledAt?: string | null
+    modificationRequestedAt?: string | null
+    modificationRequestMessage?: string | null
+    modificationRequestStatus?: string | null
 }
 
 export interface BookingFilters {

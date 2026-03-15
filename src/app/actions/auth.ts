@@ -6,12 +6,26 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type { AuthState } from "@/types/auth";
+import {
+    ActionRateLimitError,
+    enforceActionRateLimit,
+    getClientIpFromHeaders,
+} from "@/lib/action-rate-limit";
 
 const authSchema = z.object({
     email: z.string().email(),
     password: z.string().min(6),
     fullName: z.string().min(2).optional(),
 });
+
+function getRateLimitErrorMessage(error: unknown, fallbackMessage: string) {
+    if (error instanceof ActionRateLimitError) {
+        const retryAfterMinutes = Math.max(1, Math.ceil(error.retryAfterSeconds / 60));
+        return `${error.message} Retry in about ${retryAfterMinutes} minute${retryAfterMinutes > 1 ? "s" : ""}.`;
+    }
+
+    return fallbackMessage;
+}
 
 export async function loginAction(prevState: AuthState, formData: FormData): Promise<AuthState> {
     const supabase = await createClient();
@@ -26,6 +40,29 @@ export async function loginAction(prevState: AuthState, formData: FormData): Pro
     }
 
     const { email, password } = validatedFields.data;
+
+    try {
+        const requestHeaders = await headers();
+        const clientIp = getClientIpFromHeaders(requestHeaders);
+
+        await enforceActionRateLimit({
+            scope: "auth:login:ip",
+            key: clientIp,
+            maxHits: 10,
+            windowMs: 10 * 60 * 1000,
+            message: "Too many sign-in attempts.",
+        });
+
+        await enforceActionRateLimit({
+            scope: "auth:login:email",
+            key: email.toLowerCase(),
+            maxHits: 6,
+            windowMs: 10 * 60 * 1000,
+            message: "This email has too many recent sign-in attempts.",
+        });
+    } catch (error) {
+        return { error: getRateLimitErrorMessage(error, "Too many sign-in attempts. Please try again later.") };
+    }
 
     const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -76,7 +113,6 @@ export async function loginAction(prevState: AuthState, formData: FormData): Pro
 
 export async function signupAction(prevState: AuthState, formData: FormData): Promise<AuthState> {
     const supabase = await createClient();
-    const origin = (await headers()).get("origin");
 
     const validatedFields = authSchema.safeParse({
         email: formData.get("email"),
@@ -89,6 +125,29 @@ export async function signupAction(prevState: AuthState, formData: FormData): Pr
     }
 
     const { email, password, fullName } = validatedFields.data;
+
+    try {
+        const requestHeaders = await headers();
+        const clientIp = getClientIpFromHeaders(requestHeaders);
+
+        await enforceActionRateLimit({
+            scope: "auth:signup:ip",
+            key: clientIp,
+            maxHits: 5,
+            windowMs: 30 * 60 * 1000,
+            message: "Too many sign-up attempts from this network.",
+        });
+
+        await enforceActionRateLimit({
+            scope: "auth:signup:email",
+            key: email.toLowerCase(),
+            maxHits: 3,
+            windowMs: 30 * 60 * 1000,
+            message: "This email has too many recent sign-up attempts.",
+        });
+    } catch (error) {
+        return { error: getRateLimitErrorMessage(error, "Too many sign-up attempts. Please try again later.") };
+    }
 
     const productionUrl = 'https://cop17.ihotel.mn';
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || productionUrl;
@@ -158,5 +217,4 @@ export async function updatePasswordAction(prevState: AuthState, formData: FormD
 
     return { success: true, message: "Password updated successfully!" };
 }
-
 

@@ -7,6 +7,45 @@ import { getPreferredHotelAddress, getPreferredHotelName } from "@/lib/hotel-dis
 
 export const dynamic = "force-dynamic";
 
+type ReceiptHotelDisplay = {
+    name: string;
+    name_en: string | null;
+    address: string | null;
+    address_en: string | null;
+    description: string | null;
+    description_en: string | null;
+    stars: number;
+    contact_phone: string | null;
+    contact_email: string | null;
+};
+
+function getReceiptHotelRelation(value: unknown): ReceiptHotelDisplay | null {
+    if (!value || typeof value !== "object") {
+        return null;
+    }
+
+    const hotelRelation = "hotel" in value ? (value as { hotel?: unknown }).hotel : null;
+    const normalizedHotel = Array.isArray(hotelRelation) ? hotelRelation[0] : hotelRelation;
+
+    if (!normalizedHotel || typeof normalizedHotel !== "object") {
+        return null;
+    }
+
+    const hotelRecord = normalizedHotel as Record<string, unknown>;
+
+    return {
+        name: typeof hotelRecord.name === "string" && hotelRecord.name.trim() ? hotelRecord.name : "COP17 Hotel",
+        name_en: typeof hotelRecord.name_en === "string" ? hotelRecord.name_en : null,
+        address: typeof hotelRecord.address === "string" ? hotelRecord.address : null,
+        address_en: typeof hotelRecord.address_en === "string" ? hotelRecord.address_en : null,
+        description: typeof hotelRecord.description === "string" ? hotelRecord.description : null,
+        description_en: typeof hotelRecord.description_en === "string" ? hotelRecord.description_en : null,
+        stars: typeof hotelRecord.stars === "number" ? hotelRecord.stars : 0,
+        contact_phone: typeof hotelRecord.contact_phone === "string" ? hotelRecord.contact_phone : null,
+        contact_email: typeof hotelRecord.contact_email === "string" ? hotelRecord.contact_email : null,
+    };
+}
+
 interface ReceiptPageProps {
     params: Promise<{ id: string }>;
 }
@@ -19,9 +58,9 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
         notFound();
     }
 
-    const hotel = booking.room.hotel;
-    const hotelName = getPreferredHotelName(hotel);
-    const hotelAddress = getPreferredHotelAddress(hotel) || "Ulaanbaatar, Mongolia";
+    const hotel = getReceiptHotelRelation(booking.room);
+    const hotelName = hotel ? getPreferredHotelName(hotel) : "COP17 Hotel";
+    const hotelAddress = hotel ? (getPreferredHotelAddress(hotel) || "Ulaanbaatar, Mongolia") : "Ulaanbaatar, Mongolia";
     const checkIn = new Date(booking.check_in_date);
     const checkOut = new Date(booking.check_out_date);
     const nights = Math.max(1, Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)));
@@ -69,10 +108,10 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
                         </div>
                         <div className="flex flex-col gap-1 text-sm text-zinc-500">
                             <div className="flex items-center gap-2">
-                                <Phone className="h-3 w-3" /> {hotel.contact_phone || "+976 ..."}
+                                <Phone className="h-3 w-3" /> {hotel?.contact_phone || "+976 ..."}
                             </div>
                             <div className="flex items-center gap-2">
-                                <Mail className="h-3 w-3" /> {hotel.contact_email || "support@cop17.mn"}
+                                <Mail className="h-3 w-3" /> {hotel?.contact_email || "support@cop17.mn"}
                             </div>
                         </div>
                     </div>

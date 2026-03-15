@@ -1,5 +1,3 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
     Table,
     TableBody,
@@ -8,12 +6,12 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Search } from "lucide-react";
 import { getAllBookings } from "@/app/actions/booking-admin";
 import { BookingStatusBadge } from "@/components/admin/booking-status-badge";
 import { BookingActions } from "@/components/admin/booking-actions";
 import { ExportButton } from "@/components/admin/export-button";
 import { BookingsFilter } from "@/components/admin/bookings-filter";
+import { Badge } from "@/components/ui/badge";
 
 export default async function BookingsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     const resolvedParams = await searchParams;
@@ -78,11 +76,28 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                                         <div className="flex flex-col">
                                             <span className="font-medium">{booking.hotelName}</span>
                                             <span className="text-xs text-muted-foreground">{booking.roomName}</span>
+                                            {booking.modificationRequestStatus === "pending" && (
+                                                <span className="mt-1 text-xs font-medium text-amber-600">
+                                                    Change requested: {booking.modificationRequestMessage || "Guest submitted a modification request."}
+                                                </span>
+                                            )}
+                                            {booking.status === "cancelled" && booking.cancellationReason && (
+                                                <span className="mt-1 text-xs font-medium text-red-600">
+                                                    Cancel reason: {booking.cancellationReason}
+                                                </span>
+                                            )}
                                         </div>
                                     </TableCell>
                                     <TableCell>{booking.dates}</TableCell>
                                     <TableCell>
-                                        <BookingStatusBadge status={booking.status} />
+                                        <div className="flex flex-col items-start gap-2">
+                                            <BookingStatusBadge status={booking.status} />
+                                            {booking.modificationRequestStatus === "pending" && (
+                                                <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
+                                                    Change Requested
+                                                </Badge>
+                                            )}
+                                        </div>
                                     </TableCell>
                                     <TableCell className="text-right font-medium">${booking.amount}</TableCell>
                                     <TableCell>
@@ -97,4 +112,3 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
         </div>
     );
 }
-

@@ -1,9 +1,9 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { User as SupabaseUser, AuthChangeEvent, Session } from "@supabase/supabase-js";
+import { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface User {
     id: string;
@@ -21,6 +21,15 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function buildClientUser(authUser: SupabaseUser, roleOverride?: User["role"] | null, fullNameOverride?: string | null): User {
+    return {
+        id: authUser.id,
+        email: authUser.email!,
+        full_name: fullNameOverride || authUser.user_metadata?.full_name,
+        role: roleOverride || (authUser.user_metadata?.role as User["role"]) || "guest",
+    };
+}
+
 export function AuthProvider({
     children,
     initialUser
@@ -31,12 +40,7 @@ export function AuthProvider({
     // Hydrate state from server-provided user
     const [user, setUser] = useState<User | null>(() => {
         if (!initialUser) return null;
-        return {
-            id: initialUser.id,
-            email: initialUser.email!,
-            full_name: initialUser.user_metadata?.full_name,
-            role: (initialUser.user_metadata?.role as any) || "guest",
-        };
+        return buildClientUser(initialUser);
     });
 
     // Server-side hydration means we know the state immediately
@@ -44,121 +48,83 @@ export function AuthProvider({
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const router = useRouter();
-    // Use useMemo to ensure single instance of supabase client per session
-    const supabase = React.useMemo(() => createClient(), []);
+    const supabase = useMemo(() => createClient(), []);
 
-    // Listen for changes (Login, Logout, Refresh)
-    // Sync state if server passes a new user (e.g. after login redirect)
-    useEffect(() => {
-        if (initialUser && !isLoggingOut) {
-            const role = (initialUser.user_metadata?.role as any) || "guest";
-            setUser({
-                id: initialUser.id,
-                email: initialUser.email!,
-                full_name: initialUser.user_metadata?.full_name,
-                role: role,
-            });
+    const fetchProfile = useCallback(async (authUser: SupabaseUser) => {
+        try {
+            const { data: profile, error } = await supabase
+                .from("profiles")
+                .select("full_name, role")
+                .eq("id", authUser.id)
+                .single();
+
+            if (error && typeof error === "object") {
+                const code = "code" in error ? error.code : null;
+                if (code && code !== "PGRST116") {
+                    console.error("Error fetching profile from DB:", error);
+                }
+            }
+
+            setUser(buildClientUser(authUser, profile?.role || null, profile?.full_name || null));
+        } catch (error) {
+            console.error("Error in fetchProfile:", error);
+            setUser(buildClientUser(authUser));
+        } finally {
             setIsLoading(false);
         }
-    }, [initialUser, isLoggingOut]);
+    }, [supabase]);
+
+    useEffect(() => {
+        if (initialUser && !isLoggingOut) {
+            setUser(buildClientUser(initialUser));
+            setIsLoading(true);
+            void fetchProfile(initialUser);
+            return;
+        }
+
+        if (!initialUser && !isLoggingOut) {
+            setUser(null);
+            setIsLoading(false);
+        }
+    }, [initialUser, isLoggingOut, fetchProfile]);
 
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log("Auth State Change:", event);
-
-            if (session?.user) {
-                // Refresh profile data if needed, or just trust session
-                // Ideally we fetch profile to ensure we have strict DB role if metadata is stale
-                // but for now, let's trust metadata for speed and stability
-                // We can silently update profile in background
-                if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                    fetchProfile(session.user);
-                }
-            } else {
-                // Explicit logout event
-                if (event === 'SIGNED_OUT') {
-                    setUser(null);
-                    router.push("/login");
-                    router.refresh();
-                } else if (!user) {
-                    // If we thought we were logged in but session is gone?
-                    // Verify if initialUser was set but now session is null (shouldn't happen with server hydration)
-                    // allow silent null
-                    setUser(null);
-                }
+            if (event === "SIGNED_OUT") {
+                setUser(null);
+                router.push("/login");
+                router.refresh();
+                return;
             }
+
+            if (!session?.user || isLoggingOut) {
+                return;
+            }
+
+            setUser(buildClientUser(session.user));
+            setIsLoading(true);
+            await fetchProfile(session.user);
         });
 
         return () => {
             subscription.unsubscribe();
         };
-    }, [supabase, router]);
-
-    // Removed old checkUser() logic entirely as it's redundant with server hydration
-
-    // ... fetchProfile and logout remain ...
-
-
-
-    const fetchProfile = async (authUser: SupabaseUser) => {
-        try {
-
-            // Try to get profile
-            const { data: profile, error } = await supabase
-                .from("profiles")
-                .select("*")
-                .eq("id", authUser.id)
-                .single();
-
-            if (error && typeof error === 'object') {
-                const code = (error as any).code;
-                const message = (error as any).message;
-
-                // ONLY log if there is a real code/message and it's NOT the expected PGRST116
-                if (code && code !== "PGRST116") {
-                    console.error("Error fetching profile from DB:", {
-                        code,
-                        message,
-                        details: (error as any).details,
-                    });
-                } else if (code === "PGRST116") {
-                    console.log("Profile not found in DB (New user or guest), falling back to metadata.");
-                }
-            }
-
-            // Construct user object
-            // If profile is missing (e.g. new user not yet created in DB), fall back to metadata or defaults
-            const role = profile?.role || (authUser.user_metadata?.role as any) || "guest";
-
-            setUser({
-                id: authUser.id,
-                email: authUser.email!,
-                full_name: profile?.full_name || authUser.user_metadata?.full_name,
-                role: role,
-            });
-
-        } catch (error) {
-            console.error("Error in fetchProfile:", error);
-            // Fallback to basic user info from Auth
-            setUser({
-                id: authUser.id,
-                email: authUser.email!,
-                role: (authUser.user_metadata?.role as any) || "guest",
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    }, [supabase, router, isLoggingOut, fetchProfile]);
 
     const refreshSession = async () => {
         try {
-            const { data: { session }, error } = await supabase.auth.getSession();
+            setIsLoading(true);
+            const { data: { user: authUser }, error } = await supabase.auth.getUser();
             if (error) throw error;
-            if (session?.user) {
-                await fetchProfile(session.user);
+            if (authUser) {
+                await fetchProfile(authUser);
+            } else {
+                setUser(null);
+                setIsLoading(false);
             }
         } catch (error) {
             console.error("Error refreshing session:", error);
+            setIsLoading(false);
         }
     };
 

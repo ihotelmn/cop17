@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,7 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-    DropdownMenuLabel,
-    DropdownMenuSeparator
+    DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -29,10 +28,11 @@ interface Notification {
 export function NotificationBell({ userId }: { userId: string }) {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [open, setOpen] = useState(false);
+    const [supabase] = useState(() => createClient());
     const router = useRouter();
-    const supabase = createClient();
 
-    const fetchNotifications = async () => {
+    const fetchNotifications = useEffectEvent(async () => {
         const { data } = await supabase
             .from("notifications")
             .select("*")
@@ -43,20 +43,27 @@ export function NotificationBell({ userId }: { userId: string }) {
         if (data) {
             setNotifications(data);
         }
-    };
+    });
 
-    const fetchUnreadCount = async () => {
+    const fetchUnreadCount = useEffectEvent(async () => {
         const { count } = await supabase
             .from("notifications")
             .select("*", { count: 'exact', head: true })
             .eq("user_id", userId)
             .eq("is_read", false);
         setUnreadCount(count || 0);
-    };
+    });
 
     useEffect(() => {
         fetchNotifications();
         fetchUnreadCount();
+
+        const intervalId = window.setInterval(() => {
+            fetchUnreadCount();
+            if (document.visibilityState === "visible") {
+                fetchNotifications();
+            }
+        }, 30000);
 
         const channel = supabase
             .channel('notifications-bell')
@@ -83,9 +90,17 @@ export function NotificationBell({ userId }: { userId: string }) {
             .subscribe();
 
         return () => {
+            window.clearInterval(intervalId);
             supabase.removeChannel(channel);
         };
-    }, [userId]);
+    }, [supabase, userId]);
+
+    useEffect(() => {
+        if (!open) return;
+
+        fetchNotifications();
+        fetchUnreadCount();
+    }, [open]);
 
     const markAsRead = async (id: string, link: string | null) => {
         // Optimistic update
@@ -106,7 +121,7 @@ export function NotificationBell({ userId }: { userId: string }) {
     };
 
     return (
-        <DropdownMenu>
+        <DropdownMenu open={open} onOpenChange={setOpen}>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative text-white hover:bg-white/10 rounded-full h-9 w-9">
                     <Bell className="h-5 w-5" />

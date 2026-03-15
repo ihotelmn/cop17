@@ -19,9 +19,9 @@ import { getPreferredHotelName } from "@/lib/hotel-display";
 export default async function AccreditationPage({
     params
 }: {
-    params: { id: string }
+    params: Promise<{ id: string }>
 }) {
-    const bookingId = params.id;
+    const { id: bookingId } = await params;
     const supabase = await createClient();
 
     // Verify booking ownership

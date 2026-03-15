@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { format, differenceInDays } from "date-fns";
 import { CheckoutForm } from "./checkout-form";
 import { ShieldCheck, Users, MapPin, Building2 } from "lucide-react";
-import { getHotelImageUrl } from "@/lib/utils";
+import { FallbackImage } from "@/components/ui/fallback-image";
 
 interface CheckoutPageProps {
     params: Promise<{ id: string }>;
@@ -112,11 +112,13 @@ export default async function CheckoutPage({ params, searchParams }: CheckoutPag
                         <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-zinc-100 dark:bg-zinc-800">
                             {/* @ts-ignore */}
                             {hotel.images?.[0] ? (
-                                <img
+                                <FallbackImage
                                     // @ts-ignore
-                                    src={getHotelImageUrl(hotel.images[0])}
+                                    src={hotel.images[0]}
                                     alt={hotel.name}
                                     className="h-full w-full object-cover"
+                                    loading="lazy"
+                                    decoding="async"
                                 />
                             ) : (
                                 <div className="flex h-full w-full items-center justify-center">
@@ -200,11 +202,13 @@ export default async function CheckoutPage({ params, searchParams }: CheckoutPag
                                         <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-zinc-100">
                                             {/* @ts-ignore */}
                                             {hotel.images?.[0] ? (
-                                                <img
+                                                <FallbackImage
                                                     // @ts-ignore
-                                                    src={getHotelImageUrl(hotel.images[0])}
+                                                    src={hotel.images[0]}
                                                     alt={hotel.name}
                                                     className="h-full w-full object-cover"
+                                                    loading="lazy"
+                                                    decoding="async"
                                                 />
                                             ) : (
                                                 <div className="flex h-full w-full items-center justify-center">

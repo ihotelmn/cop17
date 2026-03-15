@@ -142,6 +142,14 @@ export interface Database {
                     group_id: string | null
                     guest_name: string | null
                     guest_email: string | null
+                    cancelled_at: string | null
+                    cancellation_reason: string | null
+                    cancellation_penalty_percent: number | null
+                    cancellation_penalty_amount: number | null
+                    modification_requested_at: string | null
+                    modification_request_message: string | null
+                    modification_request_status: string | null
+                    modification_reviewed_at: string | null
                 }
                 Insert: {
                     id?: string
@@ -160,6 +168,14 @@ export interface Database {
                     group_id?: string | null
                     guest_name?: string | null
                     guest_email?: string | null
+                    cancelled_at?: string | null
+                    cancellation_reason?: string | null
+                    cancellation_penalty_percent?: number | null
+                    cancellation_penalty_amount?: number | null
+                    modification_requested_at?: string | null
+                    modification_request_message?: string | null
+                    modification_request_status?: string | null
+                    modification_reviewed_at?: string | null
                 }
             }
             audit_logs: {

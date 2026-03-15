@@ -1,13 +1,13 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Star, MapPin, Navigation, ShieldCheck } from "lucide-react";
 import type { Hotel } from "@/types/hotel";
-import { cn, getHotelImageUrl } from "@/lib/utils";
+import { cn, HOTEL_IMAGE_PLACEHOLDER } from "@/lib/utils";
 import { isVipPartnerHotel } from "@/lib/vip-partners";
 import { getHotelDisplayDistance } from "@/lib/hotel-distance";
+import { FallbackImage } from "@/components/ui/fallback-image";
 
 export function HotelCardGrid({ hotel }: { hotel: (Hotel & { minPrice: number }) }) {
     const searchParams = useSearchParams();
@@ -17,7 +17,7 @@ export function HotelCardGrid({ hotel }: { hotel: (Hotel & { minPrice: number })
 
     const images = hotel.images && hotel.images.length > 0
         ? hotel.images
-        : ["https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2940"];
+        : [HOTEL_IMAGE_PLACEHOLDER];
 
     const displayDistance = getHotelDisplayDistance(hotel);
 
@@ -26,13 +26,12 @@ export function HotelCardGrid({ hotel }: { hotel: (Hotel & { minPrice: number })
             <div className="flex flex-col h-full w-full bg-white dark:bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.12)] hover:-translate-y-2 group-hover:border-blue-500/40">
                 {/* Image Section */}
                 <div className="relative aspect-[16/10] w-full overflow-hidden shrink-0">
-                    <Image
-                        src={getHotelImageUrl(images[0])}
+                    <FallbackImage
+                        src={images[0]}
                         alt={hotel.name}
-                        fill
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 25vw"
-                        className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
-                        unoptimized
+                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
+                        loading="lazy"
+                        decoding="async"
                     />
 
                     {/* High-End Badges Overlay (Top Left) */}

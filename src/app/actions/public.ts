@@ -24,6 +24,19 @@ function hasMeaningfulError(error: unknown) {
     return Boolean(message) || Boolean(code);
 }
 
+function hasRoomRows(hotel: { rooms?: unknown[] | null }) {
+    return Array.isArray(hotel.rooms) && hotel.rooms.length > 0;
+}
+
+function hasAvailabilityFilters(params?: HotelSearchParams) {
+    return Boolean(
+        (params?.from && params?.to) ||
+        params?.adults !== undefined ||
+        params?.children !== undefined ||
+        params?.rooms !== undefined
+    );
+}
+
 async function getPublishedHotelId(hotelId: string) {
     const publicClient = getSupabaseAdmin();
     const createQuery = (filterPublished: boolean, includePublishedColumn: boolean) => {
@@ -145,11 +158,15 @@ export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
         });
 
         const totalRequired = parseInt(params?.adults || "1") + parseInt(params?.children || "0");
+        const shouldApplyAvailabilityFilters = hasAvailabilityFilters(params);
+
+        if (shouldApplyAvailabilityFilters) {
+            results = results.filter((hotel: any) => hasRoomRows(hotel));
+        }
 
         if (totalRequired > 1) {
             results = results.filter((hotel: any) => {
-                // Keep hotels without sourced room rows visible until inventory is backfilled.
-                if (!hotel.rooms || hotel.rooms.length === 0) return true;
+                if (!hasRoomRows(hotel)) return false;
                 const totalHotelCapacity = hotel.rooms.reduce(
                     (sum: number, room: any) => sum + (Number(room.capacity) * Number(room.total_inventory || 0)),
                     0
@@ -185,7 +202,7 @@ export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
                     }
 
                     results = results.map((hotel: any) => {
-                        if (!hotel.rooms || hotel.rooms.length === 0) return hotel;
+                        if (!hasRoomRows(hotel)) return hotel;
 
                         const availableRooms = hotel.rooms
                             .map((room: any) => {
@@ -209,11 +226,12 @@ export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
                     });
 
                     results = results.filter((hotel: any) => {
+                        if (!hasRoomRows(hotel)) return false;
                         const totalAvailableHotelCapacity = hotel.rooms.reduce(
                             (sum: number, room: any) => sum + (Number(room.capacity) * (room.availableInventory || 0)),
                             0
                         );
-                        return totalAvailableHotelCapacity >= totalRequired;
+                        return totalAvailableHotelCapacity >= Math.max(totalRequired, 1);
                     });
                 }
             }

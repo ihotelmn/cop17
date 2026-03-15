@@ -8,7 +8,7 @@ import Link from "next/link";
 import { Star, MapPin, Navigation, Building2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { COP17_VENUE, estimateTravelTime } from "@/lib/venue";
-import { getHotelImageUrl } from "@/lib/utils";
+import { FallbackImage } from "./ui/fallback-image";
 
 const containerStyle = {
     width: "100%",
@@ -261,12 +261,13 @@ export default function HotelMap({ hotels, query }: { hotels: (Hotel & { minPric
                         <div className="w-[280px] overflow-hidden rounded-2xl bg-white dark:bg-zinc-900">
                             {hasVisibleSelectedImage ? (
                                 <div className="relative h-40 w-full bg-zinc-100">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img
-                                        src={getHotelImageUrl(selectedImageUrl)}
+                                    <FallbackImage
+                                        src={selectedImageUrl}
                                         alt={selectedMapHotel.name}
                                         className="h-full w-full object-cover"
                                         onError={() => setFailedImageUrl(selectedImageUrl)}
+                                        loading="lazy"
+                                        decoding="async"
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                                     <div className="absolute bottom-3 left-4">

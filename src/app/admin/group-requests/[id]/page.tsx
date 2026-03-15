@@ -24,10 +24,10 @@ import { Badge } from "@/components/ui/badge";
 export default async function GroupRequestDetailPage({
     params
 }: {
-    params: { id: string }
+    params: Promise<{ id: string }>
 }) {
+    const { id: requestId } = await params;
     const adminSupabase = getSupabaseAdmin();
-    const requestId = params.id;
 
     const { data: request, error } = await adminSupabase
         .from("group_requests")

@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import useEmblaCarousel from "embla-carousel-react";
-import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn, getHotelImageUrl } from "@/lib/utils";
+import { cn, HOTEL_IMAGE_PLACEHOLDER } from "@/lib/utils";
+import { FallbackImage } from "@/components/ui/fallback-image";
 
 interface ImageGalleryProps {
     images: string[];
@@ -121,7 +121,7 @@ export function ImageGallery({
         return (
             <div className={cn("relative bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden", aspectRatioClass, className)}>
                 <img
-                    src="https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=800&auto=format&fit=crop"
+                    src={HOTEL_IMAGE_PLACEHOLDER}
                     alt={alt}
                     className="absolute inset-0 w-full h-full object-cover opacity-50 grayscale"
                 />
@@ -203,21 +203,16 @@ function GalleryImage({ src, alt, priority }: { src: string, alt: string, priori
     const [isLoaded, setIsLoaded] = useState(false);
 
     return (
-        <Image
-            src={getHotelImageUrl(src)}
+        <FallbackImage
+            src={src}
             alt={alt}
-            fill
-            sizes="(max-width: 1200px) 100vw, 80vw"
-            unoptimized
             className={cn(
-                "object-cover transition-opacity duration-700",
+                "absolute inset-0 h-full w-full object-cover transition-opacity duration-700",
                 isLoaded ? "opacity-100" : "opacity-0"
             )}
-            priority={priority}
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
             onLoad={() => setIsLoaded(true)}
-            onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=800&auto=format&fit=crop';
-            }}
         />
     );
 }

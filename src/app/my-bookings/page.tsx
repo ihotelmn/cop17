@@ -7,9 +7,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
-import { getHotelImageUrl } from "@/lib/utils";
 import { getPreferredHotelAddress, getPreferredHotelName } from "@/lib/hotel-display";
 import type { Metadata } from "next";
+import { FallbackImage } from "@/components/ui/fallback-image";
 
 export const metadata: Metadata = {
     title: "My Bookings | COP17 Mongolia",
@@ -72,10 +72,12 @@ export default async function MyBookingsPage() {
                             return (
                                 <div key={booking.id} className="group bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col md:flex-row">
                                     <div className="relative w-full md:w-64 h-56 md:h-auto shrink-0 bg-zinc-100 overflow-hidden">
-                                        <img
-                                            src={getHotelImageUrl(hotelImage)}
+                                        <FallbackImage
+                                            src={hotelImage}
                                             alt={hotelName}
                                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                            loading="lazy"
+                                            decoding="async"
                                         />
                                         <div className="absolute top-4 left-4">
                                             <BookingStatusBadge status={booking.status} />

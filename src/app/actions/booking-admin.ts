@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { decrypt } from "@/lib/encryption";
-import { z } from "zod";
+import { getPreferredHotelName } from "@/lib/hotel-display";
 import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { BookingAdmin, BookingFilters } from "@/types/booking";
@@ -60,11 +60,18 @@ export async function getAllBookings(filters?: BookingFilters): Promise<{ succes
                 status,
                 total_price,
                 user_id,
+                guest_name,
                 guest_passport_encrypted,
+                cancelled_at,
+                cancellation_reason,
+                modification_requested_at,
+                modification_request_message,
+                modification_request_status,
                 room:rooms (
                     name,
                     hotel:hotels (
-                        name
+                        name,
+                        name_en
                     )
                 )
             `)
@@ -113,7 +120,7 @@ export async function getAllBookings(filters?: BookingFilters): Promise<{ succes
         let profilesMap: Record<string, any> = {};
 
         if (userIds.length > 0) {
-            const { data: profiles, error: profilesError } = await supabase
+            const { data: profiles } = await supabase
                 .from("profiles")
                 .select("id, email, full_name, role")
                 .in("id", userIds);
@@ -128,7 +135,7 @@ export async function getAllBookings(filters?: BookingFilters): Promise<{ succes
 
         // Transform data
         let formattedBookings: BookingAdmin[] = bookings.map((b: any) => {
-            let guestName = "Guest";
+            let guestName = b.guest_name || "Guest";
 
             // Try to get name from profile
             if (b.user_id && profilesMap[b.user_id]) {
@@ -143,7 +150,17 @@ export async function getAllBookings(filters?: BookingFilters): Promise<{ succes
             return {
                 id: b.id,
                 guestName,
-                hotelName: b.room?.hotel?.name || "Unknown Hotel",
+                hotelName: b.room?.hotel
+                    ? getPreferredHotelName({
+                        name: b.room.hotel.name || "",
+                        name_en: b.room.hotel.name_en || null,
+                        address: null,
+                        address_en: null,
+                        description: null,
+                        description_en: null,
+                        stars: 0,
+                    })
+                    : "Unknown Hotel",
                 roomName: b.room?.name || "Unknown Room",
                 dates: `${checkIn} - ${checkOut}`,
                 checkIn: b.check_in_date,
@@ -152,6 +169,11 @@ export async function getAllBookings(filters?: BookingFilters): Promise<{ succes
                 rawStatus: b.status,
                 amount: b.total_price,
                 createdAt: b.created_at,
+                cancelledAt: b.cancelled_at ?? null,
+                cancellationReason: b.cancellation_reason ?? null,
+                modificationRequestedAt: b.modification_requested_at ?? null,
+                modificationRequestMessage: b.modification_request_message ?? null,
+                modificationRequestStatus: b.modification_request_status ?? null,
             };
         });
 
@@ -183,9 +205,22 @@ export async function updateBookingStatus(bookingId: string, status: string) {
 
         const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
 
+        const { data: existingBooking } = await supabase
+            .from("bookings")
+            .select("modification_request_status")
+            .eq("id", bookingId)
+            .single();
+
+        const updatePayload: Record<string, string | null> = { status };
+
+        if (existingBooking?.modification_request_status === "pending") {
+            updatePayload.modification_request_status = "reviewed";
+            updatePayload.modification_reviewed_at = new Date().toISOString();
+        }
+
         let query = supabase
             .from("bookings")
-            .update({ status })
+            .update(updatePayload)
             .eq("id", bookingId);
 
         // RBAC: If not super_admin, verify ownership
@@ -196,7 +231,14 @@ export async function updateBookingStatus(bookingId: string, status: string) {
             query = query.in("room_id", allowedRoomIds);
         }
 
-        const { error } = await query;
+        let { error } = await query;
+
+        if (error?.message?.includes("column") && error.message.includes("does not exist")) {
+            ({ error } = await supabase
+                .from("bookings")
+                .update({ status })
+                .eq("id", bookingId));
+        }
 
         if (error) {
             console.error("Error updating booking:", error);
@@ -205,7 +247,7 @@ export async function updateBookingStatus(bookingId: string, status: string) {
 
         revalidatePath("/admin/bookings");
         return { success: true };
-    } catch (error) {
+    } catch {
         return { success: false, error: "Failed to update status" };
     }
 }
@@ -385,6 +427,7 @@ export async function getBookingDetails(bookingId: string) {
                     hotel:hotels (
                         id,
                         name,
+                        name_en,
                         owner_id
                     )
                 )
@@ -399,8 +442,8 @@ export async function getBookingDetails(bookingId: string) {
 
         // RBAC CHECK
         if (profile.role !== "super_admin") {
-            // @ts-ignore - Supabase types inference can be tricky with nested relations
-            const bookingOwnerId = booking.room?.hotel?.owner_id;
+            const bookingRoom = booking.room as { hotel?: { owner_id?: string | null } } | Array<{ hotel?: { owner_id?: string | null } }> | null;
+            const bookingOwnerId = Array.isArray(bookingRoom) ? bookingRoom[0]?.hotel?.owner_id : bookingRoom?.hotel?.owner_id;
             if (bookingOwnerId !== user.id) {
                 return { success: false, error: "Unauthorized access to this booking" };
             }
