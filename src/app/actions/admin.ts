@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { Hotel, Room } from "@/types/hotel";
 import { DEFAULT_HOTEL_BOOKING_POLICY } from "@/lib/cancellation-policy";
+import { parseStringArray } from "@/lib/parse-utils";
 
 // No re-exports here to avoid Turbopack build errors.
 // Import types from @/types/hotel instead.
@@ -226,20 +227,8 @@ export async function createHotel(prevState: any, formData: FormData) {
 
     const data = validatedFields.data;
 
-    // Process arrays (handle JSON string or comma-separated)
-    const parseArray = (input: string | undefined): string[] => {
-        if (!input) return [];
-        try {
-            // Try parsing as JSON array first (e.g. from hidden input set by JS)
-            const parsed = JSON.parse(input);
-            if (Array.isArray(parsed)) return parsed;
-        } catch { }
-        // Fallback to comma separation
-        return input.split(",").map((s) => s.trim()).filter(Boolean);
-    };
-
-    const amenitiesArray = parseArray(data.amenities);
-    const imagesArray = parseArray(data.images);
+    const amenitiesArray = parseStringArray(data.amenities);
+    const imagesArray = parseStringArray(data.images);
 
     // Calculate Distance if location is provided
     let cachedData = {};
@@ -378,7 +367,6 @@ export async function updateHotelPublishedStatus(id: string, isPublished: boolea
 }
 
 export async function getHotel(id: string) {
-    console.log("getHotel called with ID:", id);
     const supabase = await createClient();
     const adminClient = getSupabaseAdmin();
 
@@ -460,18 +448,8 @@ export async function updateHotel(id: string, prevState: any, formData: FormData
 
     const data = validatedFields.data;
 
-    // Process arrays
-    const parseArray = (input: string | undefined): string[] => {
-        if (!input) return [];
-        try {
-            const parsed = JSON.parse(input);
-            if (Array.isArray(parsed)) return parsed;
-        } catch { }
-        return input.split(",").map((s) => s.trim()).filter(Boolean);
-    };
-
-    const amenitiesArray = parseArray(data.amenities);
-    const imagesArray = parseArray(data.images);
+    const amenitiesArray = parseStringArray(data.amenities);
+    const imagesArray = parseStringArray(data.images);
 
     // Retrieve old hotel data to see if location changed
     // OR just always update if location is provided (simplest)
@@ -621,18 +599,8 @@ export async function createRoom(hotelId: string, prevState: any, formData: Form
 
     const { name, description, type, price_per_night, capacity, total_inventory, amenities, images } = validated.data;
 
-    // Helper to parse JSON or comma-separated string
-    const parseArray = (input: string | undefined): string[] => {
-        if (!input) return [];
-        try {
-            const parsed = JSON.parse(input);
-            if (Array.isArray(parsed)) return parsed;
-        } catch { }
-        return input.split(",").map((s) => s.trim()).filter(Boolean);
-    };
-
-    const amenitiesArray = parseArray(amenities);
-    const imagesArray = parseArray(images);
+    const amenitiesArray = parseStringArray(amenities);
+    const imagesArray = parseStringArray(images);
 
     const { error } = await supabase.from("rooms").insert({
         hotel_id: hotelId,
@@ -657,10 +625,36 @@ export async function createRoom(hotelId: string, prevState: any, formData: Form
 
 export async function deleteRoom(roomId: string) {
     const supabase = await createClient();
+    const adminClient = getSupabaseAdmin();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: "Unauthorized" };
 
-    const { error } = await supabase.from("rooms").delete().eq("id", roomId);
+    // Check role
+    const { data: profile } = await adminClient
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+    if (!profile || (profile.role !== "admin" && profile.role !== "super_admin")) {
+        return { error: "Unauthorized: insufficient permissions" };
+    }
+
+    // If not super_admin, verify room belongs to a hotel the user owns
+    if (profile.role !== "super_admin") {
+        const { data: room } = await adminClient
+            .from("rooms")
+            .select("hotel_id, hotel:hotels(owner_id)")
+            .eq("id", roomId)
+            .single();
+
+        const hotel = Array.isArray(room?.hotel) ? room.hotel[0] : room?.hotel;
+        if (!hotel || hotel.owner_id !== user.id) {
+            return { error: "Unauthorized: you do not own this hotel" };
+        }
+    }
+
+    const { error } = await adminClient.from("rooms").delete().eq("id", roomId);
     if (error) {
         console.error("Error deleting room:", error);
         return { error: "Failed to delete room" };
@@ -701,17 +695,8 @@ export async function updateRoom(hotelId: string, roomId: string, prevState: any
 
     const { name, description, type, price_per_night, capacity, total_inventory, amenities, images } = validated.data;
 
-    const parseArray = (input: string | undefined): string[] => {
-        if (!input) return [];
-        try {
-            const parsed = JSON.parse(input);
-            if (Array.isArray(parsed)) return parsed;
-        } catch { }
-        return input.split(",").map((s) => s.trim()).filter(Boolean);
-    };
-
-    const amenitiesArray = parseArray(amenities);
-    const imagesArray = parseArray(images);
+    const amenitiesArray = parseStringArray(amenities);
+    const imagesArray = parseStringArray(images);
 
     const { error } = await supabase
         .from("rooms")

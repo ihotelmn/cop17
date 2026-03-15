@@ -1,6 +1,5 @@
 
-import { motion } from "framer-motion";
-import { ArrowRight, Hotel, ShieldCheck, Star, Users, Bus, Clock, CreditCard, Search, Map as MapIcon, List as ListIcon } from "lucide-react";
+import { ShieldCheck, Bus, CreditCard, Search, Map as MapIcon, List as ListIcon } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Suspense } from 'react';

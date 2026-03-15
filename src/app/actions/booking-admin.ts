@@ -48,7 +48,6 @@ export async function getAllBookings(filters?: BookingFilters): Promise<{ succes
             .eq("id", user.id)
             .single();
 
-        console.log("getAllBookings debug:", { userId: user.id, role: profile?.role });
 
         let query = adminClient
             .from("bookings")

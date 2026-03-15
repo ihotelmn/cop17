@@ -19,7 +19,9 @@ export function getPostgresPool() {
         pool = new Pool({
             connectionString,
             ssl: requiresSsl(connectionString) ? { rejectUnauthorized: false } : undefined,
-            max: 10,
+            max: 5,
+            idleTimeoutMillis: 20000,
+            connectionTimeoutMillis: 10000,
         });
     }
 

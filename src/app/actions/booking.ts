@@ -42,10 +42,11 @@ const bookingSchema = z.object({
 });
 
 function getBookingActionErrorMessage(error: unknown): string {
-    const errorString = error instanceof Error ? error.stack || error.message : JSON.stringify(error, Object.getOwnPropertyNames(error));
-
-    // Log to server console
+    // Log full details to server console only
     console.error("FULL BOOKING ERROR:", error);
+    if (error instanceof Error && error.stack) {
+        console.error("STACK:", error.stack);
+    }
 
     const msg = error instanceof Error ? error.message : (typeof error === 'string' ? error : JSON.stringify(error));
 
@@ -54,15 +55,15 @@ function getBookingActionErrorMessage(error: unknown): string {
         msg.includes("Supabase Admin keys are missing") ||
         msg.includes("Missing required environment variable")
     ) {
-        return `Configuration Error: ${msg}. Check Vercel Env Vars.`;
+        return "A server configuration issue prevented your booking. Our team has been notified.";
     }
 
     if (msg.includes("column") && msg.includes("does not exist")) {
-        return `Database Schema Error: ${msg}. Migration required.`;
+        return "A database update is required. Please contact support.";
     }
 
-    // Return the full detail to the user for debugging
-    return `Server Error [VER-307]: ${msg} | Detailed: ${errorString.substring(0, 300)}`;
+    // Return safe, generic message to the user
+    return "An unexpected error occurred while processing your booking. Please try again or contact support.";
 }
 
 function getBookingRateLimitErrorMessage(error: unknown, fallbackMessage: string) {
@@ -536,7 +537,6 @@ export async function createBookingAction(prevState: BookingState, formData: For
             rs.price = room.price_per_night;
             totalCombinedPrice += rs.price * rs.quantity * nights;
         }
-        console.log(`[PriceTotal] Combined Total: ${totalCombinedPrice}`);
 
         // 2. Encrypt PII
         const encryptedPassport = await encrypt(guestPassport);
