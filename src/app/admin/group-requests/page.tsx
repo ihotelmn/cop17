@@ -1,15 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { format } from "date-fns";
 import {
     Users,
     Calendar,
     Building2,
-    MoreHorizontal,
     CheckCircle2,
     Clock,
-    XCircle,
-    UserPlus
 } from "lucide-react";
 import {
     Table,
@@ -21,29 +16,18 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
-import Link from "next/link";
+import { getAccessibleGroupRequests, canManageGroupAssignments } from "@/lib/group-request-access";
+import { GroupRequestRowActions } from "@/components/admin/group-request-row-actions";
 
 export default async function GroupRequestsPage() {
-    const adminSupabase = getSupabaseAdmin();
+    let requests: Awaited<ReturnType<typeof getAccessibleGroupRequests>>["requests"] = [];
+    let canAssign = false;
 
-    const { data: requests, error } = await adminSupabase
-        .from("group_requests")
-        .select(`
-            *,
-            assigned_liaison:profiles(full_name, email)
-        `)
-        .order("created_at", { ascending: false });
-
-    if (error) {
+    try {
+        const result = await getAccessibleGroupRequests();
+        requests = result.requests;
+        canAssign = canManageGroupAssignments(result.access.role);
+    } catch (error) {
         console.error("Error fetching group requests:", error);
     }
 
@@ -135,30 +119,7 @@ export default async function GroupRequestsPage() {
                                             )}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-zinc-800">
-                                                        <MoreHorizontal className="h-4 w-4 text-zinc-400" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800 text-zinc-200">
-                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                    <DropdownMenuItem asChild>
-                                                        <Link href={`/admin/group-requests/${request.id}`} className="cursor-pointer">
-                                                            View Details
-                                                        </Link>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem asChild>
-                                                        <Link href={`/admin/group-requests/${request.id}?assign=true`} className="cursor-pointer text-blue-400">
-                                                            Assign Liaison
-                                                        </Link>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator className="bg-zinc-800" />
-                                                    <DropdownMenuItem className="text-red-400 cursor-pointer">
-                                                        Reject Request
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                            <GroupRequestRowActions requestId={request.id} canManageAssignments={canAssign} />
                                         </TableCell>
                                     </TableRow>
                                 ))

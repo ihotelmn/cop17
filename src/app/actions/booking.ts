@@ -8,6 +8,7 @@ import { encrypt } from "@/lib/encryption";
 import { GolomtService } from "@/lib/golomt";
 import { getPostgresPool } from "@/lib/postgres";
 import { getPreferredHotelName } from "@/lib/hotel-display";
+import { buildGuestBookingPortalPath, verifyGuestBookingAccessToken } from "@/lib/guest-booking-access";
 import {
     createPaymentAttempt,
     getPaymentAttemptByGroupId,
@@ -425,6 +426,54 @@ function getHotelFromBookingRoomRelation(value: unknown): BookingPolicyHotel | n
     return getBookingPolicyHotel(hotel);
 }
 
+async function getAccessibleBookingRecord<T>(
+    bookingId: string,
+    select: string,
+    accessToken?: string
+): Promise<{ booking: T | null; accessMode: "user" | "guest" | null }> {
+    const supabase = await createClient();
+    const adminSupabase = getSupabaseAdmin();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) {
+        const { data: ownedBooking, error: ownedError } = await supabase
+            .from("bookings")
+            .select(select)
+            .eq("id", bookingId)
+            .eq("user_id", user.id)
+            .single();
+
+        if (!ownedError && ownedBooking) {
+            return { booking: ownedBooking as T, accessMode: "user" };
+        }
+    }
+
+    if (!accessToken) {
+        return { booking: null, accessMode: null };
+    }
+
+    const { data: guestBooking, error: guestError } = await adminSupabase
+        .from("bookings")
+        .select(select)
+        .eq("id", bookingId)
+        .single();
+
+    if (guestError || !guestBooking) {
+        return { booking: null, accessMode: null };
+    }
+
+    const guestBookingRecord = guestBooking as unknown as Record<string, unknown>;
+    const guestEmail = typeof guestBookingRecord.guest_email === "string"
+        ? guestBookingRecord.guest_email
+        : "";
+
+    if (!verifyGuestBookingAccessToken(bookingId, guestEmail, accessToken)) {
+        return { booking: null, accessMode: null };
+    }
+
+    return { booking: guestBooking as T, accessMode: "guest" };
+}
+
 export async function createBookingAction(prevState: BookingState, formData: FormData): Promise<BookingState> {
     try {
         const supabase = await createClient();
@@ -749,6 +798,7 @@ export async function confirmBookingAction(groupId: string, silent: boolean = fa
         if (finalEmail) {
             const datesStr = `${format(new Date(booking.check_in_date), "MMM d")} - ${format(new Date(booking.check_out_date), "MMM d, yyyy")}`;
             const hotelName = getBookingHotelDisplayName(relatedHotel);
+            const manageBookingPath = buildGuestBookingPortalPath(booking.id, finalEmail);
 
             // Send Confirmation Email using the first booking ID
             await sendBookingConfirmation(
@@ -756,7 +806,8 @@ export async function confirmBookingAction(groupId: string, silent: boolean = fa
                 finalName,
                 booking.id,
                 hotelName,
-                datesStr
+                datesStr,
+                manageBookingPath
             );
         }
 
@@ -834,30 +885,19 @@ export async function reconcileBookingPaymentAction(groupId: string) {
     }
 }
 
-export async function getBookingDetail(bookingId: string) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) return null;
-
-    const { data: booking, error } = await supabase
-        .from("bookings")
-        .select(`
+export async function getBookingDetail(bookingId: string, accessToken?: string) {
+    const { booking } = await getAccessibleBookingRecord(
+        bookingId,
+        `
             *,
             room:rooms (
                 name,
                 price_per_night,
                 hotel:hotels (*)
             )
-        `)
-        .eq("id", bookingId)
-        .eq("user_id", user.id)
-        .single();
-
-    if (error) {
-        console.error("Error fetching booking detail:", error);
-        return null;
-    }
+        `,
+        accessToken
+    );
 
     return booking;
 }
@@ -914,12 +954,10 @@ export async function getMyBookings() {
     });
 }
 
-export async function cancelBookingAction(bookingId: string, reason?: string) {
+export async function cancelBookingAction(bookingId: string, reason?: string, accessToken?: string) {
     const supabase = await createClient();
     const adminSupabase = getSupabaseAdmin();
     const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) return { success: false, error: "Unauthorized" };
 
     try {
         try {
@@ -936,7 +974,7 @@ export async function cancelBookingAction(bookingId: string, reason?: string) {
 
             await enforceActionRateLimit({
                 scope: "booking:cancel:user",
-                key: user.id,
+                key: user?.id || `guest:${bookingId}`,
                 maxHits: 6,
                 windowMs: 10 * 60 * 1000,
                 message: "You have submitted too many cancellation attempts.",
@@ -953,15 +991,21 @@ export async function cancelBookingAction(bookingId: string, reason?: string) {
             return { success: false, error: getBookingRateLimitErrorMessage(error, "Too many cancellation attempts. Please try again later.") };
         }
 
-        // 1. Fetch booking to check ownership and status
-        const { data: booking, error: fetchError } = await supabase
-            .from("bookings")
-            .select("id, status, check_in_date, total_price, user_id, room:rooms(hotel:hotels(*))")
-            .eq("id", bookingId)
-            .eq("user_id", user.id)
-            .single();
+        const { booking } = await getAccessibleBookingRecord<{
+            id: string;
+            status: string;
+            check_in_date: string;
+            total_price: number | string | null;
+            user_id: string | null;
+            guest_email: string | null;
+            room: unknown;
+        }>(
+            bookingId,
+            "id, status, check_in_date, total_price, user_id, guest_email, room:rooms(hotel:hotels(*))",
+            accessToken
+        );
 
-        if (fetchError || !booking) {
+        if (!booking) {
             return { success: false, error: "Booking not found or access denied." };
         }
 
@@ -1037,12 +1081,10 @@ export async function cancelBookingAction(bookingId: string, reason?: string) {
     }
 }
 
-export async function requestModificationAction(bookingId: string, message: string) {
+export async function requestModificationAction(bookingId: string, message: string, accessToken?: string) {
     const supabase = await createClient();
     const adminSupabase = getSupabaseAdmin();
     const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) return { success: false, error: "Unauthorized" };
 
     try {
         try {
@@ -1059,7 +1101,7 @@ export async function requestModificationAction(bookingId: string, message: stri
 
             await enforceActionRateLimit({
                 scope: "booking:modify:user",
-                key: user.id,
+                key: user?.id || `guest:${bookingId}`,
                 maxHits: 6,
                 windowMs: 10 * 60 * 1000,
                 message: "You have submitted too many modification requests.",
@@ -1076,15 +1118,19 @@ export async function requestModificationAction(bookingId: string, message: stri
             return { success: false, error: getBookingRateLimitErrorMessage(error, "Too many modification requests. Please try again later.") };
         }
 
-        // 1. Verify ownership
-        const { data: booking, error: fetchError } = await supabase
-            .from("bookings")
-            .select("id, check_in_date, total_price, room:rooms(hotel:hotels(*))")
-            .eq("id", bookingId)
-            .eq("user_id", user.id)
-            .single();
+        const { booking } = await getAccessibleBookingRecord<{
+            id: string;
+            check_in_date: string;
+            total_price: number | string | null;
+            guest_email: string | null;
+            room: unknown;
+        }>(
+            bookingId,
+            "id, check_in_date, total_price, guest_email, room:rooms(hotel:hotels(*))",
+            accessToken
+        );
 
-        if (fetchError || !booking) {
+        if (!booking) {
             return { success: false, error: "Booking not found or access denied." };
         }
 

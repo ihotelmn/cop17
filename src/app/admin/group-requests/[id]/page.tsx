@@ -1,4 +1,3 @@
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { format } from "date-fns";
 import {
     ChevronLeft,
@@ -9,17 +8,16 @@ import {
     Mail,
     MessageSquare,
     DollarSign,
-    ShieldCheck,
     ArrowRight
 } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AssignLiaisonForm } from "@/components/admin/assign-liaison-form";
 import { StatusUpdateForm } from "@/components/admin/status-update-form";
 import { getLiaisonsAction } from "@/app/actions/liaison-actions";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
+import { canManageGroupAssignments, getAccessibleGroupRequestById } from "@/lib/group-request-access";
 
 export default async function GroupRequestDetailPage({
     params
@@ -27,23 +25,22 @@ export default async function GroupRequestDetailPage({
     params: Promise<{ id: string }>
 }) {
     const { id: requestId } = await params;
-    const adminSupabase = getSupabaseAdmin();
+    let request: Awaited<ReturnType<typeof getAccessibleGroupRequestById>>["request"] = null;
+    let canAssign = false;
 
-    const { data: request, error } = await adminSupabase
-        .from("group_requests")
-        .select(`
-            *,
-            assigned_liaison:profiles(id, full_name, email)
-        `)
-        .eq("id", requestId)
-        .single();
+    try {
+        const result = await getAccessibleGroupRequestById(requestId);
+        request = result.request;
+        canAssign = canManageGroupAssignments(result.access.role);
+    } catch (error) {
+        console.error("Error fetching group request detail:", error);
+    }
 
-    if (error || !request) {
-        if (error) console.error("Error fetching group request detail:", error);
+    if (!request) {
         notFound();
     }
 
-    const liaisons = await getLiaisonsAction();
+    const liaisons = canAssign ? await getLiaisonsAction() : [];
 
     return (
         <div className="max-w-4xl mx-auto space-y-8">
@@ -111,11 +108,13 @@ export default async function GroupRequestDetailPage({
 
                 <div className="space-y-8">
                     {/* Assignment Action */}
-                    <AssignLiaisonForm
-                        requestId={request.id}
-                        liaisons={liaisons}
-                        currentLiaisonId={request.assigned_liaison_id}
-                    />
+                    {canAssign && (
+                        <AssignLiaisonForm
+                            requestId={request.id}
+                            liaisons={liaisons}
+                            currentLiaisonId={request.assigned_liaison_id}
+                        />
+                    )}
 
                     {/* Status & Notes Management */}
                     <StatusUpdateForm

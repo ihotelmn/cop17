@@ -1,5 +1,4 @@
 import { getDocumentsByBookingAction } from "@/app/actions/document-actions";
-import { createClient } from "@/lib/supabase/server";
 import { DocumentUpload } from "@/components/booking/document-upload";
 import {
     ChevronLeft,
@@ -7,39 +6,43 @@ import {
     ShieldCheck,
     Clock,
     FileText,
-    ArrowRight,
     XCircle
 } from "lucide-react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
 import { notFound } from "next/navigation";
 import { getPreferredHotelName } from "@/lib/hotel-display";
+import { getBookingDetail } from "@/app/actions/booking";
 
 export default async function AccreditationPage({
-    params
+    params,
+    searchParams
 }: {
     params: Promise<{ id: string }>
+    searchParams: Promise<{ access?: string }>
 }) {
     const { id: bookingId } = await params;
-    const supabase = await createClient();
+    const resolvedSearchParams = await searchParams;
+    const booking = await getBookingDetail(bookingId, resolvedSearchParams.access) as {
+        user_id: string | null;
+        room?: {
+            hotel?: unknown;
+        };
+    } | null;
 
-    // Verify booking ownership
-    const { data: booking, error: bookingError } = await supabase
-        .from("bookings")
-        .select(`
-            *,
-            hotel:hotels(name)
-        `)
-        .eq("id", bookingId)
-        .single();
-
-    if (bookingError || !booking) {
+    if (!booking) {
         notFound();
     }
 
     const documents = await getDocumentsByBookingAction(bookingId);
-    const hotelName = getPreferredHotelName(booking.hotel);
+    const hotelRelation = Array.isArray(booking.room?.hotel) ? booking.room.hotel[0] : booking.room?.hotel;
+    const hotelName = hotelRelation
+        ? getPreferredHotelName(hotelRelation)
+        : "COP17 Hotel";
+    const backHref = resolvedSearchParams.access
+        ? `/my-bookings/${bookingId}/portal?access=${encodeURIComponent(resolvedSearchParams.access)}`
+        : `/my-bookings/${bookingId}/portal`;
 
     const passportDoc = documents.find(d => d.type === 'passport');
     const visaDoc = documents.find(d => d.type === 'visa');
@@ -48,7 +51,7 @@ export default async function AccreditationPage({
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pt-24 pb-20">
             <div className="container mx-auto px-4 max-w-4xl">
                 <Link
-                    href={`/my-bookings/${bookingId}`}
+                    href={backHref}
                     className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors mb-8"
                 >
                     <ChevronLeft className="mr-1 h-4 w-4" />
@@ -91,7 +94,7 @@ export default async function AccreditationPage({
                             bookingId={bookingId}
                             type="passport"
                             label="Passport Copy"
-                            guestId={booking.user_id}
+                            guestId={booking.user_id || undefined}
                         />
                         {passportDoc && (
                             <DocumentStatusCard doc={passportDoc} />
@@ -108,7 +111,7 @@ export default async function AccreditationPage({
                             bookingId={bookingId}
                             type="visa"
                             label="Entry Visa / E-Visa"
-                            guestId={booking.user_id}
+                            guestId={booking.user_id || undefined}
                         />
                         {visaDoc && (
                             <DocumentStatusCard doc={visaDoc} />
@@ -134,7 +137,9 @@ export default async function AccreditationPage({
     );
 }
 
-function DocumentStatusCard({ doc }: { doc: any }) {
+type BookingDocument = Awaited<ReturnType<typeof getDocumentsByBookingAction>>[number];
+
+function DocumentStatusCard({ doc }: { doc: BookingDocument }) {
     const isVerified = doc.status === 'verified';
     const isRejected = doc.status === 'rejected';
 
@@ -174,6 +179,6 @@ function DocumentStatusCard({ doc }: { doc: any }) {
     );
 }
 
-function cn(...inputs: any[]) {
+function cn(...inputs: Array<string | false | null | undefined>) {
     return inputs.filter(Boolean).join(" ");
 }

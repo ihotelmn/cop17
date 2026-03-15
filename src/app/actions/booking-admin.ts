@@ -7,6 +7,7 @@ import { getPreferredHotelName } from "@/lib/hotel-display";
 import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { BookingAdmin, BookingFilters } from "@/types/booking";
+import { isValidBookingStatusTransition, normalizeBookingLifecycleStatus } from "@/lib/booking-status";
 
 // No re-exports here to avoid Turbopack build errors.
 // Import types from @/types/booking instead.
@@ -202,15 +203,28 @@ export async function updateBookingStatus(bookingId: string, status: string) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return { success: false, error: "Unauthorized" };
 
+        const normalizedNextStatus = normalizeBookingLifecycleStatus(status);
+
         const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
 
         const { data: existingBooking } = await supabase
             .from("bookings")
-            .select("modification_request_status")
+            .select("status, modification_request_status")
             .eq("id", bookingId)
             .single();
 
-        const updatePayload: Record<string, string | null> = { status };
+        if (!existingBooking) {
+            return { success: false, error: "Booking not found." };
+        }
+
+        if (!isValidBookingStatusTransition(existingBooking.status, normalizedNextStatus)) {
+            return {
+                success: false,
+                error: `Invalid status transition from ${existingBooking.status} to ${normalizedNextStatus}.`,
+            };
+        }
+
+        const updatePayload: Record<string, string | null> = { status: normalizedNextStatus };
 
         if (existingBooking?.modification_request_status === "pending") {
             updatePayload.modification_request_status = "reviewed";
@@ -235,7 +249,7 @@ export async function updateBookingStatus(bookingId: string, status: string) {
         if (error?.message?.includes("column") && error.message.includes("does not exist")) {
             ({ error } = await supabase
                 .from("bookings")
-                .update({ status })
+                .update({ status: normalizedNextStatus })
                 .eq("id", bookingId));
         }
 

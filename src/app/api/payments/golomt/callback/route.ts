@@ -6,8 +6,9 @@ import {
     markPaymentAttemptFailed,
     markPaymentAttemptPaid,
 } from "@/lib/payment-attempts";
+import type { PaymentAttemptRecord } from "@/lib/payment-attempts";
 
-function getStoredReturnUrl(paymentAttempt: Awaited<ReturnType<typeof getPaymentAttemptByTransactionId>>) {
+function getStoredReturnUrl(paymentAttempt?: PaymentAttemptRecord | null) {
     const rawRequest = paymentAttempt?.raw_request;
 
     if (!(typeof rawRequest === "object" && rawRequest !== null)) {

@@ -1,5 +1,5 @@
 import { ImageGallery } from "@/components/image-gallery";
-import { Star, MapPin, ShieldCheck, Mail, Phone, Info, Clock, CheckCircle2 } from "lucide-react";
+import { Star, MapPin, ShieldCheck, Info, Clock, CheckCircle2 } from "lucide-react";
 import { RoomList } from "@/components/room-list";
 import { SearchForm } from "@/components/search-form";
 import { ReservationSummary } from "@/components/reservation-summary";
@@ -8,6 +8,7 @@ import { getPublicHotel, getPublicRooms } from "@/app/actions/public";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { sanitizeRichTextToParagraphs, sanitizeRichTextToPlainText } from "@/lib/safe-rich-text";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -28,7 +29,7 @@ export async function generateMetadata(
 
     return {
         title: `${hotel.name} | COP17 Mongolia Official Booking`,
-        description: hotel.description?.replace(/<[^>]*>?/gm, '').substring(0, 160) || `Book your stay at ${hotel.name} for COP17 Mongolia.`,
+        description: sanitizeRichTextToPlainText(hotel.description).substring(0, 160) || `Book your stay at ${hotel.name} for COP17 Mongolia.`,
         openGraph: {
             title: hotel.name,
             description: `Official accommodation for COP17 at ${hotel.name}.`,
@@ -65,6 +66,7 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
     // Create Date objects only if dates exist
     const finalCheckIn = checkIn ? new Date(`${checkIn}T12:00:00`) : undefined;
     const finalCheckOut = checkOut ? new Date(`${checkOut}T12:00:00`) : undefined;
+    const hotelDescriptionParagraphs = sanitizeRichTextToParagraphs(hotel.description);
 
     return (
         <div className="min-h-screen bg-zinc-50 pb-40 dark:bg-zinc-950 lg:pb-20">
@@ -179,7 +181,7 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
                 <main className="lg:col-span-8 space-y-16">
 
                     {/* Description Section */}
-                    {hotel.description && hotel.description !== "NULL" && (
+                    {hotelDescriptionParagraphs.length > 0 && (
                         <section className="bg-white dark:bg-zinc-900/40 p-10 rounded-[2.5rem] shadow-xl shadow-zinc-200/50 dark:shadow-none border border-zinc-100 dark:border-zinc-800 overflow-hidden relative group">
                             <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
                                 <Info className="w-24 h-24" />
@@ -190,10 +192,11 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
                                 </div>
                                 Detailed Property Overview
                             </h2>
-                            <div
-                                className="prose prose-zinc dark:prose-invert max-w-none text-zinc-600 dark:text-zinc-400 text-lg leading-relaxed font-medium"
-                                dangerouslySetInnerHTML={{ __html: hotel.description }}
-                            />
+                            <div className="space-y-5 text-lg font-medium leading-relaxed text-zinc-600 dark:text-zinc-400">
+                                {hotelDescriptionParagraphs.map((paragraph) => (
+                                    <p key={paragraph}>{paragraph}</p>
+                                ))}
+                            </div>
                         </section>
                     )}
 
@@ -281,26 +284,26 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
                             </div>
                         </div>
 
-                        {/* Direct Contact Card */}
+                        {/* Booking Contact Policy */}
                         <div className="p-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-[2.5rem] text-white shadow-xl shadow-blue-500/20">
-                            <h4 className="text-sm font-black uppercase tracking-[0.2em] opacity-60 mb-8">Direct Contact</h4>
+                            <h4 className="text-sm font-black uppercase tracking-[0.2em] opacity-60 mb-8">Official Booking Policy</h4>
                             <div className="space-y-6">
-                                <div className="flex items-center gap-5 group cursor-pointer">
-                                    <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                                        <Mail className="w-5 h-5 text-white" />
+                                <div className="flex items-start gap-5">
+                                    <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center shrink-0">
+                                        <ShieldCheck className="w-5 h-5 text-white" />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Email Support</p>
-                                        <p className="font-bold text-lg">hotel@support.com</p>
+                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Protected Conversion</p>
+                                        <p className="font-bold text-lg leading-tight">Hotel phone numbers and websites unlock after payment.</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-5 group cursor-pointer">
-                                    <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                                        <Phone className="w-5 h-5 text-white" />
+                                <div className="flex items-start gap-5">
+                                    <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center shrink-0">
+                                        <Info className="w-5 h-5 text-white" />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Call Directly</p>
-                                        <p className="font-bold text-lg">+976 11-123-456</p>
+                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-60">When It Appears</p>
+                                        <p className="font-bold text-lg leading-tight">Once your booking is confirmed and paid, direct hotel contact details appear in your booking pages and receipt.</p>
                                     </div>
                                 </div>
                             </div>

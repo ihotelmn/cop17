@@ -1,7 +1,7 @@
 import { getBookingDetail } from "@/app/actions/booking";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
-import { Printer, ShieldCheck, MapPin, Phone, Mail } from "lucide-react";
+import { ShieldCheck, MapPin, Phone, Mail, Globe } from "lucide-react";
 import { PrintTrigger } from "./print-trigger";
 import { getPreferredHotelAddress, getPreferredHotelName } from "@/lib/hotel-display";
 
@@ -17,6 +17,8 @@ type ReceiptHotelDisplay = {
     stars: number;
     contact_phone: string | null;
     contact_email: string | null;
+    website: string | null;
+    check_in_time: string | null;
 };
 
 function getReceiptHotelRelation(value: unknown): ReceiptHotelDisplay | null {
@@ -43,16 +45,34 @@ function getReceiptHotelRelation(value: unknown): ReceiptHotelDisplay | null {
         stars: typeof hotelRecord.stars === "number" ? hotelRecord.stars : 0,
         contact_phone: typeof hotelRecord.contact_phone === "string" ? hotelRecord.contact_phone : null,
         contact_email: typeof hotelRecord.contact_email === "string" ? hotelRecord.contact_email : null,
+        website: typeof hotelRecord.website === "string" ? hotelRecord.website : null,
+        check_in_time: typeof hotelRecord.check_in_time === "string" ? hotelRecord.check_in_time : null,
     };
 }
 
 interface ReceiptPageProps {
     params: Promise<{ id: string }>;
+    searchParams: Promise<{ access?: string }>;
 }
 
-export default async function ReceiptPage({ params }: ReceiptPageProps) {
+type ReceiptBooking = {
+    id: string;
+    user_id: string | null;
+    guest_email: string | null;
+    check_in_date: string;
+    check_out_date: string;
+    total_price: number | string;
+    room: {
+        name: string;
+        price_per_night: number | string;
+        hotel?: unknown;
+    };
+};
+
+export default async function ReceiptPage({ params, searchParams }: ReceiptPageProps) {
     const { id } = await params;
-    const booking = await getBookingDetail(id);
+    const resolvedSearchParams = await searchParams;
+    const booking = await getBookingDetail(id, resolvedSearchParams.access) as ReceiptBooking | null;
 
     if (!booking) {
         notFound();
@@ -61,6 +81,7 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
     const hotel = getReceiptHotelRelation(booking.room);
     const hotelName = hotel ? getPreferredHotelName(hotel) : "COP17 Hotel";
     const hotelAddress = hotel ? (getPreferredHotelAddress(hotel) || "Ulaanbaatar, Mongolia") : "Ulaanbaatar, Mongolia";
+    const hasDirectHotelContact = Boolean(hotel?.contact_phone || hotel?.contact_email || hotel?.website);
     const checkIn = new Date(booking.check_in_date);
     const checkOut = new Date(booking.check_out_date);
     const nights = Math.max(1, Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)));
@@ -93,7 +114,7 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
                     <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-4">Guest Details</h3>
                     <div className="space-y-2">
                         <p className="text-lg font-bold">Delegate Booking</p>
-                        <p className="text-sm text-zinc-600">ID: {booking.user_id?.substring(0, 8)}...</p>
+                        <p className="text-sm text-zinc-600">{booking.guest_email || `ID: ${booking.user_id?.substring(0, 8)}...`}</p>
                     </div>
                 </div>
                 <div>
@@ -106,14 +127,28 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
                                 <span>{hotelAddress}</span>
                             </div>
                         </div>
-                        <div className="flex flex-col gap-1 text-sm text-zinc-500">
-                            <div className="flex items-center gap-2">
-                                <Phone className="h-3 w-3" /> {hotel?.contact_phone || "+976 ..."}
+                        {hasDirectHotelContact && (
+                            <div className="flex flex-col gap-1 text-sm text-zinc-500">
+                                {hotel?.contact_phone && (
+                                    <div className="flex items-center gap-2">
+                                        <Phone className="h-3 w-3" /> {hotel.contact_phone}
+                                    </div>
+                                )}
+                                {hotel?.contact_email && (
+                                    <div className="flex items-center gap-2">
+                                        <Mail className="h-3 w-3" /> {hotel.contact_email}
+                                    </div>
+                                )}
+                                {hotel?.website && (
+                                    <div className="flex items-center gap-2">
+                                        <Globe className="h-3 w-3" />
+                                        <a href={hotel.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                            {hotel.website}
+                                        </a>
+                                    </div>
+                                )}
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Mail className="h-3 w-3" /> {hotel?.contact_email || "support@cop17.mn"}
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -153,7 +188,7 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
                     <p className="font-bold text-zinc-600 mb-2 uppercase tracking-tighter">Important Information</p>
                     <ul className="space-y-1 list-disc pl-4">
                         <li>Please present this voucher upon check-in.</li>
-                        <li>Check-in is typically from 14:00 onwards.</li>
+                        <li>Check-in is typically from {hotel?.check_in_time?.substring(0, 5) || "14:00"} onwards.</li>
                         <li>Early check-in is subject to availability.</li>
                     </ul>
                 </div>

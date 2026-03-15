@@ -1,15 +1,30 @@
 import { RevenueTrendChart, StatusDistributionChart, TopHotelsChart } from "./dashboard-charts";
-import { Users, CreditCard, Activity, CalendarCheck, Clock } from "lucide-react";
+import { Users, CreditCard, Activity, CalendarCheck } from "lucide-react";
 
-interface DashboardStats {
+interface RevenueTrendPoint {
+    date: string;
+    amount: number;
+}
+
+interface StatusDistributionPoint {
+    name: string;
+    value: number;
+}
+
+interface TopHotelPoint {
+    name: string;
+    bookings: number;
+}
+
+export interface DashboardStats {
     totalBookings: number;
     revenue: number;
     activeGuests: number;
     pendingBookings: number;
     occupancyRate: number;
-    revenueTrends: any[];
-    statusDistribution: any[];
-    topHotels: any[];
+    revenueTrends: RevenueTrendPoint[];
+    statusDistribution: StatusDistributionPoint[];
+    topHotels: TopHotelPoint[];
 }
 
 interface DashboardStatsGridProps {
@@ -160,4 +175,3 @@ export function DashboardStatsGrid({ stats }: DashboardStatsGridProps) {
         </div>
     );
 }
-

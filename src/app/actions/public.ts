@@ -140,6 +140,9 @@ export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
                 amenities: Array.isArray(hotel.amenities)
                     ? hotel.amenities.map((amenity: any) => typeof amenity === "string" ? amenity : JSON.stringify(amenity))
                     : [],
+                contact_phone: null,
+                contact_email: null,
+                website: null,
                 latitude: lat,
                 longitude: lng,
                 distanceToVenue: distance,
@@ -314,6 +317,9 @@ export async function getPublicHotel(id: string) {
 
         return normalizeHotelForPublic({
             ...hotel,
+            contact_phone: null,
+            contact_email: null,
+            website: null,
             latitude: lat,
             longitude: lng,
             distanceToVenue: hotel.cached_distance_km ?? (

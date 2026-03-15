@@ -14,6 +14,7 @@ import { MoreHorizontal, CheckCircle, XCircle, Clock, Loader2, Eye } from "lucid
 import { updateBookingStatus } from "@/app/actions/booking-admin";
 import { toast } from "sonner";
 import { BookingDetailsDialog } from "./booking-details-dialog";
+import { getAllowedBookingStatusTransitions } from "@/lib/booking-status";
 
 interface BookingActionsProps {
     bookingId: string;
@@ -22,6 +23,7 @@ interface BookingActionsProps {
 
 export function BookingActions({ bookingId, currentStatus }: BookingActionsProps) {
     const [loading, setLoading] = useState(false);
+    const allowedTransitions = getAllowedBookingStatusTransitions(currentStatus);
 
     const handleStatusUpdate = async (newStatus: string) => {
         if (loading) return;
@@ -29,16 +31,40 @@ export function BookingActions({ bookingId, currentStatus }: BookingActionsProps
         try {
             const result = await updateBookingStatus(bookingId, newStatus);
             if (result.success) {
-                // Toast success
+                toast.success("Booking status updated");
             } else {
-                alert("Failed to update status: " + result.error);
+                toast.error(result.error || "Failed to update status");
             }
-        } catch (e) {
-            alert("An error occurred");
+        } catch {
+            toast.error("An error occurred while updating this booking");
         } finally {
             setLoading(false);
         }
     };
+
+    const statusActions = [
+        {
+            value: "confirmed",
+            label: "Mark Confirmed",
+            icon: <CheckCircle className="mr-2 h-4 w-4 text-green-500" />,
+        },
+        {
+            value: "checked-in",
+            label: "Mark Checked In",
+            icon: <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />,
+        },
+        {
+            value: "completed",
+            label: "Mark Completed",
+            icon: <CheckCircle className="mr-2 h-4 w-4 text-violet-500" />,
+        },
+        {
+            value: "cancelled",
+            label: "Cancel Booking",
+            icon: <XCircle className="mr-2 h-4 w-4" />,
+            className: "text-red-600",
+        },
+    ].filter((action) => allowedTransitions.includes(action.value as typeof allowedTransitions[number]));
 
     return (
         <DropdownMenu>
@@ -53,7 +79,7 @@ export function BookingActions({ bookingId, currentStatus }: BookingActionsProps
                 <BookingDetailsDialog
                     bookingId={bookingId}
                     trigger={
-                        <DropdownMenuItem onSelect={(e: any) => e.preventDefault()}>
+                        <DropdownMenuItem onSelect={(event) => event.preventDefault()}>
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                         </DropdownMenuItem>
@@ -66,23 +92,23 @@ export function BookingActions({ bookingId, currentStatus }: BookingActionsProps
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel>Update Status</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => handleStatusUpdate("confirmed")}>
-                    <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                    Mark Confirmed
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleStatusUpdate("pending")}>
-                    <Clock className="mr-2 h-4 w-4 text-amber-500" />
-                    Mark Pending
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleStatusUpdate("checked-in")}>
-                    <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
-                    Mark Checked In
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => handleStatusUpdate("cancelled")} className="text-red-600">
-                    <XCircle className="mr-2 h-4 w-4" />
-                    Cancel Booking
-                </DropdownMenuItem>
+                {statusActions.length === 0 ? (
+                    <DropdownMenuItem disabled>
+                        <Clock className="mr-2 h-4 w-4 text-zinc-400" />
+                        No valid transitions
+                    </DropdownMenuItem>
+                ) : (
+                    statusActions.map((action) => (
+                        <DropdownMenuItem
+                            key={action.value}
+                            onClick={() => handleStatusUpdate(action.value)}
+                            className={action.className}
+                        >
+                            {action.icon}
+                            {action.label}
+                        </DropdownMenuItem>
+                    ))
+                )}
             </DropdownMenuContent>
         </DropdownMenu>
     );

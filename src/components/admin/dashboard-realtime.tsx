@@ -3,12 +3,13 @@
 import { useEffect, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { DashboardStatsGrid } from "./dashboard-stats-grid";
+import type { DashboardStats } from "./dashboard-stats-grid";
 import { getDashboardStats } from "@/app/actions/booking-admin";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 interface DashboardRealtimeProps {
-    initialStats: any; // Using any for simplicity in matching return type of server action
+    initialStats: DashboardStats;
 }
 
 export function DashboardRealtime({ initialStats }: DashboardRealtimeProps) {
@@ -18,8 +19,6 @@ export function DashboardRealtime({ initialStats }: DashboardRealtimeProps) {
 
     useEffect(() => {
         const supabase = createClient();
-
-        console.log("Subscribing to realtime updates for bookings...");
 
         const channel = supabase
             .channel('dashboard-db-changes')
@@ -31,8 +30,6 @@ export function DashboardRealtime({ initialStats }: DashboardRealtimeProps) {
                     table: 'bookings'
                 },
                 async (payload) => {
-                    console.log('Change received!', payload);
-
                     // Show toast notification based on event type
                     if (payload.eventType === 'INSERT') {
                         toast.success("New booking received!", {
@@ -54,11 +51,7 @@ export function DashboardRealtime({ initialStats }: DashboardRealtimeProps) {
                     });
                 }
             )
-            .subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                    console.log("Successfully subscribed to bookings changes");
-                }
-            });
+            .subscribe();
 
         return () => {
             supabase.removeChannel(channel);

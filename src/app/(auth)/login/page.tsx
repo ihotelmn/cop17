@@ -2,9 +2,8 @@
 
 export const dynamic = "force-dynamic";
 
-import React, { useActionState, useState } from "react";
+import React, { useActionState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 
@@ -36,9 +35,17 @@ export default function LoginPage() {
             const supabase = createClient();
             const { data } = await supabase.auth.getUser();
             if (data.user) {
-                // If we are on login page but have a user, it means middleware/RSC is stale.
-                // Force a hard refresh to sync state.
-                window.location.href = "/dashboard";
+                const { data: profile } = await supabase
+                    .from("profiles")
+                    .select("role")
+                    .eq("id", data.user.id)
+                    .single();
+
+                const destination = profile?.role === "admin" || profile?.role === "super_admin" || profile?.role === "liaison"
+                    ? "/admin"
+                    : "/";
+
+                window.location.replace(destination);
             }
         };
         checkSession();
@@ -101,7 +108,7 @@ export default function LoginPage() {
                             </div>
                         )}
 
-                        <Button disabled={isLoading} variant={"premium" as any} className="h-12 rounded-xl text-base font-bold shadow-lg shadow-blue-500/20 mt-2">
+                        <Button disabled={isLoading} variant="premium" className="h-12 rounded-xl text-base font-bold shadow-lg shadow-blue-500/20 mt-2">
                             {isLoading && (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             )}
@@ -121,7 +128,7 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                <Button variant={"outline" as any} asChild className="h-12 rounded-xl border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-semibold">
+                <Button variant="outline" asChild className="h-12 rounded-xl border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-semibold">
                     <Link href="/signup">
                         Create Guest Account
                     </Link>

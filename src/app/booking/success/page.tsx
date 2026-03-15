@@ -1,7 +1,7 @@
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { format, isValid } from "date-fns";
 import Link from "next/link";
-import { CheckCircle2, ArrowRight, MapPin, Calendar, Building2, Mail, ShieldCheck, AlertTriangle, Clock3 } from "lucide-react";
+import { CheckCircle2, ArrowRight, MapPin, Calendar, Building2, Mail, ShieldCheck, AlertTriangle, Clock3, Phone, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
 import { PrintButton } from "@/components/booking/print-button";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { getPreferredHotelAddress, getPreferredHotelName } from "@/lib/hotel-display";
 import { getPaymentAttemptByGroupId } from "@/lib/payment-attempts";
 import { FallbackImage } from "@/components/ui/fallback-image";
+import { buildGuestBookingPortalPath } from "@/lib/guest-booking-access";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +49,8 @@ type SuccessHotelDisplay = {
     check_in_time: string | null;
     check_out_time: string | null;
     contact_phone: string | null;
+    contact_email: string | null;
+    website: string | null;
     images: string[] | null;
 };
 
@@ -81,6 +84,8 @@ function getSuccessHotelRelation(value: unknown): SuccessHotelDisplay | null {
         check_in_time: typeof hotelRecord.check_in_time === "string" ? hotelRecord.check_in_time : null,
         check_out_time: typeof hotelRecord.check_out_time === "string" ? hotelRecord.check_out_time : null,
         contact_phone: typeof hotelRecord.contact_phone === "string" ? hotelRecord.contact_phone : null,
+        contact_email: typeof hotelRecord.contact_email === "string" ? hotelRecord.contact_email : null,
+        website: typeof hotelRecord.website === "string" ? hotelRecord.website : null,
         images: Array.isArray(hotelRecord.images)
             ? hotelRecord.images.filter((value): value is string => typeof value === "string")
             : null,
@@ -117,12 +122,19 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
                     name,
                     hotel:hotels (
                         name,
+                        name_en,
                         address,
+                        address_en,
+                        description,
+                        description_en,
+                        stars,
                         latitude,
                         longitude,
                         check_in_time,
                         check_out_time,
                         contact_phone,
+                        contact_email,
+                        website,
                         images
                     )
                 )
@@ -144,6 +156,12 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
         const paymentState = resolvedParams.payment || paymentAttempt?.status || (isConfirmed ? "confirmed" : "pending");
         const isFailed = paymentState === "failed";
         const isPending = !isConfirmed && !isFailed;
+        const hasDirectHotelContact = Boolean(
+            hotel?.contact_phone || hotel?.contact_email || hotel?.website
+        );
+        const guestManagePath = firstBooking.guest_email
+            ? buildGuestBookingPortalPath(firstBooking.id, firstBooking.guest_email)
+            : null;
 
         const checkInDate = new Date(firstBooking.check_in_date);
         const checkOutDate = new Date(firstBooking.check_out_date);
@@ -298,6 +316,47 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
                                     </div>
                                 )}
                             </div>
+                            {isConfirmed && hasDirectHotelContact && hotel && (
+                                <div className="rounded-3xl border border-zinc-200 bg-white p-8 dark:border-zinc-800 dark:bg-zinc-900">
+                                    <p className="mb-5 text-[10px] font-black uppercase tracking-widest text-blue-600">
+                                        Direct Hotel Contact
+                                    </p>
+                                    <div className="space-y-4 text-sm">
+                                        {hotel.contact_phone && (
+                                            <div className="flex items-start gap-3 text-zinc-600 dark:text-zinc-300">
+                                                <Phone className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                                                <span className="font-medium">{hotel.contact_phone}</span>
+                                            </div>
+                                        )}
+                                        {hotel.contact_email && (
+                                            <div className="flex items-start gap-3 text-zinc-600 dark:text-zinc-300">
+                                                <Mail className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                                                <span className="font-medium">{hotel.contact_email}</span>
+                                            </div>
+                                        )}
+                                        {hotel.website && (
+                                            <div className="flex items-start gap-3 text-zinc-600 dark:text-zinc-300">
+                                                <Globe className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                                                <a
+                                                    href={hotel.website}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                                                >
+                                                    {hotel.website}
+                                                </a>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                            {isConfirmed && guestManagePath && (
+                                <Button asChild className="w-full rounded-2xl h-12 bg-blue-600 hover:bg-blue-700 font-bold">
+                                    <Link href={guestManagePath}>
+                                        Manage This Booking
+                                    </Link>
+                                </Button>
+                            )}
                             <Button asChild variant="link" className="w-full text-zinc-400 hover:text-blue-600 font-bold uppercase tracking-widest text-[10px]">
                                 <Link href="/">Back to iHotel <ArrowRight className="h-3 w-3 ml-2" /></Link>
                             </Button>
@@ -315,8 +374,8 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
                 </div>
                 <h1 className="text-2xl font-black mb-2">Registration system error</h1>
                 <p className="text-zinc-500 mb-8 max-w-sm">
-                    We confirmed your booking via email, but we had trouble displaying the details here.
-                    Error: {err instanceof Error ? err.message : "Internal system failure"}
+                    We had trouble displaying your booking details right now. Please return to the homepage or contact
+                    the accommodation team if this page does not recover after refresh.
                 </p>
                 <Link href="/" className="px-8 py-3 bg-zinc-100 text-black rounded-xl font-bold hover:bg-white transition-colors">
                     Return to Marketplace

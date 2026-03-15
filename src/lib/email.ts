@@ -36,9 +36,12 @@ export async function sendEmail(payload: EmailPayload): Promise<{ success: boole
         }
 
         return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("❌ Resend System Crash:", error);
-        return { success: false, error: error.message };
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown email failure",
+        };
     }
 }
 
@@ -47,12 +50,15 @@ export async function sendBookingConfirmation(
     guestName: string,
     bookingId: string,
     hotelName: string,
-    dates: string
+    dates: string,
+    manageBookingPath?: string
 ) {
     const subject = `Booking Confirmation: ${hotelName} - ${bookingId}`;
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cop17.ihotel.mn';
-    const bookingLink = `${baseUrl}/my-bookings`;
+    const bookingLink = manageBookingPath
+        ? new URL(manageBookingPath, baseUrl).toString()
+        : `${baseUrl}/my-bookings`;
 
     // Premium HTML Template with Inline Styles for maximum compatibility
     const body = `
@@ -109,7 +115,7 @@ export async function sendBookingConfirmation(
                     <!-- Action Button -->
                     <div style="text-align: center;">
                         <a href="${bookingLink}" style="display: inline-block; background-color: #2563eb; color: #ffffff !important; padding: 16px 32px; border-radius: 12px; font-weight: 800; text-decoration: none; font-size: 14px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); transition: all 0.2s ease;">
-                            <span style="color: #ffffff !important;">View My Bookings</span>
+                            <span style="color: #ffffff !important;">Manage This Booking</span>
                         </a>
                     </div>
                 </div>

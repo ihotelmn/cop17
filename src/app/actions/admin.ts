@@ -14,8 +14,11 @@ import { parseStringArray } from "@/lib/parse-utils";
 
 const hotelSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
+    name_en: z.string().optional(),
     description: z.string().optional(),
+    description_en: z.string().optional(),
     address: z.string().optional(),
+    address_en: z.string().optional(),
     stars: z.preprocess((val) => Number(val), z.number().min(1).max(5).default(5)),
     amenities: z.string().optional(),
     images: z.string().optional(),
@@ -31,6 +34,9 @@ const hotelSchema = z.object({
         (val) => (val === "" ? undefined : val),
         z.string().url("Invalid website URL").optional()
     ),
+    is_official_partner: z.boolean().default(false),
+    is_recommended: z.boolean().default(false),
+    has_shuttle_service: z.boolean().default(false),
     check_in_time: z.string().optional(),
     check_out_time: z.string().optional(),
     latitude: z.preprocess((val) => (val ? Number(val) : undefined), z.number().optional()),
@@ -194,8 +200,11 @@ export async function createHotel(prevState: any, formData: FormData) {
 
     const rawData = {
         name: formData.get("name"),
+        name_en: formData.get("name_en"),
         description: formData.get("description"),
+        description_en: formData.get("description_en"),
         address: formData.get("address"),
+        address_en: formData.get("address_en"),
         stars: Number(formData.get("stars")),
         amenities: formData.get("amenities"),
         images: formData.get("images"),
@@ -204,6 +213,9 @@ export async function createHotel(prevState: any, formData: FormData) {
         contact_phone: formData.get("contact_phone"),
         contact_email: formData.get("contact_email"),
         website: formData.get("website"),
+        is_official_partner: formData.get("is_official_partner") === "on",
+        is_recommended: formData.get("is_recommended") === "on",
+        has_shuttle_service: formData.get("has_shuttle_service") === "on",
         check_in_time: formData.get("check_in_time"),
         check_out_time: formData.get("check_out_time"),
         latitude: formData.get("latitude") ? Number(formData.get("latitude")) : undefined,
@@ -257,11 +269,14 @@ export async function createHotel(prevState: any, formData: FormData) {
         }
     }
 
-    const { error } = await supabase.from("hotels").insert({
+    const { data: createdHotel, error } = await supabase.from("hotels").insert({
         owner_id: user.id,
         name: data.name,
+        name_en: data.name_en || null,
         description: data.description,
+        description_en: data.description_en || null,
         address: data.address,
+        address_en: data.address_en || null,
         stars: data.stars,
         amenities: amenitiesArray,
         images: imagesArray,
@@ -270,6 +285,9 @@ export async function createHotel(prevState: any, formData: FormData) {
         contact_phone: data.contact_phone,
         contact_email: data.contact_email || null, // transform empty string to null
         website: data.website || null,
+        is_official_partner: data.is_official_partner,
+        is_recommended: data.is_recommended,
+        has_shuttle_service: data.has_shuttle_service,
         check_in_time: data.check_in_time,
         check_out_time: data.check_out_time,
         latitude: data.latitude,
@@ -281,7 +299,7 @@ export async function createHotel(prevState: any, formData: FormData) {
         modification_cutoff_hours: data.modification_cutoff_hours,
         cancellation_policy_notes: data.cancellation_policy_notes || null,
         ...cachedData
-    });
+    }).select("id").maybeSingle();
 
     if (error) {
         console.error("Error creating hotel:", error);
@@ -289,6 +307,12 @@ export async function createHotel(prevState: any, formData: FormData) {
     }
 
     revalidatePath("/admin/hotels", "page");
+    revalidatePath("/", "page");
+    revalidatePath("/hotels", "page");
+    if (createdHotel?.id) {
+        revalidatePath(`/hotels/${createdHotel.id}`, "page");
+        revalidatePath(`/hotels/${createdHotel.id}/checkout`, "page");
+    }
     (revalidateTag as any)("hotels");
     redirect("/admin/hotels");
 }
@@ -415,8 +439,11 @@ export async function updateHotel(id: string, prevState: any, formData: FormData
 
     const rawData = {
         name: formData.get("name"),
+        name_en: formData.get("name_en"),
         description: formData.get("description"),
+        description_en: formData.get("description_en"),
         address: formData.get("address"),
+        address_en: formData.get("address_en"),
         stars: Number(formData.get("stars")),
         amenities: formData.get("amenities"),
         images: formData.get("images"),
@@ -425,6 +452,9 @@ export async function updateHotel(id: string, prevState: any, formData: FormData
         contact_phone: formData.get("contact_phone"),
         contact_email: formData.get("contact_email"),
         website: formData.get("website"),
+        is_official_partner: formData.get("is_official_partner") === "on",
+        is_recommended: formData.get("is_recommended") === "on",
+        has_shuttle_service: formData.get("has_shuttle_service") === "on",
         check_in_time: formData.get("check_in_time"),
         check_out_time: formData.get("check_out_time"),
         latitude: formData.get("latitude") ? Number(formData.get("latitude")) : undefined,
@@ -486,8 +516,11 @@ export async function updateHotel(id: string, prevState: any, formData: FormData
 
     let query = supabase.from("hotels").update({
         name: data.name,
+        name_en: data.name_en || null,
         description: data.description,
+        description_en: data.description_en || null,
         address: data.address,
+        address_en: data.address_en || null,
         stars: data.stars,
         amenities: amenitiesArray,
         images: imagesArray,
@@ -496,6 +529,9 @@ export async function updateHotel(id: string, prevState: any, formData: FormData
         contact_phone: data.contact_phone,
         contact_email: data.contact_email || null,
         website: data.website || null,
+        is_official_partner: data.is_official_partner,
+        is_recommended: data.is_recommended,
+        has_shuttle_service: data.has_shuttle_service,
         check_in_time: data.check_in_time,
         check_out_time: data.check_out_time,
         latitude: data.latitude,
@@ -522,6 +558,11 @@ export async function updateHotel(id: string, prevState: any, formData: FormData
     }
 
     revalidatePath("/admin/hotels", "page");
+    revalidatePath(`/admin/hotels/${id}`, "page");
+    revalidatePath("/", "page");
+    revalidatePath("/hotels", "page");
+    revalidatePath(`/hotels/${id}`, "page");
+    revalidatePath(`/hotels/${id}/checkout`, "page");
     (revalidateTag as any)("hotels");
     redirect("/admin/hotels");
 }

@@ -28,6 +28,14 @@ export function BookingStatusBadge({ status }: { status: string }) {
         );
     }
 
+    if (s === "completed") {
+        return (
+            <Badge variant="secondary" className="bg-violet-100 text-violet-700 hover:bg-violet-100 dark:bg-violet-900/30 dark:text-violet-400">
+                <CheckCircle className="mr-1 h-3 w-3" /> Completed
+            </Badge>
+        );
+    }
+
     if (s === "cancelled") {
         return (
             <Badge variant="secondary" className="bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400">

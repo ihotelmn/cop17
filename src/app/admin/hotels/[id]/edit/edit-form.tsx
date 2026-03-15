@@ -52,7 +52,7 @@ export default function EditHotelForm({ hotel }: { hotel: Hotel }) {
 
             <form action={formAction} className="space-y-8">
                 {/* Basic Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
                         <Label htmlFor="name" className="text-zinc-300">Hotel Name *</Label>
                         <Input
@@ -63,6 +63,17 @@ export default function EditHotelForm({ hotel }: { hotel: Hotel }) {
                             className="bg-zinc-800 border-zinc-700 text-white"
                         />
                         {state?.fieldErrors?.name && <p className="text-red-500 text-sm">{state.fieldErrors.name}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="name_en" className="text-zinc-300">English Name</Label>
+                        <Input
+                            id="name_en"
+                            name="name_en"
+                            defaultValue={hotel.name_en || ""}
+                            className="bg-zinc-800 border-zinc-700 text-white"
+                        />
+                        {state?.fieldErrors?.name_en && <p className="text-red-500 text-sm">{state.fieldErrors.name_en}</p>}
                     </div>
 
                     <div className="space-y-2">
@@ -82,15 +93,27 @@ export default function EditHotelForm({ hotel }: { hotel: Hotel }) {
                     </div>
                 </div>
 
-                <div className="space-y-2">
-                    <Label htmlFor="description" className="text-zinc-300">Description</Label>
-                    <Textarea
-                        id="description"
-                        name="description"
-                        defaultValue={hotel.description || ""}
-                        className="bg-zinc-800 border-zinc-700 text-white min-h-[100px]"
-                    />
-                    {state?.fieldErrors?.description && <p className="text-red-500 text-sm">{state.fieldErrors.description}</p>}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="description" className="text-zinc-300">Description</Label>
+                        <Textarea
+                            id="description"
+                            name="description"
+                            defaultValue={hotel.description || ""}
+                            className="bg-zinc-800 border-zinc-700 text-white min-h-[100px]"
+                        />
+                        {state?.fieldErrors?.description && <p className="text-red-500 text-sm">{state.fieldErrors.description}</p>}
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="description_en" className="text-zinc-300">English Description</Label>
+                        <Textarea
+                            id="description_en"
+                            name="description_en"
+                            defaultValue={hotel.description_en || ""}
+                            className="bg-zinc-800 border-zinc-700 text-white min-h-[100px]"
+                        />
+                        {state?.fieldErrors?.description_en && <p className="text-red-500 text-sm">{state.fieldErrors.description_en}</p>}
+                    </div>
                 </div>
 
                 {/* Contact & Times */}
@@ -154,20 +177,74 @@ export default function EditHotelForm({ hotel }: { hotel: Hotel }) {
                     </div>
                 </div>
 
+                <div className="space-y-3">
+                    <Label className="text-zinc-300">Public Display Flags</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
+                        <label className="flex items-start gap-3 text-sm text-zinc-200">
+                            <input
+                                type="checkbox"
+                                name="is_official_partner"
+                                defaultChecked={!!hotel.is_official_partner}
+                                className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-800 text-amber-500"
+                            />
+                            <span>
+                                <span className="block font-semibold">Official Partner</span>
+                                <span className="text-xs text-zinc-500">Admin/public partner flag.</span>
+                            </span>
+                        </label>
+                        <label className="flex items-start gap-3 text-sm text-zinc-200">
+                            <input
+                                type="checkbox"
+                                name="is_recommended"
+                                defaultChecked={!!hotel.is_recommended}
+                                className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-800 text-amber-500"
+                            />
+                            <span>
+                                <span className="block font-semibold">Recommended</span>
+                                <span className="text-xs text-zinc-500">Shows the recommended badge in listings.</span>
+                            </span>
+                        </label>
+                        <label className="flex items-start gap-3 text-sm text-zinc-200">
+                            <input
+                                type="checkbox"
+                                name="has_shuttle_service"
+                                defaultChecked={!!hotel.has_shuttle_service}
+                                className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-800 text-amber-500"
+                            />
+                            <span>
+                                <span className="block font-semibold">Shuttle Service</span>
+                                <span className="text-xs text-zinc-500">Marks hotels with organized transport.</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
                 {/* Guest Policy */}
                 <HotelPolicyFields hotel={hotel} />
 
                 {/* Address & Location */}
                 <div className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="address" className="text-zinc-300">Address text</Label>
-                        <Input
-                            id="address"
-                            name="address"
-                            defaultValue={hotel.address || ""}
-                            className="bg-zinc-800 border-zinc-700 text-white"
-                        />
-                        {state?.fieldErrors?.address && <p className="text-red-500 text-sm">{state.fieldErrors.address}</p>}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="address" className="text-zinc-300">Address text</Label>
+                            <Input
+                                id="address"
+                                name="address"
+                                defaultValue={hotel.address || ""}
+                                className="bg-zinc-800 border-zinc-700 text-white"
+                            />
+                            {state?.fieldErrors?.address && <p className="text-red-500 text-sm">{state.fieldErrors.address}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="address_en" className="text-zinc-300">English Address</Label>
+                            <Input
+                                id="address_en"
+                                name="address_en"
+                                defaultValue={hotel.address_en || ""}
+                                className="bg-zinc-800 border-zinc-700 text-white"
+                            />
+                            {state?.fieldErrors?.address_en && <p className="text-red-500 text-sm">{state.fieldErrors.address_en}</p>}
+                        </div>
                     </div>
 
                     <div className="space-y-2">

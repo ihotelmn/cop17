@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { getBookingDetail, cancelBookingAction, requestModificationAction } from "@/app/actions/booking";
 import { BookingStatusBadge } from "@/components/admin/booking-status-badge";
 import { Button } from "@/components/ui/button";
@@ -15,9 +15,10 @@ import {
     XCircle,
     MessageSquare,
     Info,
-    ChevronRight,
-    Building2,
-    ShieldCheck
+    ShieldCheck,
+    Phone,
+    Mail,
+    Globe
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -37,10 +38,24 @@ import { calculateBookingPolicyState, formatPolicyWindow } from "@/lib/cancellat
 import { getPreferredHotelAddress, getPreferredHotelName } from "@/lib/hotel-display";
 import { FallbackImage } from "@/components/ui/fallback-image";
 
+type PortalBooking = {
+    id: string;
+    status: string;
+    user_id: string | null;
+    total_price: number | string;
+    check_in_date: string;
+    check_out_date: string;
+    room?: {
+        name?: string | null;
+        hotel?: unknown;
+    };
+};
+
 export default function BookingPortalPage() {
     const params = useParams();
     const router = useRouter();
-    const [booking, setBooking] = useState<any>(null);
+    const searchParams = useSearchParams();
+    const [booking, setBooking] = useState<PortalBooking | null>(null);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
     const [modMessage, setModMessage] = useState("");
@@ -49,24 +64,25 @@ export default function BookingPortalPage() {
     const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
     const bookingId = params.id as string;
+    const accessToken = searchParams.get("access") || undefined;
 
     useEffect(() => {
         async function load() {
-            const data = await getBookingDetail(bookingId);
+            const data = await getBookingDetail(bookingId, accessToken) as PortalBooking | null;
             if (!data) {
                 toast.error("Booking not found");
-                router.push("/my-bookings");
+                router.push(accessToken ? "/" : "/my-bookings");
                 return;
             }
             setBooking(data);
             setLoading(false);
         }
         load();
-    }, [bookingId, router]);
+    }, [accessToken, bookingId, router]);
 
     const handleCancel = async () => {
         setActionLoading(true);
-        const res = await cancelBookingAction(bookingId, cancelReason);
+        const res = await cancelBookingAction(bookingId, cancelReason, accessToken);
         setActionLoading(false);
         if (res.success) {
             toast.success(res.message || "Booking cancelled successfully");
@@ -74,7 +90,7 @@ export default function BookingPortalPage() {
             setIsCancelDialogOpen(false);
             router.refresh();
             // Refresh local state
-            const data = await getBookingDetail(bookingId);
+            const data = await getBookingDetail(bookingId, accessToken) as PortalBooking | null;
             setBooking(data);
         } else {
             toast.error(res.error || "Failed to cancel booking");
@@ -87,7 +103,7 @@ export default function BookingPortalPage() {
             return;
         }
         setActionLoading(true);
-        const res = await requestModificationAction(bookingId, modMessage);
+        const res = await requestModificationAction(bookingId, modMessage, accessToken);
         setActionLoading(false);
         if (res.success) {
             toast.success("Modification request sent to hotel");
@@ -109,7 +125,10 @@ export default function BookingPortalPage() {
         );
     }
 
-    const checkInDate = new Date(booking.check_in_date);
+    if (!booking) {
+        return null;
+    }
+
     const rawHotel = booking.room?.hotel;
     const hotel = Array.isArray(rawHotel) ? rawHotel[0] : rawHotel;
 
@@ -124,6 +143,17 @@ export default function BookingPortalPage() {
     const hotelAddress = hotel ? (getPreferredHotelAddress(hotel) || "Ulaanbaatar, Mongolia") : "Ulaanbaatar, Mongolia";
     const canCancelBooking = booking.status !== "cancelled" && policyState.canCancelOnline;
     const canRequestModification = booking.status !== "cancelled" && policyState.canRequestModification;
+    const showDirectHotelContact = booking.status !== "pending" && Boolean(
+        hotel?.contact_phone || hotel?.contact_email || hotel?.website
+    );
+    const receiptHref = accessToken
+        ? `/booking/receipt/${booking.id}?access=${encodeURIComponent(accessToken)}`
+        : `/booking/receipt/${booking.id}`;
+    const accreditationHref = accessToken
+        ? `/my-bookings/${bookingId}/accreditation?access=${encodeURIComponent(accessToken)}`
+        : `/my-bookings/${bookingId}/accreditation`;
+    const checkInTime = hotel?.check_in_time?.substring(0, 5) || "14:00";
+    const checkOutTime = hotel?.check_out_time?.substring(0, 5) || "12:00";
 
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pt-24 pb-20">
@@ -175,7 +205,7 @@ export default function BookingPortalPage() {
                                     <p className="text-xl font-black text-zinc-900 dark:text-white">
                                         {format(new Date(booking.check_in_date), "MMM d, yyyy")}
                                     </p>
-                                    <p className="text-xs text-zinc-500 mt-1">From 14:00 PM</p>
+                                    <p className="text-xs text-zinc-500 mt-1">From {checkInTime}</p>
                                 </div>
                                 <div className="bg-zinc-50 dark:bg-zinc-800/50 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-700/50">
                                     <div className="flex items-center gap-3 mb-3 text-blue-600">
@@ -185,7 +215,7 @@ export default function BookingPortalPage() {
                                     <p className="text-xl font-black text-zinc-900 dark:text-white">
                                         {format(new Date(booking.check_out_date), "MMM d, yyyy")}
                                     </p>
-                                    <p className="text-xs text-zinc-500 mt-1">Until 12:00 PM</p>
+                                    <p className="text-xs text-zinc-500 mt-1">Until {checkOutTime}</p>
                                 </div>
                             </div>
                         </section>
@@ -302,7 +332,7 @@ export default function BookingPortalPage() {
                                                     <DialogHeader>
                                                         <DialogTitle className="text-2xl font-black">What would you like to change?</DialogTitle>
                                                         <DialogDescription className="text-zinc-500">
-                                                            Describe the changes you'd like to make (new dates, guests, etc.).
+                                                            Describe the changes you&apos;d like to make (new dates, guests, etc.).
                                                             The hotel manager will review your request and contact you.
                                                         </DialogDescription>
                                                     </DialogHeader>
@@ -340,7 +370,7 @@ export default function BookingPortalPage() {
                                             </div>
 
                                             <Button asChild className="rounded-xl h-11 px-8 font-bold bg-amber-500 hover:bg-amber-600 text-black whitespace-nowrap">
-                                                <Link href={`/my-bookings/${bookingId}/accreditation`}>
+                                                <Link href={accreditationHref}>
                                                     Manage Documents
                                                 </Link>
                                             </Button>
@@ -386,12 +416,45 @@ export default function BookingPortalPage() {
 
                             <div className="mt-8">
                                 <Button asChild variant="outline" className="w-full rounded-2xl h-12 border-zinc-200 dark:border-zinc-800 font-bold hover:bg-zinc-50">
-                                    <Link href={`/booking/receipt/${booking.id}`} target="_blank">
+                                    <Link href={receiptHref} target="_blank">
                                         View Receipt
                                     </Link>
                                 </Button>
                             </div>
                         </div>
+
+                        {showDirectHotelContact && (
+                            <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-6">
+                                <h4 className="font-black text-sm uppercase tracking-widest text-zinc-400 mb-6">Direct Hotel Contact</h4>
+                                <div className="space-y-4 text-sm">
+                                    {hotel?.contact_phone && (
+                                        <div className="flex items-start gap-3 text-zinc-600 dark:text-zinc-300">
+                                            <Phone className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                                            <span className="font-medium">{hotel.contact_phone}</span>
+                                        </div>
+                                    )}
+                                    {hotel?.contact_email && (
+                                        <div className="flex items-start gap-3 text-zinc-600 dark:text-zinc-300">
+                                            <Mail className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                                            <span className="font-medium">{hotel.contact_email}</span>
+                                        </div>
+                                    )}
+                                    {hotel?.website && (
+                                        <div className="flex items-start gap-3 text-zinc-600 dark:text-zinc-300">
+                                            <Globe className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                                            <a
+                                                href={hotel.website}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                                            >
+                                                {hotel.website}
+                                            </a>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-3xl p-6 text-white shadow-xl shadow-zinc-200/50 dark:shadow-none">
                             <div className="flex items-center gap-3 mb-6">

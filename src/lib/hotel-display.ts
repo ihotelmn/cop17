@@ -127,7 +127,7 @@ function buildFallbackDescription(hotel: HotelDisplayFields) {
     const address = getPreferredHotelAddress(hotel) ?? "Ulaanbaatar, Mongolia";
     const starPrefix = typeof hotel.stars === "number" && hotel.stars > 0 ? `${hotel.stars}-star ` : "";
 
-    return `<p>${escapeHtml(name)} is a ${starPrefix}hotel in ${escapeHtml(address)} for COP17 travelers. Contact the property directly for the latest room details, amenities, and check-in information.</p>`;
+    return `<p>${escapeHtml(name)} is a ${starPrefix}hotel in ${escapeHtml(address)} for COP17 travelers. Room details, amenities, and arrival information are available through the official booking flow.</p>`;
 }
 
 export function getPreferredHotelName(hotel: HotelDisplayFields) {
