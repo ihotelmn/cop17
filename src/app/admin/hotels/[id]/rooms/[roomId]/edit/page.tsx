@@ -19,6 +19,7 @@ import Link from "next/link";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { ImageUpload } from "@/components/admin/image-upload";
 import { AmenitiesSelector } from "@/components/admin/amenities-selector";
+import { sanitizeRichTextToPlainText } from "@/lib/safe-rich-text";
 
 const initialState = { error: "", fieldErrors: {} };
 
@@ -107,10 +108,11 @@ export default function EditRoomPage({ params }: { params: Promise<{ id: string,
                         <Textarea
                             id="description"
                             name="description"
-                            defaultValue={room.description || ""}
+                            defaultValue={sanitizeRichTextToPlainText(room.description)}
                             placeholder="Room details..."
                             className="bg-zinc-800 border-zinc-700 text-white min-h-[100px]"
                         />
+                        <p className="text-xs text-zinc-500">Plain text is enough. HTML tags are not required.</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

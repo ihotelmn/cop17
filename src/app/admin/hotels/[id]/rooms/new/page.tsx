@@ -19,7 +19,6 @@ import Link from "next/link";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { ImageUpload } from "@/components/admin/image-upload";
 import { AmenitiesSelector } from "@/components/admin/amenities-selector";
-import { useParams } from "next/navigation";
 
 const initialState = { error: "", fieldErrors: {} };
 
@@ -75,6 +74,7 @@ export default function NewRoomPage({ params }: { params: Promise<{ id: string }
                     <div className="space-y-2">
                         <Label htmlFor="description" className="text-zinc-300">Description</Label>
                         <Textarea id="description" name="description" placeholder="Room details..." className="bg-zinc-800 border-zinc-700 text-white min-h-[100px]" />
+                        <p className="text-xs text-zinc-500">Plain text is enough. HTML tags are not required.</p>
                     </div>
 
                     {/* Pricing & Inventory */}

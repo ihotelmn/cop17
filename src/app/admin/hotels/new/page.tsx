@@ -80,11 +80,13 @@ export default function NewHotelPage() {
                         <div className="space-y-2">
                             <Label htmlFor="description" className="text-zinc-300">Description</Label>
                             <Textarea id="description" name="description" placeholder="About the property..." className="bg-zinc-800 border-zinc-700 text-white min-h-[100px]" />
+                            <p className="text-xs text-zinc-500">Plain text is enough. HTML tags are not required.</p>
                             {state?.fieldErrors?.description && <p className="text-red-500 text-sm">{state.fieldErrors.description}</p>}
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="description_en" className="text-zinc-300">English Description</Label>
                             <Textarea id="description_en" name="description_en" placeholder="Public English description..." className="bg-zinc-800 border-zinc-700 text-white min-h-[100px]" />
+                            <p className="text-xs text-zinc-500">Plain text is enough. HTML tags are not required.</p>
                             {state?.fieldErrors?.description_en && <p className="text-red-500 text-sm">{state.fieldErrors.description_en}</p>}
                         </div>
                     </div>

@@ -22,6 +22,7 @@ import { ImageUpload } from "@/components/admin/image-upload";
 import { AmenitiesSelector } from "@/components/admin/amenities-selector";
 import { LocationPicker } from "@/components/admin/location-picker";
 import { HotelPolicyFields } from "@/components/admin/hotel-policy-fields";
+import { sanitizeRichTextToPlainText } from "@/lib/safe-rich-text";
 
 const initialState = { error: "", fieldErrors: {} };
 
@@ -99,9 +100,10 @@ export default function EditHotelForm({ hotel }: { hotel: Hotel }) {
                         <Textarea
                             id="description"
                             name="description"
-                            defaultValue={hotel.description || ""}
+                            defaultValue={sanitizeRichTextToPlainText(hotel.description)}
                             className="bg-zinc-800 border-zinc-700 text-white min-h-[100px]"
                         />
+                        <p className="text-xs text-zinc-500">Plain text is enough. HTML tags are not required.</p>
                         {state?.fieldErrors?.description && <p className="text-red-500 text-sm">{state.fieldErrors.description}</p>}
                     </div>
                     <div className="space-y-2">
@@ -109,9 +111,10 @@ export default function EditHotelForm({ hotel }: { hotel: Hotel }) {
                         <Textarea
                             id="description_en"
                             name="description_en"
-                            defaultValue={hotel.description_en || ""}
+                            defaultValue={sanitizeRichTextToPlainText(hotel.description_en)}
                             className="bg-zinc-800 border-zinc-700 text-white min-h-[100px]"
                         />
+                        <p className="text-xs text-zinc-500">Plain text is enough. HTML tags are not required.</p>
                         {state?.fieldErrors?.description_en && <p className="text-red-500 text-sm">{state.fieldErrors.description_en}</p>}
                     </div>
                 </div>

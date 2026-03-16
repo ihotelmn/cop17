@@ -129,11 +129,9 @@ export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
         let results = visibleHotels.map((hotel: any) => {
             const lat = hotel.latitude ? Number(hotel.latitude) : null;
             const lng = hotel.longitude ? Number(hotel.longitude) : null;
-            const distance = hotel.cached_distance_km ?? (
-                (lat && lng)
-                    ? calculateDistance(lat, lng, COP17_VENUE.latitude, COP17_VENUE.longitude)
-                    : null
-            );
+            const distance = (lat != null && lng != null)
+                ? calculateDistance(lat, lng, COP17_VENUE.latitude, COP17_VENUE.longitude)
+                : hotel.cached_distance_km ?? null;
 
             return normalizeHotelForPublic({
                 ...hotel,
@@ -322,11 +320,9 @@ export async function getPublicHotel(id: string) {
             website: null,
             latitude: lat,
             longitude: lng,
-            distanceToVenue: hotel.cached_distance_km ?? (
-                (lat && lng)
-                    ? calculateDistance(lat, lng, COP17_VENUE.latitude, COP17_VENUE.longitude)
-                    : null
-            ),
+            distanceToVenue: (lat != null && lng != null)
+                ? calculateDistance(lat, lng, COP17_VENUE.latitude, COP17_VENUE.longitude)
+                : hotel.cached_distance_km ?? null,
             cached_rating: hotel.cached_rating,
             cached_review_count: hotel.cached_review_count,
             google_place_id: hotel.google_place_id,

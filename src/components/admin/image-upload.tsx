@@ -3,9 +3,9 @@
 import { useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { X, Upload, Loader2, ImagePlus } from "lucide-react";
+import { X, Loader2, ImagePlus } from "lucide-react";
 import imageCompression from "browser-image-compression";
-import Image from "next/image";
+import { FallbackImage } from "@/components/ui/fallback-image";
 import { cn } from "@/lib/utils";
 
 interface ImageUploadProps {
@@ -27,7 +27,6 @@ export function ImageUpload({ value, onChange, maxFiles = 5, disabled }: ImageUp
 
             setError(null);
             setIsUploading(true);
-            const newUrls: string[] = [];
             const uploadedUrls: string[] = [];
 
             // Identify how many we can add
@@ -135,13 +134,12 @@ export function ImageUpload({ value, onChange, maxFiles = 5, disabled }: ImageUp
                                 <X className="h-3 w-3" />
                             </Button>
                         </div>
-                        <Image
-                            fill
+                        <FallbackImage
                             src={url}
                             alt="Hotel Image"
-                            className="object-cover"
-                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                            unoptimized
+                            className="absolute inset-0 h-full w-full object-cover"
+                            loading="lazy"
+                            decoding="async"
                         />
                     </div>
                 ))}

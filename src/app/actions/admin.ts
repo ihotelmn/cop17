@@ -8,6 +8,7 @@ import { z } from "zod";
 import type { Hotel, Room } from "@/types/hotel";
 import { DEFAULT_HOTEL_BOOKING_POLICY } from "@/lib/cancellation-policy";
 import { parseStringArray } from "@/lib/parse-utils";
+import { sanitizeRichTextToPlainText } from "@/lib/safe-rich-text";
 
 // No re-exports here to avoid Turbopack build errors.
 // Import types from @/types/hotel instead.
@@ -241,6 +242,8 @@ export async function createHotel(prevState: any, formData: FormData) {
 
     const amenitiesArray = parseStringArray(data.amenities);
     const imagesArray = parseStringArray(data.images);
+    const cleanedDescription = sanitizeRichTextToPlainText(data.description);
+    const cleanedDescriptionEn = sanitizeRichTextToPlainText(data.description_en);
 
     // Calculate Distance if location is provided
     let cachedData = {};
@@ -273,8 +276,8 @@ export async function createHotel(prevState: any, formData: FormData) {
         owner_id: user.id,
         name: data.name,
         name_en: data.name_en || null,
-        description: data.description,
-        description_en: data.description_en || null,
+        description: cleanedDescription || null,
+        description_en: cleanedDescriptionEn || null,
         address: data.address,
         address_en: data.address_en || null,
         stars: data.stars,
@@ -351,6 +354,10 @@ export async function deleteHotel(id: string) {
     (revalidateTag as any)("hotels");
 }
 
+export async function submitDeleteHotel(id: string): Promise<void> {
+    await deleteHotel(id);
+}
+
 export async function updateHotelPublishedStatus(id: string, isPublished: boolean) {
     const supabase = await createClient();
     const adminClient = getSupabaseAdmin();
@@ -388,6 +395,61 @@ export async function updateHotelPublishedStatus(id: string, isPublished: boolea
     (revalidateTag as any)("hotels");
 
     return { success: true };
+}
+
+export async function bulkUpdateHotelPublishedStatus(ids: string[], isPublished: boolean) {
+    const supabase = await createClient();
+    const adminClient = getSupabaseAdmin();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Unauthorized" };
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return { error: "No hotels selected" };
+    }
+
+    const normalizedIds = Array.from(new Set(ids.filter(Boolean)));
+
+    const { data: profile } = await adminClient
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+    if (!profile) return { error: "Profile not found" };
+
+    let allowedIds = normalizedIds;
+
+    if (profile.role !== "super_admin") {
+        const { data: ownedHotels } = await adminClient
+            .from("hotels")
+            .select("id")
+            .in("id", normalizedIds)
+            .eq("owner_id", user.id);
+
+        allowedIds = (ownedHotels || []).map((hotel) => hotel.id);
+    }
+
+    if (allowedIds.length === 0) {
+        return { error: "No authorized hotels selected" };
+    }
+
+    const { error } = await adminClient
+        .from("hotels")
+        .update({ is_published: isPublished })
+        .in("id", allowedIds);
+
+    if (error) {
+        console.error("Error bulk updating hotel published status:", error);
+        return { error: "Failed to update selected hotels" };
+    }
+
+    revalidatePath("/admin/hotels", "page");
+    revalidatePath("/", "page");
+    revalidatePath("/hotels", "page");
+    revalidateTag("hotels", "max");
+
+    return { success: true, updatedCount: allowedIds.length };
 }
 
 export async function getHotel(id: string) {
@@ -480,6 +542,8 @@ export async function updateHotel(id: string, prevState: any, formData: FormData
 
     const amenitiesArray = parseStringArray(data.amenities);
     const imagesArray = parseStringArray(data.images);
+    const cleanedDescription = sanitizeRichTextToPlainText(data.description);
+    const cleanedDescriptionEn = sanitizeRichTextToPlainText(data.description_en);
 
     // Retrieve old hotel data to see if location changed
     // OR just always update if location is provided (simplest)
@@ -517,8 +581,8 @@ export async function updateHotel(id: string, prevState: any, formData: FormData
     let query = supabase.from("hotels").update({
         name: data.name,
         name_en: data.name_en || null,
-        description: data.description,
-        description_en: data.description_en || null,
+        description: cleanedDescription || null,
+        description_en: cleanedDescriptionEn || null,
         address: data.address,
         address_en: data.address_en || null,
         stars: data.stars,
@@ -578,6 +642,12 @@ const roomSchema = z.object({
     total_inventory: z.number().min(0).default(0),
     amenities: z.string().optional(),
     images: z.string().optional(),
+});
+
+const roomQuickUpdateSchema = z.object({
+    price_per_night: z.preprocess((value) => Number(value), z.number().min(0)),
+    capacity: z.preprocess((value) => Number(value), z.number().min(1)),
+    total_inventory: z.preprocess((value) => Number(value), z.number().min(0)),
 });
 
 export async function getRooms(hotelId: string) {
@@ -642,11 +712,12 @@ export async function createRoom(hotelId: string, prevState: any, formData: Form
 
     const amenitiesArray = parseStringArray(amenities);
     const imagesArray = parseStringArray(images);
+    const cleanedDescription = sanitizeRichTextToPlainText(description);
 
     const { error } = await supabase.from("rooms").insert({
         hotel_id: hotelId,
         name,
-        description,
+        description: cleanedDescription || null,
         type,
         price_per_night,
         capacity,
@@ -738,12 +809,13 @@ export async function updateRoom(hotelId: string, roomId: string, prevState: any
 
     const amenitiesArray = parseStringArray(amenities);
     const imagesArray = parseStringArray(images);
+    const cleanedDescription = sanitizeRichTextToPlainText(description);
 
     const { error } = await supabase
         .from("rooms")
         .update({
             name,
-            description,
+            description: cleanedDescription || null,
             type,
             price_per_night,
             capacity,
@@ -760,4 +832,60 @@ export async function updateRoom(hotelId: string, roomId: string, prevState: any
 
     revalidatePath(`/admin/hotels/${hotelId}`);
     redirect(`/admin/hotels/${hotelId}`);
+}
+
+export async function quickUpdateRoom(roomId: string, hotelId: string, formData: FormData) {
+    const supabase = await createClient();
+    const adminClient = getSupabaseAdmin();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Unauthorized" };
+
+    const validated = roomQuickUpdateSchema.safeParse({
+        price_per_night: formData.get("price_per_night"),
+        capacity: formData.get("capacity"),
+        total_inventory: formData.get("total_inventory"),
+    });
+
+    if (!validated.success) {
+        return { error: "Invalid room values" };
+    }
+
+    const { data: profile } = await adminClient
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+    if (!profile || (profile.role !== "admin" && profile.role !== "super_admin")) {
+        return { error: "Unauthorized: insufficient permissions" };
+    }
+
+    if (profile.role !== "super_admin") {
+        const { data: room } = await adminClient
+            .from("rooms")
+            .select("hotel_id, hotel:hotels(owner_id)")
+            .eq("id", roomId)
+            .single();
+
+        const hotel = Array.isArray(room?.hotel) ? room.hotel[0] : room?.hotel;
+        if (!hotel || hotel.owner_id !== user.id) {
+            return { error: "Unauthorized: you do not own this hotel" };
+        }
+    }
+
+    const { error } = await adminClient
+        .from("rooms")
+        .update(validated.data)
+        .eq("id", roomId)
+        .eq("hotel_id", hotelId);
+
+    if (error) {
+        console.error("Error quick updating room:", error);
+        return { error: "Failed to update room" };
+    }
+
+    revalidatePath(`/admin/hotels/${hotelId}`);
+    revalidatePath(`/hotels/${hotelId}`);
+    revalidatePath(`/hotels/${hotelId}/checkout`);
+    return { success: true };
 }
