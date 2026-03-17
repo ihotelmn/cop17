@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createBookingAction } from "@/app/actions/booking";
+import { formatUsd } from "@/lib/utils";
 
 interface CheckoutFormProps {
     hotelId: string;
@@ -25,14 +26,20 @@ export function CheckoutForm({
 }: CheckoutFormProps) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [activeAction, setActiveAction] = useState<"pay_now" | "prebook" | null>(null);
 
     async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+        const bookingMode = submitter?.value === "prebook" ? "prebook" : "pay_now";
+
         setLoading(true);
+        setActiveAction(bookingMode);
         setError(null);
 
         const formData = new FormData(event.currentTarget);
         formData.append("hotelId", hotelId);
+        formData.append("bookingMode", bookingMode);
         formData.append("roomsData", JSON.stringify(selectedRooms));
         formData.append("checkIn", format(checkIn, "yyyy-MM-dd"));
         formData.append("checkOut", format(checkOut, "yyyy-MM-dd"));
@@ -52,6 +59,7 @@ export function CheckoutForm({
             setError(`Connection or Server Error: ${detail}`);
         } finally {
             setLoading(false);
+            setActiveAction(null);
         }
     }
 
@@ -134,24 +142,55 @@ export function CheckoutForm({
                 </div>
             )}
 
-            <div className="pt-6">
-                <Button
-                    type="submit"
-                    className="w-full h-14 rounded-2xl bg-blue-600 text-base font-bold shadow-xl shadow-blue-500/20 hover:bg-blue-700 sm:h-[3.75rem] sm:text-lg"
-                    disabled={loading}
-                >
-                    {loading ? (
-                        <>
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            Securing Your Room...
-                        </>
-                    ) : (
-                        <span className="flex items-center gap-2 text-center">
-                            Proceed to Payment (${totalPrice})
-                            <ArrowRight className="h-5 w-5" />
-                        </span>
-                    )}
-                </Button>
+            <div className="pt-6 space-y-4">
+                <div className="grid gap-3 md:grid-cols-2">
+                    <Button
+                        type="submit"
+                        name="bookingMode"
+                        value="pay_now"
+                        className="h-14 rounded-2xl bg-blue-600 text-base font-bold shadow-xl shadow-blue-500/20 hover:bg-blue-700 sm:h-[3.75rem] sm:text-lg"
+                        disabled={loading}
+                    >
+                        {loading && activeAction === "pay_now" ? (
+                            <>
+                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                Redirecting to Payment...
+                            </>
+                        ) : (
+                            <span className="flex items-center gap-2 text-center">
+                                Pay Now ({formatUsd(totalPrice)})
+                                <ArrowRight className="h-5 w-5" />
+                            </span>
+                        )}
+                    </Button>
+
+                    <Button
+                        type="submit"
+                        name="bookingMode"
+                        value="prebook"
+                        variant="outline"
+                        className="h-14 rounded-2xl border-zinc-300 bg-white text-base font-bold text-zinc-900 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800 sm:h-[3.75rem] sm:text-lg"
+                        disabled={loading}
+                    >
+                        {loading && activeAction === "prebook" ? (
+                            <>
+                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                Sending Request...
+                            </>
+                        ) : (
+                            <span className="flex items-center gap-2 text-center">
+                                Pre-book
+                                <ArrowRight className="h-5 w-5" />
+                            </span>
+                        )}
+                    </Button>
+                </div>
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-300">
+                    <p className="font-semibold text-zinc-900 dark:text-white">Pre-book</p>
+                    <p>
+                        Send a reservation request without immediate payment. Our team will review it, contact you directly, and confirm the booking after offline payment is received.
+                    </p>
+                </div>
                 <div className="mt-4 flex items-center justify-center gap-4 grayscale opacity-50">
                     {/* Mock payment logos */}
                     <div className="text-[10px] font-bold border px-2 py-1 rounded">VISA</div>

@@ -58,7 +58,7 @@ export async function getInventoryStats(startDateStr?: string, days: number = 21
             .from("bookings")
             .select("room_id, check_in_date, check_out_date, status")
             .in("room_id", roomIds)
-            .in("status", ["confirmed", "pending", "blocked", "paid"])
+            .in("status", ["confirmed", "pending", "prebook_requested", "blocked", "paid"])
             .lte("check_in_date", format(end, "yyyy-MM-dd"))
             .gte("check_out_date", format(start, "yyyy-MM-dd"));
 

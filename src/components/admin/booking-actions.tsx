@@ -45,7 +45,7 @@ export function BookingActions({ bookingId, currentStatus }: BookingActionsProps
     const statusActions = [
         {
             value: "confirmed",
-            label: "Mark Confirmed",
+            label: currentStatus === "prebook_requested" ? "Approve & Confirm" : "Mark Confirmed",
             icon: <CheckCircle className="mr-2 h-4 w-4 text-green-500" />,
         },
         {

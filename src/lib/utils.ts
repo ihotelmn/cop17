@@ -31,3 +31,22 @@ export function getHotelImageUrl(path: string | null | undefined): string {
 
   return `https://api.myhotel.mn/image?${query.toString()}`;
 }
+
+export function roundCurrencyAmount(value: number | string | null | undefined): number {
+  const numericValue = typeof value === "string" ? Number(value) : value ?? 0;
+
+  if (!Number.isFinite(numericValue)) {
+    return 0;
+  }
+
+  return Math.round(numericValue * 100) / 100;
+}
+
+export function formatUsd(value: number | string | null | undefined): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(roundCurrencyAmount(value));
+}

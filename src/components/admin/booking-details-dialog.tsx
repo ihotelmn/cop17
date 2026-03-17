@@ -138,7 +138,9 @@ export function BookingDetailsDialog({ bookingId, trigger }: BookingDetailsDialo
                                     </span>
                                 </div>
                                 <div className="flex justify-between items-center text-sm">
-                                    <span className="text-zinc-500 font-bold">Total Paid</span>
+                                    <span className="text-zinc-500 font-bold">
+                                        {booking.status === "prebook_requested" ? "Estimated Total" : "Total Paid"}
+                                    </span>
                                     <span className="font-bold text-emerald-600">
                                         {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(booking.total_price)}
                                     </span>

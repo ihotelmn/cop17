@@ -76,6 +76,11 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                                         <div className="flex flex-col">
                                             <span className="font-medium">{booking.hotelName}</span>
                                             <span className="text-xs text-muted-foreground">{booking.roomName}</span>
+                                            {booking.status === "prebook_requested" && (
+                                                <span className="mt-1 text-xs font-medium text-sky-600">
+                                                    Pre-book request awaiting offline payment follow-up.
+                                                </span>
+                                            )}
                                             {booking.modificationRequestStatus === "pending" && (
                                                 <span className="mt-1 text-xs font-medium text-amber-600">
                                                     Change requested: {booking.modificationRequestMessage || "Guest submitted a modification request."}

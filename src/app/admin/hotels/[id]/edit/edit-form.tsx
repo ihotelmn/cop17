@@ -103,7 +103,7 @@ export default function EditHotelForm({ hotel }: { hotel: Hotel }) {
                             defaultValue={sanitizeRichTextToPlainText(hotel.description)}
                             className="bg-zinc-800 border-zinc-700 text-white min-h-[100px]"
                         />
-                        <p className="text-xs text-zinc-500">Plain text is enough. HTML tags are not required.</p>
+                        <p className="text-xs text-zinc-500">Normal text is enough. Old HTML tags like &lt;ul&gt;, &lt;li&gt;, or &lt;p&gt; are cleaned automatically.</p>
                         {state?.fieldErrors?.description && <p className="text-red-500 text-sm">{state.fieldErrors.description}</p>}
                     </div>
                     <div className="space-y-2">
@@ -114,7 +114,7 @@ export default function EditHotelForm({ hotel }: { hotel: Hotel }) {
                             defaultValue={sanitizeRichTextToPlainText(hotel.description_en)}
                             className="bg-zinc-800 border-zinc-700 text-white min-h-[100px]"
                         />
-                        <p className="text-xs text-zinc-500">Plain text is enough. HTML tags are not required.</p>
+                        <p className="text-xs text-zinc-500">Normal text is enough. Old HTML tags like &lt;ul&gt;, &lt;li&gt;, or &lt;p&gt; are cleaned automatically.</p>
                         {state?.fieldErrors?.description_en && <p className="text-red-500 text-sm">{state.fieldErrors.description_en}</p>}
                     </div>
                 </div>

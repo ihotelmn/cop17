@@ -150,12 +150,14 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
         const hotel = getSuccessHotelRelation(firstBooking.room);
         const hotelName = hotel ? getPreferredHotelName(hotel) : "The Hotel";
         const hotelAddress = hotel ? (getPreferredHotelAddress(hotel) || "Address not available") : "Address not available";
+        const hasPrebookStatus = bookings.every((booking) => booking.status === "prebook_requested");
         const isConfirmed = bookings.every(
             (booking) => booking.status === "confirmed" || booking.status === "completed"
         );
         const paymentState = resolvedParams.payment || paymentAttempt?.status || (isConfirmed ? "confirmed" : "pending");
+        const isPrebookRequested = paymentState === "prebook-requested" || hasPrebookStatus;
         const isFailed = paymentState === "failed";
-        const isPending = !isConfirmed && !isFailed;
+        const isPending = !isConfirmed && !isPrebookRequested && !isFailed;
         const hasDirectHotelContact = Boolean(
             hotel?.contact_phone || hotel?.contact_email || hotel?.website
         );
@@ -194,6 +196,8 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
                         >
                             {isConfirmed ? (
                                 <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-500" />
+                            ) : isPrebookRequested ? (
+                                <Clock3 className="h-10 w-10 text-sky-600 dark:text-sky-400" />
                             ) : isPending ? (
                                 <Clock3 className="h-10 w-10 text-amber-600 dark:text-amber-500" />
                             ) : (
@@ -203,6 +207,8 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
                         <h1 className="text-4xl font-black tracking-tight mb-3">
                             {isConfirmed
                                 ? "Your stay is confirmed!"
+                                : isPrebookRequested
+                                    ? "Pre-booking request sent"
                                 : isPending
                                     ? "Payment verification in progress"
                                     : "We could not verify the payment"}
@@ -214,6 +220,10 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
                             {isConfirmed ? (
                                 <>
                                     A confirmation email has been sent to <span className="text-blue-600 font-bold">{firstBooking.guest_email}</span>
+                                </>
+                            ) : isPrebookRequested ? (
+                                <>
+                                    Your request has been sent to our accommodation team. We will contact <span className="text-blue-600 font-bold">{firstBooking.guest_email}</span> with the next payment steps.
                                 </>
                             ) : isPending ? (
                                 <>
@@ -299,7 +309,7 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
                         <div className="space-y-6">
                             <div className="bg-zinc-900 text-white rounded-3xl p-8">
                                 <p className="text-[10px] font-black opacity-60 uppercase tracking-widest mb-1">
-                                    {isConfirmed ? "Total Paid" : "Total Reserved"}
+                                    {isConfirmed ? "Total Paid" : isPrebookRequested ? "Estimated Total" : "Total Reserved"}
                                 </p>
                                 <h3 className="text-4xl font-black mb-6">${totalPrice}</h3>
                                 <div className="space-y-4 mb-8 text-sm">
@@ -308,6 +318,10 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
                                 </div>
                                 {isConfirmed ? (
                                     <PrintButton />
+                                ) : isPrebookRequested ? (
+                                    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/75">
+                                        Pre-booking received. Our team will review your request and contact you directly to arrange payment.
+                                    </div>
                                 ) : (
                                     <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/75">
                                         {isPending
@@ -350,7 +364,7 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
                                     </div>
                                 </div>
                             )}
-                            {isConfirmed && guestManagePath && (
+                            {(isConfirmed || isPrebookRequested) && guestManagePath && (
                                 <Button asChild className="w-full rounded-2xl h-12 bg-blue-600 hover:bg-blue-700 font-bold">
                                     <Link href={guestManagePath}>
                                         Manage This Booking

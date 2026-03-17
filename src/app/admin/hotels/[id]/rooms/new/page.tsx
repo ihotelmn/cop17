@@ -73,8 +73,8 @@ export default function NewRoomPage({ params }: { params: Promise<{ id: string }
 
                     <div className="space-y-2">
                         <Label htmlFor="description" className="text-zinc-300">Description</Label>
-                        <Textarea id="description" name="description" placeholder="Room details..." className="bg-zinc-800 border-zinc-700 text-white min-h-[100px]" />
-                        <p className="text-xs text-zinc-500">Plain text is enough. HTML tags are not required.</p>
+                        <Textarea id="description" name="description" placeholder="Example: 55 m2, one king bed, work desk, bathtub and shower." className="bg-zinc-800 border-zinc-700 text-white min-h-[100px]" />
+                        <p className="text-xs text-zinc-500">Normal text is enough. Old HTML tags like &lt;ul&gt; or &lt;li&gt; are cleaned automatically.</p>
                     </div>
 
                     {/* Pricing & Inventory */}

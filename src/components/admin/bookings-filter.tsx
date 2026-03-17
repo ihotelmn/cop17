@@ -89,6 +89,7 @@ export function BookingsFilter() {
                 <SelectContent>
                     <SelectItem value="all">All Statuses</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="prebook_requested">Pre-book Requested</SelectItem>
                     <SelectItem value="confirmed">Confirmed</SelectItem>
                     <SelectItem value="checked-in">Checked In</SelectItem>
                     <SelectItem value="checked-out">Checked Out</SelectItem>

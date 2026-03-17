@@ -57,6 +57,7 @@ interface ReceiptPageProps {
 
 type ReceiptBooking = {
     id: string;
+    status: string;
     user_id: string | null;
     guest_email: string | null;
     check_in_date: string;
@@ -81,7 +82,9 @@ export default async function ReceiptPage({ params, searchParams }: ReceiptPageP
     const hotel = getReceiptHotelRelation(booking.room);
     const hotelName = hotel ? getPreferredHotelName(hotel) : "COP17 Hotel";
     const hotelAddress = hotel ? (getPreferredHotelAddress(hotel) || "Ulaanbaatar, Mongolia") : "Ulaanbaatar, Mongolia";
-    const hasDirectHotelContact = Boolean(hotel?.contact_phone || hotel?.contact_email || hotel?.website);
+    const isPrebookRequested = booking.status === "prebook_requested";
+    const hasDirectHotelContact =
+        !isPrebookRequested && Boolean(hotel?.contact_phone || hotel?.contact_email || hotel?.website);
     const checkIn = new Date(booking.check_in_date);
     const checkOut = new Date(booking.check_out_date);
     const nights = Math.max(1, Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)));
@@ -103,8 +106,14 @@ export default async function ReceiptPage({ params, searchParams }: ReceiptPageP
 
             <div className="bg-blue-600 text-white p-8 rounded-2xl mb-12 flex justify-between items-center">
                 <div>
-                    <h2 className="text-2xl font-black mb-1">Status: CONFIRMED</h2>
-                    <p className="text-blue-100 text-sm">Your reservation is fully paid and guaranteed.</p>
+                    <h2 className="text-2xl font-black mb-1">
+                        Status: {isPrebookRequested ? "PRE-BOOK REQUESTED" : "CONFIRMED"}
+                    </h2>
+                    <p className="text-blue-100 text-sm">
+                        {isPrebookRequested
+                            ? "Your request has been received. Our team will contact you to arrange payment."
+                            : "Your reservation is fully paid and guaranteed."}
+                    </p>
                 </div>
                 <ShieldCheck className="h-12 w-12 text-blue-200" />
             </div>
@@ -176,7 +185,9 @@ export default async function ReceiptPage({ params, searchParams }: ReceiptPageP
                             </td>
                         </tr>
                         <tr className="bg-zinc-50/50">
-                            <td colSpan={2} className="p-6 text-right text-sm font-bold uppercase text-zinc-400">Total Paid (USD)</td>
+                            <td colSpan={2} className="p-6 text-right text-sm font-bold uppercase text-zinc-400">
+                                {isPrebookRequested ? "Estimated Total (USD)" : "Total Paid (USD)"}
+                            </td>
                             <td className="p-6 text-right font-black text-2xl text-blue-600">${booking.total_price}</td>
                         </tr>
                     </tbody>

@@ -187,14 +187,14 @@ export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
                     .in("room_id", roomIds)
                     .lt("check_in_date", params.to)
                     .gt("check_out_date", params.from)
-                    .in("status", ["confirmed", "pending"]);
+                    .in("status", ["confirmed", "pending", "prebook_requested"]);
 
                 if (!bookingsError && overlappingBookings) {
                     const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
                     const bookingsByRoom: Record<string, number> = {};
 
                     for (const booking of overlappingBookings) {
-                        const isConfirmed = booking.status === "confirmed";
+                        const isConfirmed = booking.status === "confirmed" || booking.status === "paid" || booking.status === "prebook_requested";
                         const isRecentPending = booking.status === "pending" && new Date(booking.created_at) >= fifteenMinutesAgo;
 
                         if (isConfirmed || isRecentPending) {
@@ -362,14 +362,14 @@ export async function getPublicRooms(hotelId: string, _guests?: number, from?: s
                 .in("room_id", roomIds)
                 .lt("check_in_date", to)
                 .gt("check_out_date", from)
-                .in("status", ["confirmed", "pending"]);
+                .in("status", ["confirmed", "pending", "prebook_requested"]);
 
             if (!bookingsError && overlappingBookings) {
                 const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
                 const bookingsByRoom: Record<string, number> = {};
 
                 for (const booking of overlappingBookings) {
-                    const isConfirmed = booking.status === "confirmed";
+                    const isConfirmed = booking.status === "confirmed" || booking.status === "paid" || booking.status === "prebook_requested";
                     const isRecentPending = booking.status === "pending" && new Date(booking.created_at) >= fifteenMinutesAgo;
 
                     if (isConfirmed || isRecentPending) {

@@ -143,9 +143,11 @@ export default function BookingPortalPage() {
     const hotelAddress = hotel ? (getPreferredHotelAddress(hotel) || "Ulaanbaatar, Mongolia") : "Ulaanbaatar, Mongolia";
     const canCancelBooking = booking.status !== "cancelled" && policyState.canCancelOnline;
     const canRequestModification = booking.status !== "cancelled" && policyState.canRequestModification;
-    const showDirectHotelContact = booking.status !== "pending" && Boolean(
+    const isPrebookRequested = booking.status === "prebook_requested";
+    const showDirectHotelContact = ["confirmed", "checked-in", "completed", "paid"].includes(booking.status) && Boolean(
         hotel?.contact_phone || hotel?.contact_email || hotel?.website
     );
+    const canManageDocuments = ["confirmed", "checked-in", "completed", "paid"].includes(booking.status);
     const receiptHref = accessToken
         ? `/booking/receipt/${booking.id}?access=${encodeURIComponent(accessToken)}`
         : `/booking/receipt/${booking.id}`;
@@ -178,6 +180,12 @@ export default function BookingPortalPage() {
                                 </div>
                                 <BookingStatusBadge status={booking.status} />
                             </div>
+
+                            {isPrebookRequested && (
+                                <div className="mb-8 rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm text-sky-800 dark:border-sky-900/40 dark:bg-sky-950/20 dark:text-sky-200">
+                                    This is currently a pre-book request. Our team will contact you directly to arrange payment before the stay is confirmed.
+                                </div>
+                            )}
 
                             <div className="relative aspect-video rounded-2xl overflow-hidden mb-8 bg-zinc-100 group">
                                 <FallbackImage
@@ -358,24 +366,36 @@ export default function BookingPortalPage() {
                                             </Dialog>
                                         </div>
 
-                                        <div className="flex flex-col md:flex-row items-center justify-between p-6 bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-900/30 gap-6">
-                                            <div className="flex gap-4">
-                                                <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
-                                                    <ShieldCheck className="h-6 w-6 text-amber-600" />
+                                        {canManageDocuments && (
+                                            <div className="flex flex-col md:flex-row items-center justify-between p-6 bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-900/30 gap-6">
+                                                <div className="flex gap-4">
+                                                    <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
+                                                        <ShieldCheck className="h-6 w-6 text-amber-600" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-zinc-900 dark:text-white">Accreditation & Documents</h4>
+                                                        <p className="text-sm text-zinc-500 mt-1">Upload passports and visas for official COP17 accreditation.</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h4 className="font-bold text-zinc-900 dark:text-white">Accreditation & Documents</h4>
-                                                    <p className="text-sm text-zinc-500 mt-1">Upload passports and visas for official COP17 accreditation.</p>
-                                                </div>
-                                            </div>
 
-                                            <Button asChild className="rounded-xl h-11 px-8 font-bold bg-amber-500 hover:bg-amber-600 text-black whitespace-nowrap">
-                                                <Link href={accreditationHref}>
-                                                    Manage Documents
-                                                </Link>
-                                            </Button>
-                                        </div>
+                                                <Button asChild className="rounded-xl h-11 px-8 font-bold bg-amber-500 hover:bg-amber-600 text-black whitespace-nowrap">
+                                                    <Link href={accreditationHref}>
+                                                        Manage Documents
+                                                    </Link>
+                                                </Button>
+                                            </div>
+                                        )}
                                     </>
+                                )}
+
+                                {!canManageDocuments && booking.status !== "cancelled" && (
+                                    <div className="flex flex-col items-center justify-center py-10 px-6 text-center bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-700/50">
+                                        <ShieldCheck className="h-10 w-10 text-zinc-300 mb-4" />
+                                        <h4 className="font-bold text-lg text-zinc-700 dark:text-zinc-200">Documents unlock after confirmation</h4>
+                                        <p className="text-sm text-zinc-500 mt-2 max-w-md">
+                                            Once payment is completed and the booking is confirmed, you will be able to upload accreditation documents here.
+                                        </p>
+                                    </div>
                                 )}
 
                                 {booking.status === "cancelled" && (
@@ -406,10 +426,14 @@ export default function BookingPortalPage() {
                                 </div>
                                 <div className="flex justify-between items-center text-sm font-medium">
                                     <span className="text-zinc-500">Rate Plan</span>
-                                    <span className="text-green-600">Flexible - COP17</span>
+                                    <span className={isPrebookRequested ? "text-sky-600" : "text-green-600"}>
+                                        {isPrebookRequested ? "Pre-book Request" : "Flexible - COP17"}
+                                    </span>
                                 </div>
                                 <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 mt-4 flex justify-between items-center">
-                                    <span className="text-base font-bold text-zinc-900 dark:text-white">Total Paid</span>
+                                    <span className="text-base font-bold text-zinc-900 dark:text-white">
+                                        {isPrebookRequested ? "Estimated Total" : "Total Paid"}
+                                    </span>
                                     <span className="text-2xl font-black text-blue-600">${booking.total_price}</span>
                                 </div>
                             </div>
@@ -417,7 +441,7 @@ export default function BookingPortalPage() {
                             <div className="mt-8">
                                 <Button asChild variant="outline" className="w-full rounded-2xl h-12 border-zinc-200 dark:border-zinc-800 font-bold hover:bg-zinc-50">
                                     <Link href={receiptHref} target="_blank">
-                                        View Receipt
+                                        {isPrebookRequested ? "View Request Summary" : "View Receipt"}
                                     </Link>
                                 </Button>
                             </div>

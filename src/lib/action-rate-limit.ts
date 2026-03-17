@@ -43,6 +43,18 @@ export function getClientIpFromHeaders(requestHeaders: Headers) {
         || null;
 }
 
+export function buildActionRateLimitKey(...parts: Array<string | null | undefined>) {
+    const normalizedParts = parts
+        .map((part) => (typeof part === "string" ? part.trim().toLowerCase() : ""))
+        .filter(Boolean);
+
+    if (normalizedParts.length === 0) {
+        return null;
+    }
+
+    return normalizedParts.join("::");
+}
+
 export async function enforceActionRateLimit({
     scope,
     key,
@@ -101,5 +113,20 @@ export async function enforceActionRateLimit({
         );
 
         throw new ActionRateLimitError(message, retryAfterSeconds);
+    }
+}
+
+export async function enforceActionRateLimitSafely(
+    input: ActionRateLimitInput,
+    contextLabel: string
+) {
+    try {
+        await enforceActionRateLimit(input);
+    } catch (error) {
+        if (error instanceof ActionRateLimitError) {
+            throw error;
+        }
+
+        console.error(`[rate-limit:${contextLabel}] failed open`, error);
     }
 }

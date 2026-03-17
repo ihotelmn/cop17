@@ -37,7 +37,8 @@ export default async function ReportsPage() {
     const totalBookings = bookings.length;
     const confirmedBookings = bookings.filter(b => b.status === "confirmed" || b.status === "paid");
     const totalRevenue = confirmedBookings.reduce((sum, b) => sum + (Number(b.total_price) || 0), 0);
-    const pendingBookings = bookings.filter(b => b.status === "pending").length;
+    const pendingBookings = bookings.filter(b => b.status === "pending" || b.status === "prebook_requested").length;
+    const prebookRequests = bookings.filter(b => b.status === "prebook_requested").length;
 
     // Recent Bookings (Last 5)
     const recentBookings = bookings.slice(0, 10);
@@ -72,7 +73,7 @@ export default async function ReportsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-white">{totalBookings}</div>
-                        <p className="text-xs text-zinc-500">{pendingBookings} pending payment</p>
+                        <p className="text-xs text-zinc-500">{pendingBookings} awaiting payment or review</p>
                     </CardContent>
                 </Card>
 
@@ -83,7 +84,7 @@ export default async function ReportsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-white">{pendingBookings}</div>
-                        <p className="text-xs text-zinc-500">Awaiting payment</p>
+                        <p className="text-xs text-zinc-500">{prebookRequests} pre-book requests included</p>
                     </CardContent>
                 </Card>
 
@@ -164,12 +165,14 @@ function StatusBadge({ status }: { status: string | null }) {
         confirmed: "bg-emerald-900/30 text-emerald-400 border-emerald-900/50",
         paid: "bg-emerald-900/30 text-emerald-400 border-emerald-900/50",
         pending: "bg-amber-900/30 text-amber-400 border-amber-900/50",
+        prebook_requested: "bg-sky-900/30 text-sky-400 border-sky-900/50",
         cancelled: "bg-red-900/30 text-red-400 border-red-900/50",
     };
     const labels: Record<string, string> = {
         confirmed: "Confirmed",
         paid: "Paid",
         pending: "Pending",
+        prebook_requested: "Pre-book",
         cancelled: "Cancelled",
     };
 

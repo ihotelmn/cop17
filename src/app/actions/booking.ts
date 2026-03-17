@@ -3,12 +3,13 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { format } from "date-fns";
-import { sendBookingConfirmation } from "@/lib/email";
+import { sendBookingConfirmation, sendPreBookingRequestReceived } from "@/lib/email";
 import { encrypt } from "@/lib/encryption";
 import { GolomtService } from "@/lib/golomt";
 import { getPostgresPool } from "@/lib/postgres";
 import { getPreferredHotelName } from "@/lib/hotel-display";
 import { buildGuestBookingPortalPath, verifyGuestBookingAccessToken } from "@/lib/guest-booking-access";
+import { roundCurrencyAmount } from "@/lib/utils";
 import {
     createPaymentAttempt,
     getPaymentAttemptByGroupId,
@@ -22,7 +23,8 @@ import type { BookingState } from "@/types/booking";
 import { calculateBookingPolicyState } from "@/lib/cancellation-policy";
 import {
     ActionRateLimitError,
-    enforceActionRateLimit,
+    buildActionRateLimitKey,
+    enforceActionRateLimitSafely,
     getClientIpFromHeaders,
 } from "@/lib/action-rate-limit";
 
@@ -33,6 +35,7 @@ import {
 const bookingSchema = z.object({
     roomsData: z.string().min(1, "Rooms data required"),
     hotelId: z.string().min(1, "Hotel ID required"),
+    bookingMode: z.enum(["pay_now", "prebook"]).default("pay_now"),
     checkIn: z.string().date(),
     checkOut: z.string().date(),
     guestName: z.string().min(2, "Name required"),
@@ -138,6 +141,34 @@ type LockedRoomRow = {
     hotel_name_en: string | null;
 };
 
+function isBookingServiceUnavailableError(error: unknown) {
+    const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+    const code = typeof error === "object" && error !== null && "code" in error ? String(error.code).toLowerCase() : "";
+
+    return (
+        ["08001", "08006", "53300", "57p01", "etimedout", "econnrefused", "econnreset"].includes(code) ||
+        message.includes("connection terminated") ||
+        message.includes("connection refused") ||
+        message.includes("timeout exceeded when trying to connect") ||
+        message.includes("timeout expired") ||
+        message.includes("could not connect") ||
+        message.includes("the database system is starting up")
+    );
+}
+
+function isBookingStatusConstraintError(error: unknown) {
+    const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+    const code = typeof error === "object" && error !== null && "code" in error ? String(error.code).toLowerCase() : "";
+    const constraint = typeof error === "object" && error !== null && "constraint" in error
+        ? String(error.constraint).toLowerCase()
+        : "";
+
+    return (
+        code === "23514" &&
+        (constraint === "bookings_status_check" || message.includes("bookings_status_check"))
+    );
+}
+
 function getBookingHotelDisplayName(hotel: BookingPolicyHotel | null | undefined) {
     if (!hotel) {
         return "COP17 Hotel";
@@ -197,6 +228,7 @@ function isPendingBookingStillActive(createdAt: string | null | undefined) {
 
 async function createPendingBookingsAtomically(input: {
     hotelId: string;
+    initialStatus: "pending" | "prebook_requested";
     checkIn: string;
     checkOut: string;
     guestName: string;
@@ -259,6 +291,7 @@ async function createPendingBookingsAtomically(input: {
                       AND (
                         b.status = 'confirmed'
                         OR b.status = 'paid'
+                        OR b.status = 'prebook_requested'
                         OR (b.status = 'pending' AND b.created_at >= NOW() - INTERVAL '15 minutes')
                       )
                 `,
@@ -273,7 +306,9 @@ async function createPendingBookingsAtomically(input: {
             }
 
             roomSelection.price = pricePerNight;
-            totalCombinedPrice += pricePerNight * roomSelection.quantity * input.nights;
+            totalCombinedPrice = roundCurrencyAmount(
+                totalCombinedPrice + (pricePerNight * roomSelection.quantity * input.nights)
+            );
 
             if (!ownerId) {
                 ownerId = room.owner_id;
@@ -302,7 +337,7 @@ async function createPendingBookingsAtomically(input: {
                             special_requests_encrypted,
                             group_id
                         ) VALUES (
-                            $1, $2, $3::date, $4::date, 'pending', $5, $6, $7, $8, $9, $10, $11
+                            $1, $2, $3::date, $4::date, $5, $6, $7, $8, $9, $10, $11, $12
                         )
                     `,
                     [
@@ -310,7 +345,8 @@ async function createPendingBookingsAtomically(input: {
                         input.userId,
                         input.checkIn,
                         input.checkOut,
-                        roomSelection.price * input.nights,
+                        input.initialStatus,
+                        roundCurrencyAmount(roomSelection.price * input.nights),
                         input.guestName,
                         input.guestEmail,
                         input.encryptedPassport,
@@ -336,6 +372,94 @@ async function createPendingBookingsAtomically(input: {
     } finally {
         client.release();
     }
+}
+
+async function createPendingBookingsFallback(
+    adminSupabase: ReturnType<typeof getSupabaseAdmin>,
+    input: {
+        hotelId: string;
+        initialStatus: "pending" | "prebook_requested";
+        checkIn: string;
+        checkOut: string;
+        guestName: string;
+        guestEmail: string;
+        encryptedPassport: string;
+        encryptedPhone: string;
+        encryptedRequests: string | null;
+        userId: string | null;
+        groupId: string;
+        nights: number;
+        roomsSelected: SelectedRoomInput[];
+    }
+) {
+    let totalCombinedPrice = 0;
+    let ownerId: string | null = null;
+    let hotelName: string | null = null;
+    const bookingRows: Array<Record<string, unknown>> = [];
+
+    for (const roomSelection of input.roomsSelected) {
+        const { data: roomRecord, error: roomError } = await adminSupabase
+            .from("rooms")
+            .select(`
+                id,
+                name,
+                price_per_night,
+                hotel:hotels (
+                    owner_id,
+                    name,
+                    name_en
+                )
+            `)
+            .eq("id", roomSelection.id)
+            .eq("hotel_id", input.hotelId)
+            .maybeSingle();
+
+        if (roomError || !roomRecord) {
+            throw new Error(`ROOM_NOT_FOUND:${roomSelection.name || roomSelection.id}`);
+        }
+
+        const relatedHotel = Array.isArray(roomRecord.hotel) ? roomRecord.hotel[0] : roomRecord.hotel;
+        const pricePerNight = Number(roomRecord.price_per_night || 0);
+        roomSelection.price = pricePerNight;
+        totalCombinedPrice = roundCurrencyAmount(totalCombinedPrice + (pricePerNight * roomSelection.quantity * input.nights));
+
+        if (!ownerId) {
+            ownerId = relatedHotel?.owner_id ?? null;
+            hotelName = getBookingHotelDisplayName(relatedHotel);
+        }
+
+        for (let i = 0; i < roomSelection.quantity; i++) {
+            bookingRows.push({
+                room_id: roomSelection.id,
+                user_id: input.userId,
+                check_in_date: input.checkIn,
+                check_out_date: input.checkOut,
+                status: input.initialStatus,
+                total_price: roundCurrencyAmount(pricePerNight * input.nights),
+                guest_name: input.guestName,
+                guest_email: input.guestEmail,
+                guest_passport_encrypted: input.encryptedPassport,
+                guest_phone_encrypted: input.encryptedPhone,
+                special_requests_encrypted: input.encryptedRequests,
+                group_id: input.groupId,
+            });
+        }
+    }
+
+    const { error: insertError } = await adminSupabase
+        .from("bookings")
+        .insert(bookingRows);
+
+    if (insertError) {
+        throw insertError;
+    }
+
+    return {
+        totalCombinedPrice,
+        ownerId,
+        hotelName,
+        normalizedRooms: input.roomsSelected,
+    };
 }
 
 async function getBookingNotificationRecipientIds(
@@ -484,6 +608,7 @@ export async function createBookingAction(prevState: BookingState, formData: For
         const validatedFields = bookingSchema.safeParse({
             roomsData: formData.get("roomsData"),
             hotelId: formData.get("hotelId"),
+            bookingMode: formData.get("bookingMode") || "pay_now",
             checkIn: formData.get("checkIn"),
             checkOut: formData.get("checkOut"),
             guestName: formData.get("guestName"),
@@ -500,26 +625,27 @@ export async function createBookingAction(prevState: BookingState, formData: For
             };
         }
 
-        const { hotelId, checkIn, checkOut, guestName, guestEmail, guestPassport, guestPhone, specialRequests, roomsData } = validatedFields.data;
+        const { hotelId, bookingMode, checkIn, checkOut, guestName, guestEmail, guestPassport, guestPhone, specialRequests, roomsData } = validatedFields.data;
 
         try {
             const clientIp = getClientIpFromHeaders(requestHeaders);
+            const bookingIdentityKey = buildActionRateLimitKey(clientIp, guestEmail, hotelId);
 
-            await enforceActionRateLimit({
-                scope: "booking:create:ip",
+            await enforceActionRateLimitSafely({
+                scope: "booking:create:network:v2",
                 key: clientIp,
-                maxHits: 8,
+                maxHits: 40,
                 windowMs: 10 * 60 * 1000,
                 message: "Too many booking attempts from this network.",
-            });
+            }, "booking:create:network:v2");
 
-            await enforceActionRateLimit({
-                scope: "booking:create:email",
-                key: guestEmail.toLowerCase(),
-                maxHits: 4,
+            await enforceActionRateLimitSafely({
+                scope: "booking:create:identity:v2",
+                key: bookingIdentityKey,
+                maxHits: 8,
                 windowMs: 10 * 60 * 1000,
-                message: "This email has too many recent booking attempts.",
-            });
+                message: "Too many recent booking attempts for this stay.",
+            }, "booking:create:identity:v2");
         } catch (error) {
             return { error: getBookingRateLimitErrorMessage(error, "Too many booking attempts. Please try again later.") };
         }
@@ -559,7 +685,7 @@ export async function createBookingAction(prevState: BookingState, formData: For
                 .eq("room_id", rs.id)
                 .lt("check_in_date", checkOut)
                 .gt("check_out_date", checkIn)
-                .in("status", ["confirmed", "pending"]);
+                .in("status", ["confirmed", "pending", "paid", "prebook_requested"]);
 
             if (countError) {
                 console.error("Availability Check Error:", countError);
@@ -570,7 +696,7 @@ export async function createBookingAction(prevState: BookingState, formData: For
             let bookedCount = 0;
             if (overlappingBookings) {
                 for (const b of overlappingBookings) {
-                    const isConfirmed = b.status === "confirmed";
+                    const isConfirmed = b.status === "confirmed" || b.status === "paid" || b.status === "prebook_requested";
                     const isRecentPending = b.status === "pending" && new Date(b.created_at) >= fifteenMinutesAgo;
                     if (isConfirmed || isRecentPending) {
                         bookedCount++;
@@ -584,7 +710,7 @@ export async function createBookingAction(prevState: BookingState, formData: For
 
             // Ensure we use the official DB price
             rs.price = room.price_per_night;
-            totalCombinedPrice += rs.price * rs.quantity * nights;
+            totalCombinedPrice = roundCurrencyAmount(totalCombinedPrice + (rs.price * rs.quantity * nights));
         }
 
         // 2. Encrypt PII
@@ -604,15 +730,16 @@ export async function createBookingAction(prevState: BookingState, formData: For
                 checkIn,
                 checkOut,
                 guestName,
-                guestEmail,
-                encryptedPassport,
-                encryptedPhone,
-                encryptedRequests,
-                userId: user?.id || null,
-                groupId,
-                nights,
-                roomsSelected,
-            });
+                    guestEmail,
+                    encryptedPassport,
+                    encryptedPhone,
+                    encryptedRequests,
+                    userId: user?.id || null,
+                    groupId,
+                    nights,
+                    initialStatus: bookingMode === "prebook" ? "prebook_requested" : "pending",
+                    roomsSelected,
+                });
 
             totalCombinedPrice = atomicResult.totalCombinedPrice;
             ownerId = atomicResult.ownerId;
@@ -646,7 +773,83 @@ export async function createBookingAction(prevState: BookingState, formData: For
                 };
             }
 
-            return { error: "Booking inventory changed while you were checking out. Please review availability and try again." };
+            try {
+                const fallbackResult = await createPendingBookingsFallback(adminSupabase, {
+                    hotelId,
+                    checkIn,
+                    checkOut,
+                    guestName,
+                    guestEmail,
+                    encryptedPassport,
+                    encryptedPhone,
+                    encryptedRequests,
+                    userId: user?.id || null,
+                    groupId,
+                    nights,
+                    initialStatus: bookingMode === "prebook" ? "prebook_requested" : "pending",
+                    roomsSelected,
+                });
+
+                totalCombinedPrice = fallbackResult.totalCombinedPrice;
+                ownerId = fallbackResult.ownerId;
+                hotelName = fallbackResult.hotelName;
+                roomsSelected = fallbackResult.normalizedRooms;
+            } catch (fallbackError) {
+                console.error("Supabase booking fallback failed:", fallbackError);
+
+                if (isBookingStatusConstraintError(atomicError) || isBookingStatusConstraintError(fallbackError)) {
+                    return {
+                        error: "Booking configuration is being updated right now. Please try again in a moment.",
+                    };
+                }
+
+                if (isBookingServiceUnavailableError(atomicError) || isBookingServiceUnavailableError(fallbackError)) {
+                    return {
+                        error: "Booking service is temporarily busy. Please try again in a moment.",
+                    };
+                }
+
+                return { error: "We couldn't complete your reservation right now. Please try again in a moment." };
+            }
+        }
+
+        const primaryBookingId = groupId ? `${groupId}` : null;
+        const datesStr = `${format(new Date(checkIn), "MMM d")} - ${format(new Date(checkOut), "MMM d, yyyy")}`;
+
+        if (bookingMode === "prebook") {
+            const { data: firstBooking } = await adminSupabase
+                .from("bookings")
+                .select("id")
+                .eq("group_id", groupId)
+                .order("created_at", { ascending: true })
+                .limit(1)
+                .maybeSingle();
+
+            const manageBookingPath = firstBooking?.id
+                ? buildGuestBookingPortalPath(firstBooking.id, guestEmail)
+                : undefined;
+
+            await createBookingNotifications(adminSupabase, ownerId, {
+                title: "Pre-booking Request",
+                message: `New pre-booking request at ${hotelName || "COP17 Hotel"} for ${nights} nights.`,
+                type: "booking_prebook",
+                link: `/admin/bookings`,
+            });
+
+            await sendPreBookingRequestReceived(
+                guestEmail,
+                guestName,
+                firstBooking?.id || primaryBookingId || groupId,
+                hotelName || "COP17 Hotel",
+                datesStr,
+                manageBookingPath
+            );
+
+            return {
+                success: true,
+                message: "Pre-booking request sent successfully.",
+                paymentRedirectUrl: `/booking/success?groupId=${groupId}&payment=prebook-requested`,
+            };
         }
 
         // 4. Initiate Payment (Golomt Bank)
@@ -964,29 +1167,29 @@ export async function cancelBookingAction(bookingId: string, reason?: string, ac
             const requestHeaders = await headers();
             const clientIp = getClientIpFromHeaders(requestHeaders);
 
-            await enforceActionRateLimit({
+            await enforceActionRateLimitSafely({
                 scope: "booking:cancel:ip",
                 key: clientIp,
                 maxHits: 12,
                 windowMs: 10 * 60 * 1000,
                 message: "Too many cancellation attempts from this network.",
-            });
+            }, "booking:cancel:ip");
 
-            await enforceActionRateLimit({
+            await enforceActionRateLimitSafely({
                 scope: "booking:cancel:user",
                 key: user?.id || `guest:${bookingId}`,
                 maxHits: 6,
                 windowMs: 10 * 60 * 1000,
                 message: "You have submitted too many cancellation attempts.",
-            });
+            }, "booking:cancel:user");
 
-            await enforceActionRateLimit({
+            await enforceActionRateLimitSafely({
                 scope: "booking:cancel:booking",
                 key: bookingId,
                 maxHits: 3,
                 windowMs: 10 * 60 * 1000,
                 message: "This booking has too many recent cancellation attempts.",
-            });
+            }, "booking:cancel:booking");
         } catch (error) {
             return { success: false, error: getBookingRateLimitErrorMessage(error, "Too many cancellation attempts. Please try again later.") };
         }
@@ -1091,29 +1294,29 @@ export async function requestModificationAction(bookingId: string, message: stri
             const requestHeaders = await headers();
             const clientIp = getClientIpFromHeaders(requestHeaders);
 
-            await enforceActionRateLimit({
+            await enforceActionRateLimitSafely({
                 scope: "booking:modify:ip",
                 key: clientIp,
                 maxHits: 12,
                 windowMs: 10 * 60 * 1000,
                 message: "Too many modification attempts from this network.",
-            });
+            }, "booking:modify:ip");
 
-            await enforceActionRateLimit({
+            await enforceActionRateLimitSafely({
                 scope: "booking:modify:user",
                 key: user?.id || `guest:${bookingId}`,
                 maxHits: 6,
                 windowMs: 10 * 60 * 1000,
                 message: "You have submitted too many modification requests.",
-            });
+            }, "booking:modify:user");
 
-            await enforceActionRateLimit({
+            await enforceActionRateLimitSafely({
                 scope: "booking:modify:booking",
                 key: bookingId,
                 maxHits: 4,
                 windowMs: 10 * 60 * 1000,
                 message: "This booking has too many recent modification requests.",
-            });
+            }, "booking:modify:booking");
         } catch (error) {
             return { success: false, error: getBookingRateLimitErrorMessage(error, "Too many modification requests. Please try again later.") };
         }

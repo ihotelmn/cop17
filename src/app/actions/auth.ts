@@ -8,7 +8,8 @@ import { z } from "zod";
 import type { AuthState } from "@/types/auth";
 import {
     ActionRateLimitError,
-    enforceActionRateLimit,
+    buildActionRateLimitKey,
+    enforceActionRateLimitSafely,
     getClientIpFromHeaders,
 } from "@/lib/action-rate-limit";
 
@@ -40,26 +41,28 @@ export async function loginAction(prevState: AuthState, formData: FormData): Pro
     }
 
     const { email, password } = validatedFields.data;
+    const normalizedEmail = email.toLowerCase().trim();
 
     try {
         const requestHeaders = await headers();
         const clientIp = getClientIpFromHeaders(requestHeaders);
+        const identityKey = buildActionRateLimitKey(clientIp, normalizedEmail);
 
-        await enforceActionRateLimit({
-            scope: "auth:login:ip",
+        await enforceActionRateLimitSafely({
+            scope: "auth:login:network:v2",
             key: clientIp,
-            maxHits: 10,
+            maxHits: 60,
             windowMs: 10 * 60 * 1000,
-            message: "Too many sign-in attempts.",
-        });
+            message: "Too many sign-in attempts from this network.",
+        }, "auth:login:network:v2");
 
-        await enforceActionRateLimit({
-            scope: "auth:login:email",
-            key: email.toLowerCase(),
-            maxHits: 6,
+        await enforceActionRateLimitSafely({
+            scope: "auth:login:identity:v2",
+            key: identityKey,
+            maxHits: 12,
             windowMs: 10 * 60 * 1000,
-            message: "This email has too many recent sign-in attempts.",
-        });
+            message: "Too many recent sign-in attempts for this account.",
+        }, "auth:login:identity:v2");
     } catch (error) {
         return { error: getRateLimitErrorMessage(error, "Too many sign-in attempts. Please try again later.") };
     }
@@ -125,26 +128,28 @@ export async function signupAction(prevState: AuthState, formData: FormData): Pr
     }
 
     const { email, password, fullName } = validatedFields.data;
+    const normalizedEmail = email.toLowerCase().trim();
 
     try {
         const requestHeaders = await headers();
         const clientIp = getClientIpFromHeaders(requestHeaders);
+        const identityKey = buildActionRateLimitKey(clientIp, normalizedEmail);
 
-        await enforceActionRateLimit({
-            scope: "auth:signup:ip",
+        await enforceActionRateLimitSafely({
+            scope: "auth:signup:network:v2",
             key: clientIp,
-            maxHits: 5,
+            maxHits: 20,
             windowMs: 30 * 60 * 1000,
             message: "Too many sign-up attempts from this network.",
-        });
+        }, "auth:signup:network:v2");
 
-        await enforceActionRateLimit({
-            scope: "auth:signup:email",
-            key: email.toLowerCase(),
-            maxHits: 3,
+        await enforceActionRateLimitSafely({
+            scope: "auth:signup:identity:v2",
+            key: identityKey,
+            maxHits: 6,
             windowMs: 30 * 60 * 1000,
-            message: "This email has too many recent sign-up attempts.",
-        });
+            message: "Too many recent sign-up attempts for this account.",
+        }, "auth:signup:identity:v2");
     } catch (error) {
         return { error: getRateLimitErrorMessage(error, "Too many sign-up attempts. Please try again later.") };
     }
@@ -217,4 +222,3 @@ export async function updatePasswordAction(prevState: AuthState, formData: FormD
 
     return { success: true, message: "Password updated successfully!" };
 }
-

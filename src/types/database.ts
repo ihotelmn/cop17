@@ -7,7 +7,7 @@ export type Json =
     | Json[]
 
 export type UserRole = 'super_admin' | 'admin' | 'liaison' | 'vip' | 'guest'
-export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'paid' | 'blocked'
+export type BookingStatus = 'pending' | 'prebook_requested' | 'confirmed' | 'cancelled' | 'completed' | 'paid' | 'blocked'
 export type AuditAction = 'INSERT' | 'UPDATE' | 'DELETE'
 export type GroupRequestStatus = 'pending' | 'approved' | 'rejected' | 'completed'
 export type DocumentType = 'passport' | 'visa' | 'accreditation'

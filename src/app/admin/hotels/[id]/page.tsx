@@ -63,7 +63,7 @@ export default async function HotelDetailsPage({ params }: { params: Promise<{ i
                 <Card className="bg-zinc-900 border-zinc-800">
                     <CardHeader>
                         <CardDescription>Manage room types, pricing, and blocked inventory for this hotel.</CardDescription>
-                        <CardDescription>Price, max guests, and allocation can be updated directly from this list.</CardDescription>
+                        <CardDescription>Price, max guests, and allocation can be updated directly from this list. Use the green save icon on each row to apply changes.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>

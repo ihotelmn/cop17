@@ -1,5 +1,6 @@
 export type BookingLifecycleStatus =
     | "pending"
+    | "prebook_requested"
     | "paid"
     | "confirmed"
     | "checked-in"
@@ -8,6 +9,7 @@ export type BookingLifecycleStatus =
 
 const ALLOWED_BOOKING_STATUS_TRANSITIONS: Record<BookingLifecycleStatus, BookingLifecycleStatus[]> = {
     pending: ["confirmed", "cancelled"],
+    prebook_requested: ["confirmed", "cancelled"],
     paid: ["confirmed", "cancelled"],
     confirmed: ["checked-in", "cancelled"],
     "checked-in": ["completed"],

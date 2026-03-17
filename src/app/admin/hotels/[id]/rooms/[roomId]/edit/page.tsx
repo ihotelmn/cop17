@@ -109,10 +109,10 @@ export default function EditRoomPage({ params }: { params: Promise<{ id: string,
                             id="description"
                             name="description"
                             defaultValue={sanitizeRichTextToPlainText(room.description)}
-                            placeholder="Room details..."
+                            placeholder="Example: 55 m2, one king bed, work desk, bathtub and shower."
                             className="bg-zinc-800 border-zinc-700 text-white min-h-[100px]"
                         />
-                        <p className="text-xs text-zinc-500">Plain text is enough. HTML tags are not required.</p>
+                        <p className="text-xs text-zinc-500">Normal text is enough. Old HTML tags like &lt;ul&gt; or &lt;li&gt; are cleaned automatically.</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

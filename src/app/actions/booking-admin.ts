@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { decrypt } from "@/lib/encryption";
 import { getPreferredHotelName } from "@/lib/hotel-display";
+import { buildGuestBookingPortalPath } from "@/lib/guest-booking-access";
+import { sendBookingConfirmation } from "@/lib/email";
 import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { BookingAdmin, BookingFilters } from "@/types/booking";
@@ -198,6 +200,7 @@ export async function getAllBookings(filters?: BookingFilters): Promise<{ succes
 
 export async function updateBookingStatus(bookingId: string, status: string) {
     const supabase = await createClient();
+    const adminClient = getSupabaseAdmin();
 
     try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -207,9 +210,24 @@ export async function updateBookingStatus(bookingId: string, status: string) {
 
         const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
 
-        const { data: existingBooking } = await supabase
+        const { data: existingBooking } = await adminClient
             .from("bookings")
-            .select("status, modification_request_status")
+            .select(`
+                id,
+                group_id,
+                status,
+                modification_request_status,
+                guest_name,
+                guest_email,
+                check_in_date,
+                check_out_date,
+                room:rooms (
+                    hotel:hotels (
+                        name,
+                        name_en
+                    )
+                )
+            `)
             .eq("id", bookingId)
             .single();
 
@@ -231,10 +249,21 @@ export async function updateBookingStatus(bookingId: string, status: string) {
             updatePayload.modification_reviewed_at = new Date().toISOString();
         }
 
+        const shouldUpdateWholeGroup = Boolean(
+            existingBooking.group_id &&
+            existingBooking.status === "prebook_requested" &&
+            (normalizedNextStatus === "confirmed" || normalizedNextStatus === "cancelled")
+        );
+
         let query = supabase
             .from("bookings")
-            .update(updatePayload)
-            .eq("id", bookingId);
+            .update(updatePayload);
+
+        if (shouldUpdateWholeGroup) {
+            query = query.eq("group_id", existingBooking.group_id);
+        } else {
+            query = query.eq("id", bookingId);
+        }
 
         // RBAC: If not super_admin, verify ownership
         if (profile?.role !== "super_admin") {
@@ -250,12 +279,43 @@ export async function updateBookingStatus(bookingId: string, status: string) {
             ({ error } = await supabase
                 .from("bookings")
                 .update({ status: normalizedNextStatus })
-                .eq("id", bookingId));
+                .eq(shouldUpdateWholeGroup ? "group_id" : "id", shouldUpdateWholeGroup ? existingBooking.group_id : bookingId));
         }
 
         if (error) {
             console.error("Error updating booking:", error);
             return { success: false, error: error.message };
+        }
+
+        if (existingBooking.status === "prebook_requested" && normalizedNextStatus === "confirmed" && existingBooking.guest_email) {
+            const hotelRelation = Array.isArray(existingBooking.room) ? existingBooking.room[0] : existingBooking.room;
+            const hotel = hotelRelation && typeof hotelRelation === "object" && "hotel" in hotelRelation
+                ? (Array.isArray(hotelRelation.hotel) ? hotelRelation.hotel[0] : hotelRelation.hotel)
+                : null;
+
+            const hotelName = hotel
+                ? getPreferredHotelName({
+                    name: hotel.name || "",
+                    name_en: hotel.name_en || null,
+                    address: null,
+                    address_en: null,
+                    description: null,
+                    description_en: null,
+                    stars: 0,
+                })
+                : "COP17 Hotel";
+
+            const manageBookingPath = buildGuestBookingPortalPath(bookingId, existingBooking.guest_email);
+            const dates = `${format(new Date(existingBooking.check_in_date), "MMM d")} - ${format(new Date(existingBooking.check_out_date), "MMM d, yyyy")}`;
+
+            await sendBookingConfirmation(
+                existingBooking.guest_email,
+                existingBooking.guest_name || "Guest",
+                bookingId,
+                hotelName,
+                dates,
+                manageBookingPath
+            );
         }
 
         revalidatePath("/admin/bookings");
@@ -329,7 +389,7 @@ export async function getDashboardStats() {
         activeGuestsQuery = applyFilter(activeGuestsQuery);
         const { count: activeGuests } = await activeGuestsQuery;
 
-        let pendingBookingsQuery = adminClient.from("bookings").select("*", { count: "exact", head: true }).eq("status", "pending");
+        let pendingBookingsQuery = adminClient.from("bookings").select("*", { count: "exact", head: true }).in("status", ["pending", "prebook_requested"]);
         pendingBookingsQuery = applyFilter(pendingBookingsQuery);
         const { count: pendingBookings } = await pendingBookingsQuery;
 
