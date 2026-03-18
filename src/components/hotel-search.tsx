@@ -34,6 +34,7 @@ import {
     type BookingSearchState,
     createBookingSearchState,
     getDateRangeFromBookingSearchState,
+    getNextBookingDateRange,
     mergeBookingSearchState,
     normalizeBookingSearchState,
     persistBookingSearchState,
@@ -138,13 +139,11 @@ export function HotelSearch() {
         setIsMobileGuestsOpen(false);
     };
 
-    const handleSelect = (selectedRange: DateRange | undefined) => {
-        if (date?.from && date?.to && selectedRange?.from) {
-            const clickedDay = selectedRange.to || selectedRange.from;
-            if (clickedDay.getTime() !== date.to.getTime()) {
-                setDate({ from: clickedDay, to: undefined });
-                return;
-            }
+    const handleSelect = (selectedRange: DateRange | undefined, clickedDay?: Date) => {
+        const nextRange = getNextBookingDateRange(date, clickedDay);
+        if (nextRange && clickedDay) {
+            setDate(nextRange);
+            return;
         }
 
         setDate(selectedRange);

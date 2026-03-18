@@ -243,9 +243,13 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
                     <div className="space-y-6 lg:sticky lg:top-20">
 
                         {/* Search Persistence / Quick Modify */}
-                        <div id="reservation-assistant" className="relative hidden overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-7 shadow-2xl shadow-zinc-200/50 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none lg:block">
-                            <div className="absolute top-0 right-0 p-12 -mr-6 -mt-6 bg-blue-600/5 rounded-full blur-3xl pointer-events-none" />
-                            <h3 className="mb-4 text-xs font-black uppercase tracking-[0.22em] text-zinc-400">Reservation Assistant</h3>
+                        <div id="reservation-assistant" className="relative hidden overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-xl shadow-zinc-200/40 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none lg:block">
+                            <div className="mb-4">
+                                <h3 className="text-lg font-bold tracking-tight text-zinc-950 dark:text-white">Stay details</h3>
+                                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                                    Update your dates, guests, and room count here before you continue.
+                                </p>
+                            </div>
 
                             <div className="relative z-10 space-y-5">
                                 <SearchForm compact />

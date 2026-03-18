@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+    getNextBookingDateRange,
     hasActiveBookingSearchState,
     normalizeBookingSearchState,
     readPartialBookingSearchState,
@@ -53,6 +54,61 @@ describe("booking search state helpers", () => {
         expect(partial).toEqual({
             from: "2026-08-28",
             to: "2026-08-31",
+        });
+    });
+
+    it("keeps partial date selections without snapping checkout back to the default date", () => {
+        const normalized = normalizeBookingSearchState({
+            from: "2026-08-28",
+            to: undefined,
+        });
+
+        expect(normalized.from).toBe("2026-08-28");
+        expect(normalized.to).toBeUndefined();
+    });
+
+    it("starts a fresh range when clicking a new check-in on an existing full range", () => {
+        const next = getNextBookingDateRange(
+            {
+                from: new Date("2026-08-17T12:00:00"),
+                to: new Date("2026-08-28T12:00:00"),
+            },
+            new Date("2026-08-28T12:00:00")
+        );
+
+        expect(next).toEqual({
+            from: new Date("2026-08-28T12:00:00"),
+            to: undefined,
+        });
+    });
+
+    it("finishes the range on the second click when checkout is after check-in", () => {
+        const next = getNextBookingDateRange(
+            {
+                from: new Date("2026-08-28T12:00:00"),
+                to: undefined,
+            },
+            new Date("2026-09-21T12:00:00")
+        );
+
+        expect(next).toEqual({
+            from: new Date("2026-08-28T12:00:00"),
+            to: new Date("2026-09-21T12:00:00"),
+        });
+    });
+
+    it("resets the check-in when the second click is on or before the current start day", () => {
+        const next = getNextBookingDateRange(
+            {
+                from: new Date("2026-08-28T12:00:00"),
+                to: undefined,
+            },
+            new Date("2026-08-20T12:00:00")
+        );
+
+        expect(next).toEqual({
+            from: new Date("2026-08-20T12:00:00"),
+            to: undefined,
         });
     });
 });

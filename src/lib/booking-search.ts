@@ -58,6 +58,32 @@ function normalizeDateOrder(from?: string, to?: string) {
     };
 }
 
+function toDayKey(date: Date) {
+    return format(date, "yyyy-MM-dd");
+}
+
+export function getNextBookingDateRange(
+    currentRange: DateRange | undefined,
+    clickedDay: Date | undefined
+): DateRange | undefined {
+    if (!clickedDay) {
+        return currentRange;
+    }
+
+    if (!currentRange?.from || currentRange.to) {
+        return { from: clickedDay, to: undefined };
+    }
+
+    if (toDayKey(clickedDay) <= toDayKey(currentRange.from)) {
+        return { from: clickedDay, to: undefined };
+    }
+
+    return {
+        from: currentRange.from,
+        to: clickedDay,
+    };
+}
+
 function cleanNumber(
     value: unknown,
     fallback: number,
@@ -125,9 +151,15 @@ export function readPartialBookingSearchState(
 export function normalizeBookingSearchState(
     state?: Partial<BookingSearchState> | null
 ): BookingSearchState {
+    const hasExplicitDateKeys = Boolean(
+        state &&
+        (Object.prototype.hasOwnProperty.call(state, "from") ||
+            Object.prototype.hasOwnProperty.call(state, "to"))
+    );
+
     const normalizedDates = normalizeDateOrder(
-        cleanDate(state?.from) ?? DEFAULT_BOOKING_SEARCH_STATE.from,
-        cleanDate(state?.to) ?? DEFAULT_BOOKING_SEARCH_STATE.to
+        cleanDate(state?.from) ?? (hasExplicitDateKeys ? undefined : DEFAULT_BOOKING_SEARCH_STATE.from),
+        cleanDate(state?.to) ?? (hasExplicitDateKeys ? undefined : DEFAULT_BOOKING_SEARCH_STATE.to)
     );
 
     return {

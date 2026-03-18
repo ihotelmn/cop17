@@ -26,6 +26,7 @@ import {
     applyBookingSearchStateToParams,
     type BookingSearchState,
     getDateRangeFromBookingSearchState,
+    getNextBookingDateRange,
     mergeBookingSearchState,
     normalizeBookingSearchState,
     persistBookingSearchState,
@@ -132,16 +133,14 @@ export function SearchForm({ className, compact = false }: SearchFormProps) {
         }
     };
 
-    const handleDateSelect = (selectedRange: DateRange | undefined) => {
-        if (date?.from && date?.to && selectedRange?.from) {
-            const clickedDay = selectedRange.to || selectedRange.from;
-            if (clickedDay.getTime() !== date.to.getTime()) {
-                updateParams({
-                    from: format(clickedDay, "yyyy-MM-dd"),
-                    to: undefined,
-                });
-                return;
-            }
+    const handleDateSelect = (selectedRange: DateRange | undefined, clickedDay?: Date) => {
+        const nextRange = getNextBookingDateRange(date, clickedDay);
+        if (nextRange && clickedDay) {
+            updateParams({
+                from: nextRange.from ? format(nextRange.from, "yyyy-MM-dd") : undefined,
+                to: nextRange.to ? format(nextRange.to, "yyyy-MM-dd") : undefined,
+            });
+            return;
         }
 
         updateParams({
@@ -153,51 +152,32 @@ export function SearchForm({ className, compact = false }: SearchFormProps) {
     if (compact) {
         return (
             <div className={cn("space-y-3", className)}>
-                <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-white/10 dark:bg-white/5">
-                        <p className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-400">Dates</p>
-                        <p className="mt-1 text-xs font-black tracking-tight text-zinc-950 dark:text-white">
-                            {date?.from && date?.to
-                                ? `${format(date.from, "MMM d")} - ${format(date.to, "MMM d")}`
-                                : "Not set"}
-                        </p>
-                    </div>
-                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-white/10 dark:bg-white/5">
-                        <p className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-400">Guests</p>
-                        <p className="mt-1 text-xs font-black tracking-tight text-zinc-950 dark:text-white">
-                            {totalGuests} guest{totalGuests > 1 ? "s" : ""}
-                        </p>
-                    </div>
-                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-white/10 dark:bg-white/5">
-                        <p className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-400">Rooms</p>
-                        <p className="mt-1 text-xs font-black tracking-tight text-zinc-950 dark:text-white">
-                            {rooms} room{rooms > 1 ? "s" : ""}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="space-y-2">
+                <div className="grid grid-cols-[1.2fr_1.3fr] gap-3">
                     <Popover open={isDatePopoverOpen} onOpenChange={setIsDatePopoverOpen}>
                         <PopoverTrigger asChild>
-                            <button className="w-full rounded-[1.15rem] border border-zinc-200 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-blue-500/30 hover:shadow-md focus:outline-none dark:border-white/10 dark:bg-white/5">
-                                <div className="flex items-center justify-between gap-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/10">
-                                            <CalendarIcon className="h-4 w-4 text-blue-500" />
-                                        </div>
-                                        <div>
-                                            <span className="block text-xs font-black tracking-tight text-zinc-950 dark:text-white">
-                                                {date?.from && date?.to
-                                                    ? `${format(date.from, "MMM dd")} - ${format(date.to, "MMM dd")}`
-                                                    : "Choose dates"}
-                                            </span>
-                                            <span className="mt-1 block text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-400">
-                                                {nights > 0 ? `${nights} night stay` : "Check-in and check-out"}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400" />
+                            <button
+                                type="button"
+                                className="group rounded-2xl border border-zinc-200 bg-white px-4 py-4 text-left shadow-sm transition-all hover:border-zinc-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-white/10 dark:bg-white/5"
+                            >
+                                <div className="flex items-start justify-between gap-2">
+                                    <p className="flex items-center gap-2 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+                                        <CalendarIcon className="h-3.5 w-3.5 text-zinc-400" />
+                                        Dates
+                                    </p>
+                                    <ChevronDown className="h-4 w-4 shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-500" />
                                 </div>
+                                <p className="mt-3 text-base font-bold leading-tight tracking-tight text-zinc-950 dark:text-white">
+                                    {date?.from && date?.to
+                                        ? `${format(date.from, "MMM d")} - ${format(date.to, "MMM d")}`
+                                        : date?.from
+                                            ? `${format(date.from, "MMM d")} onward`
+                                            : "Select dates"}
+                                </p>
+                                <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                                    {date?.from && date?.to
+                                        ? `${nights} night${nights > 1 ? "s" : ""}`
+                                        : "Check-in and check-out"}
+                                </p>
                             </button>
                         </PopoverTrigger>
                         <PopoverContent className="w-[calc(100vw-2rem)] max-w-[42rem] overflow-hidden rounded-3xl border-none p-0 shadow-[0_30px_70px_rgba(0,0,0,0.2)]" align="start" sideOffset={8}>
@@ -240,22 +220,41 @@ export function SearchForm({ className, compact = false }: SearchFormProps) {
 
                     <Popover open={isGuestsPopoverOpen} onOpenChange={setIsGuestsPopoverOpen}>
                         <PopoverTrigger asChild>
-                            <button className="w-full rounded-[1.15rem] border border-zinc-200 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-blue-500/30 hover:shadow-md focus:outline-none dark:border-white/10 dark:bg-white/5">
-                                <div className="flex items-center justify-between gap-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/10">
-                                            <Users className="h-4 w-4 text-blue-500" />
-                                        </div>
-                                        <div>
-                                            <span className="block text-xs font-black tracking-tight text-zinc-950 dark:text-white">
-                                                {totalGuests} traveler{totalGuests > 1 ? "s" : ""}
-                                            </span>
-                                            <span className="mt-1 block text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-400">
-                                                {adults} adults, {children} children, {rooms} room{rooms > 1 ? "s" : ""}
-                                            </span>
-                                        </div>
+                            <button
+                                type="button"
+                                className="group rounded-2xl border border-zinc-200 bg-white px-4 py-4 text-left shadow-sm transition-all hover:border-zinc-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-white/10 dark:bg-white/5"
+                            >
+                                <div className="flex items-start justify-between gap-2">
+                                    <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+                                        Guests & rooms
+                                    </p>
+                                    <ChevronDown className="h-4 w-4 shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-500" />
+                                </div>
+                                <div className="mt-3 grid grid-cols-2 gap-3">
+                                    <div className="rounded-xl bg-zinc-50 px-3 py-3 dark:bg-white/5">
+                                        <p className="flex items-center gap-2 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+                                            <Users className="h-3.5 w-3.5 text-zinc-400" />
+                                            Guests
+                                        </p>
+                                        <p className="mt-2 text-base font-bold leading-tight tracking-tight text-zinc-950 dark:text-white">
+                                            {totalGuests}
+                                        </p>
+                                        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                            {adults} adult{adults > 1 ? "s" : ""}{children > 0 ? `, ${children} child${children > 1 ? "ren" : ""}` : ""}
+                                        </p>
                                     </div>
-                                    <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400" />
+                                    <div className="rounded-xl bg-zinc-50 px-3 py-3 dark:bg-white/5">
+                                        <p className="flex items-center gap-2 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+                                            <BedDouble className="h-3.5 w-3.5 text-zinc-400" />
+                                            Rooms
+                                        </p>
+                                        <p className="mt-2 text-base font-bold leading-tight tracking-tight text-zinc-950 dark:text-white">
+                                            {rooms}
+                                        </p>
+                                        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                            {rooms === 1 ? "Single room request" : `${rooms} rooms requested`}
+                                        </p>
+                                    </div>
                                 </div>
                             </button>
                         </PopoverTrigger>
@@ -297,6 +296,33 @@ export function SearchForm({ className, compact = false }: SearchFormProps) {
                                         </Button>
                                         <span className="w-4 text-center text-xs font-black">{children}</span>
                                         <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-zinc-200 dark:border-zinc-800" onClick={() => updateParams({ children: Math.min(10, children + 1) })}>
+                                            <Plus className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <span className="text-sm font-black uppercase tracking-tight text-zinc-950 dark:text-white">Rooms</span>
+                                        <p className="text-[10px] font-bold uppercase text-zinc-500">Accommodation units</p>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-9 w-9 rounded-full border-zinc-200 dark:border-zinc-800"
+                                            onClick={() => updateParams({ rooms: Math.max(1, rooms - 1) })}
+                                            disabled={rooms <= 1}
+                                        >
+                                            <Minus className="h-3.5 w-3.5" />
+                                        </Button>
+                                        <span className="w-4 text-center text-xs font-black">{rooms}</span>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-9 w-9 rounded-full border-zinc-200 dark:border-zinc-800"
+                                            onClick={() => updateParams({ rooms: Math.min(10, rooms + 1) })}
+                                        >
                                             <Plus className="h-3.5 w-3.5" />
                                         </Button>
                                     </div>
@@ -348,59 +374,27 @@ export function SearchForm({ className, compact = false }: SearchFormProps) {
                 </div>
 
                 <div className={cn("grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3", compact ? "mt-4" : "mt-5")}>
-                    <div className={cn("border border-white/70 bg-white/80 backdrop-blur dark:border-white/10 dark:bg-white/5", compact ? "rounded-xl px-3 py-2.5" : "rounded-2xl px-4 py-3")}>
-                        <p className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-400">Dates</p>
-                        <p className={cn("mt-1 font-black tracking-tight text-zinc-950 dark:text-white", compact ? "text-xs" : "text-sm")}>
-                            {date?.from && date?.to
-                                ? `${format(date.from, "MMM d")} - ${format(date.to, "MMM d")}`
-                                : date?.from
-                                    ? `${format(date.from, "MMM d")} onward`
-                                    : "Not selected"}
-                        </p>
-                    </div>
-
-                    <div className={cn("border border-white/70 bg-white/80 backdrop-blur dark:border-white/10 dark:bg-white/5", compact ? "rounded-xl px-3 py-2.5" : "rounded-2xl px-4 py-3")}>
-                        <p className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-400">Travelers</p>
-                        <p className={cn("mt-1 font-black tracking-tight text-zinc-950 dark:text-white", compact ? "text-xs" : "text-sm")}>
-                            {totalGuests} guest{totalGuests > 1 ? "s" : ""}
-                        </p>
-                    </div>
-
-                    <div className={cn("border border-white/70 bg-white/80 backdrop-blur dark:border-white/10 dark:bg-white/5", compact ? "rounded-xl px-3 py-2.5" : "rounded-2xl px-4 py-3")}>
-                        <p className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-400">Room Request</p>
-                        <p className={cn("mt-1 font-black tracking-tight text-zinc-950 dark:text-white", compact ? "text-xs" : "text-sm")}>
-                            {rooms} room{rooms > 1 ? "s" : ""}
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div className="space-y-4">
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">
-                        Stay Period
-                    </label>
                     <Popover open={isDatePopoverOpen} onOpenChange={setIsDatePopoverOpen}>
                         <PopoverTrigger asChild>
-                            <button className={cn("w-full border border-zinc-200 bg-white text-left shadow-sm transition-all hover:border-blue-500/30 hover:shadow-md focus:outline-none dark:border-white/10 dark:bg-white/5", compact ? "rounded-[1.35rem] px-4 py-3" : "rounded-[1.75rem] px-5 py-4")}>
-                                <div className="flex items-center justify-between gap-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className={cn("flex shrink-0 items-center justify-center bg-blue-500/10", compact ? "h-10 w-10 rounded-xl" : "h-12 w-12 rounded-2xl")}>
-                                            <CalendarIcon className="h-5 w-5 text-blue-500" />
-                                        </div>
-                                        <div>
-                                            <span className={cn("block font-black tracking-tight text-zinc-950 dark:text-white", compact ? "text-xs" : "text-sm")}>
-                                                {date?.from && date?.to
-                                                    ? `${format(date.from, "MMM dd")} - ${format(date.to, "MMM dd")}`
-                                                    : "Choose check-in and check-out"}
-                                            </span>
-                                            <span className={cn("mt-1 block font-bold uppercase tracking-[0.18em] text-zinc-400", compact ? "text-[9px]" : "text-[10px]")}>
-                                                {nights > 0 ? `${nights} night stay` : "Keep this synced across the site"}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400 transition-colors group-hover:text-blue-500" />
-                                </div>
+                            <button
+                                type="button"
+                                className={cn(
+                                    "border border-white/70 bg-white/80 px-4 py-3 text-left backdrop-blur transition-all hover:border-blue-500/40 hover:bg-white hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-white/10 dark:bg-white/5",
+                                    compact ? "rounded-xl" : "rounded-2xl"
+                                )}
+                            >
+                                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-400">Dates</p>
+                                <p className={cn("mt-1 font-black tracking-tight text-zinc-950 dark:text-white", compact ? "text-xs" : "text-sm")}>
+                                    {date?.from && date?.to
+                                        ? `${format(date.from, "MMM d")} - ${format(date.to, "MMM d")}`
+                                        : date?.from
+                                            ? `${format(date.from, "MMM d")} onward`
+                                            : "Not selected"}
+                                </p>
+                                <p className="mt-2 flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-400">
+                                    Edit
+                                    <ChevronDown className="h-3 w-3" />
+                                </p>
                             </button>
                         </PopoverTrigger>
                         <PopoverContent className="w-[calc(100vw-2rem)] max-w-[42rem] overflow-hidden rounded-3xl border-none p-0 shadow-[0_30px_70px_rgba(0,0,0,0.2)]" align="start" sideOffset={8}>
@@ -440,30 +434,35 @@ export function SearchForm({ className, compact = false }: SearchFormProps) {
                             </div>
                         </PopoverContent>
                     </Popover>
-                </div>
 
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">
-                        Guest Setup
-                    </label>
                     <Popover open={isGuestsPopoverOpen} onOpenChange={setIsGuestsPopoverOpen}>
                         <PopoverTrigger asChild>
-                            <button className={cn("w-full border border-zinc-200 bg-white text-left shadow-sm transition-all hover:border-blue-500/30 hover:shadow-md focus:outline-none dark:border-white/10 dark:bg-white/5", compact ? "rounded-[1.35rem] px-4 py-3" : "rounded-[1.75rem] px-5 py-4")}>
-                                <div className="flex items-center justify-between gap-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className={cn("flex shrink-0 items-center justify-center rounded-2xl bg-blue-500/10", compact ? "h-10 w-10 rounded-xl" : "h-12 w-12 rounded-2xl")}>
-                                            <Users className="h-5 w-5 text-blue-500" />
-                                        </div>
-                                        <div>
-                                            <span className={cn("block font-black tracking-tight text-zinc-950 dark:text-white", compact ? "text-xs" : "text-sm")}>
-                                                {totalGuests} traveler{totalGuests > 1 ? "s" : ""}
-                                            </span>
-                                            <span className={cn("mt-1 block font-bold uppercase tracking-[0.18em] text-zinc-400", compact ? "text-[9px]" : "text-[10px]")}>
-                                                {adults} adults, {children} children, {rooms} room{rooms > 1 ? "s" : ""}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400 transition-colors group-hover:text-blue-500" />
+                            <button
+                                type="button"
+                                className={cn(
+                                    "sm:col-span-2 lg:col-span-1 xl:col-span-2 grid grid-cols-2 gap-3 text-left focus:outline-none"
+                                )}
+                            >
+                                <div className={cn("border border-white/70 bg-white/80 px-4 py-3 backdrop-blur transition-all hover:border-blue-500/40 hover:bg-white hover:shadow-sm dark:border-white/10 dark:bg-white/5", compact ? "rounded-xl" : "rounded-2xl")}>
+                                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-400">Travelers</p>
+                                    <p className={cn("mt-1 font-black tracking-tight text-zinc-950 dark:text-white", compact ? "text-xs" : "text-sm")}>
+                                        {totalGuests} guest{totalGuests > 1 ? "s" : ""}
+                                    </p>
+                                    <p className="mt-2 flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-400">
+                                        Edit
+                                        <ChevronDown className="h-3 w-3" />
+                                    </p>
+                                </div>
+
+                                <div className={cn("border border-white/70 bg-white/80 px-4 py-3 backdrop-blur transition-all hover:border-blue-500/40 hover:bg-white hover:shadow-sm dark:border-white/10 dark:bg-white/5", compact ? "rounded-xl" : "rounded-2xl")}>
+                                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-400">Room Request</p>
+                                    <p className={cn("mt-1 font-black tracking-tight text-zinc-950 dark:text-white", compact ? "text-xs" : "text-sm")}>
+                                        {rooms} room{rooms > 1 ? "s" : ""}
+                                    </p>
+                                    <p className="mt-2 flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-400">
+                                        Edit
+                                        <ChevronDown className="h-3 w-3" />
+                                    </p>
                                 </div>
                             </button>
                         </PopoverTrigger>
@@ -532,23 +531,31 @@ export function SearchForm({ className, compact = false }: SearchFormProps) {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-800/50">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-zinc-900">
-                                            <BedDouble className="h-4 w-4 text-blue-500" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">
-                                                Rooms Requested
-                                            </p>
-                                            <p className="mt-1 text-sm font-black text-zinc-950 dark:text-white">
-                                                {rooms} room{rooms > 1 ? "s" : ""}
-                                            </p>
-                                        </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <span className="text-sm font-black uppercase tracking-tight text-zinc-950 dark:text-white">Rooms</span>
+                                        <p className="text-[10px] font-bold uppercase text-zinc-500">Accommodation units</p>
                                     </div>
-                                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
-                                        From homepage
-                                    </span>
+                                    <div className="flex items-center gap-4">
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-9 w-9 rounded-full border-zinc-200 dark:border-zinc-800"
+                                            onClick={() => updateParams({ rooms: Math.max(1, rooms - 1) })}
+                                            disabled={rooms <= 1}
+                                        >
+                                            <Minus className="h-3.5 w-3.5" />
+                                        </Button>
+                                        <span className="w-4 text-center text-xs font-black">{rooms}</span>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-9 w-9 rounded-full border-zinc-200 dark:border-zinc-800"
+                                            onClick={() => updateParams({ rooms: Math.min(10, rooms + 1) })}
+                                        >
+                                            <Plus className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </div>
                                 </div>
 
                                 <Button

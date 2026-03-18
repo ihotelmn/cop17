@@ -1,34 +1,21 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { ReactNode } from "react";
 
 export default function PageTransition({ children }: { children: ReactNode }) {
     const pathname = usePathname();
-    const isMounted = useSyncExternalStore(
-        () => () => undefined,
-        () => true,
-        () => false
-    );
-
-    if (!isMounted) {
-        return <div className="w-full h-full">{children}</div>;
-    }
 
     return (
-        <AnimatePresence mode="wait">
-            <motion.div
-                key={pathname}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="w-full h-full"
-            >
-                {children}
-            </motion.div>
-        </AnimatePresence>
+        <motion.div
+            key={pathname}
+            initial={false}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.24, ease: "easeOut" }}
+            className="w-full h-full"
+        >
+            {children}
+        </motion.div>
     );
 }
