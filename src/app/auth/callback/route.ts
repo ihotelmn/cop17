@@ -1,19 +1,41 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url);
-    const code = searchParams.get("code");
-    const next = searchParams.get("next") ?? "/";
+function normalizeNextPath(next: string | null) {
+    if (!next || !next.startsWith("/") || next.startsWith("//")) {
+        return "/";
+    }
 
-    const productionUrl = 'https://cop17.ihotel.mn';
-    const origin = process.env.NEXT_PUBLIC_APP_URL || productionUrl;
+    return next;
+}
+
+export async function GET(request: Request) {
+    const requestUrl = new URL(request.url);
+    const { searchParams } = requestUrl;
+    const code = searchParams.get("code");
+    const next = normalizeNextPath(searchParams.get("next"));
+    const origin = requestUrl.origin;
 
     if (code) {
         const supabase = await createClient();
-        console.log("Exchanging code for session on origin:", origin);
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (!error) {
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (user && next === "/") {
+                const { data: profile } = await supabase
+                    .from("profiles")
+                    .select("role")
+                    .eq("id", user.id)
+                    .single();
+
+                const destination = profile?.role === "admin" || profile?.role === "super_admin" || profile?.role === "liaison"
+                    ? "/admin"
+                    : "/";
+
+                return NextResponse.redirect(`${origin}${destination}`);
+            }
+
             return NextResponse.redirect(`${origin}${next}`);
         } else {
             console.error("Auth Callback Error (Exchange Code):", error.message);

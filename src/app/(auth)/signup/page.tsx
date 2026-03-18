@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signupAction } from "@/app/actions/auth";
 import type { AuthState } from "@/types/auth";
+import { GoogleAuthButton } from "@/components/auth/google-auth-button";
 
 
 const initialState: AuthState = { error: undefined, success: undefined };
@@ -55,6 +56,22 @@ export default function SignupPage() {
                 </p>
             </div>
             <div className={cn("grid gap-6")}>
+                <GoogleAuthButton
+                    label="Continue with Google"
+                    className="h-11 rounded-xl border-zinc-200 bg-white text-sm font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                />
+
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground font-medium">
+                            Or sign up with email
+                        </span>
+                    </div>
+                </div>
+
                 <form action={handleSubmit}>
                     <div className="grid gap-4">
                         <div className="grid gap-2">

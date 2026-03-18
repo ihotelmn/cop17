@@ -204,18 +204,14 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
                     <section id="rooms" className="scroll-mt-24">
                         <div
                             id="mobile-search-assistant"
-                            className="mb-8 rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-xl shadow-zinc-200/40 dark:border-zinc-800 dark:bg-zinc-900/50 dark:shadow-none lg:hidden"
+                            className="mb-6 lg:hidden"
                         >
-                            <div className="mb-6">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Stay Setup</p>
-                                <h3 className="mt-2 text-2xl font-black tracking-tight text-zinc-950 dark:text-white">
-                                    Adjust dates and guests before you book
+                            <div className="mb-3">
+                                <h3 className="text-lg font-black tracking-tight text-zinc-950 dark:text-white">
+                                    Stay details
                                 </h3>
-                                <p className="mt-2 text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                                    Your room selection stays in view below, so you can continue without scrolling back through every card.
-                                </p>
                             </div>
-                            <SearchForm className="space-y-4" />
+                            <SearchForm compact className="space-y-3" />
                         </div>
 
                         <div className="flex items-center justify-between mb-10 pb-6 border-b border-zinc-200 dark:border-zinc-800">
@@ -243,37 +239,35 @@ export default async function HotelDetailPage({ params, searchParams }: PageProp
                     <div className="space-y-6 lg:sticky lg:top-20">
 
                         {/* Search Persistence / Quick Modify */}
-                        <div id="reservation-assistant" className="relative hidden overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-xl shadow-zinc-200/40 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none lg:block">
+                        <div id="reservation-assistant" className="relative hidden overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white p-5 shadow-lg shadow-zinc-200/30 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none lg:block">
                             <div className="mb-4">
-                                <h3 className="text-lg font-bold tracking-tight text-zinc-950 dark:text-white">Stay details</h3>
+                                <h3 className="text-lg font-black tracking-tight text-zinc-950 dark:text-white">Stay details</h3>
                                 <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                                    Update your dates, guests, and room count here before you continue.
+                                    Update dates, guests, and rooms before checkout.
                                 </p>
                             </div>
 
-                            <div className="relative z-10 space-y-5">
+                            <div className="relative z-10 space-y-4">
                                 <SearchForm compact />
 
-                                <div className="grid grid-cols-2 gap-3 border-t border-zinc-100 pt-5 dark:border-zinc-800">
-                                    <div className="space-y-2">
-                                        <div className="mb-1 flex items-center gap-2">
-                                            <Clock className="w-3.5 h-3.5 text-blue-500" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Policy</span>
+                                <div className="grid grid-cols-2 gap-3 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+                                    <div className="rounded-[1.15rem] border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950/60">
+                                        <div className="flex items-center gap-2">
+                                            <Clock className="h-3.5 w-3.5 text-blue-500" />
+                                            <span className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-400">Check-in</span>
                                         </div>
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Check-In</p>
-                                            <p className="text-lg font-black text-zinc-900 dark:text-white">{hotel.check_in_time?.substring(0, 5) || "14:00"}</p>
-                                        </div>
+                                        <p className="mt-2 text-lg font-black text-zinc-900 dark:text-white">
+                                            {hotel.check_in_time?.substring(0, 5) || "14:00"}
+                                        </p>
                                     </div>
-                                    <div className="space-y-2">
-                                        <div className="mb-1 flex items-center gap-2">
-                                            <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Checkout</span>
+                                    <div className="rounded-[1.15rem] border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950/60">
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle2 className="h-3.5 w-3.5 text-blue-500" />
+                                            <span className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-400">Check-out</span>
                                         </div>
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Check-Out</p>
-                                            <p className="text-lg font-black text-zinc-900 dark:text-white">{hotel.check_out_time?.substring(0, 5) || "11:00"}</p>
-                                        </div>
+                                        <p className="mt-2 text-lg font-black text-zinc-900 dark:text-white">
+                                            {hotel.check_out_time?.substring(0, 5) || "11:00"}
+                                        </p>
                                     </div>
                                 </div>
 

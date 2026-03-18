@@ -152,28 +152,28 @@ export function SearchForm({ className, compact = false }: SearchFormProps) {
     if (compact) {
         return (
             <div className={cn("space-y-3", className)}>
-                <div className="grid grid-cols-[1.2fr_1.3fr] gap-3">
+                <div className="grid gap-3 md:grid-cols-[1.25fr_1fr]">
                     <Popover open={isDatePopoverOpen} onOpenChange={setIsDatePopoverOpen}>
                         <PopoverTrigger asChild>
                             <button
                                 type="button"
-                                className="group rounded-2xl border border-zinc-200 bg-white px-4 py-4 text-left shadow-sm transition-all hover:border-zinc-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-white/10 dark:bg-white/5"
+                                className="group rounded-[1.35rem] border border-zinc-200 bg-white px-4 py-4 text-left shadow-sm transition-all hover:border-zinc-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-white/10 dark:bg-white/5"
                             >
-                                <div className="flex items-start justify-between gap-2">
-                                    <p className="flex items-center gap-2 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+                                <div className="flex items-center justify-between gap-2">
+                                    <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
                                         <CalendarIcon className="h-3.5 w-3.5 text-zinc-400" />
                                         Dates
                                     </p>
                                     <ChevronDown className="h-4 w-4 shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-500" />
                                 </div>
-                                <p className="mt-3 text-base font-bold leading-tight tracking-tight text-zinc-950 dark:text-white">
+                                <p className="mt-3 text-base font-black leading-tight tracking-tight text-zinc-950 dark:text-white">
                                     {date?.from && date?.to
                                         ? `${format(date.from, "MMM d")} - ${format(date.to, "MMM d")}`
                                         : date?.from
                                             ? `${format(date.from, "MMM d")} onward`
                                             : "Select dates"}
                                 </p>
-                                <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                                <p className="mt-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
                                     {date?.from && date?.to
                                         ? `${nights} night${nights > 1 ? "s" : ""}`
                                         : "Check-in and check-out"}
@@ -182,12 +182,9 @@ export function SearchForm({ className, compact = false }: SearchFormProps) {
                         </PopoverTrigger>
                         <PopoverContent className="w-[calc(100vw-2rem)] max-w-[42rem] overflow-hidden rounded-3xl border-none p-0 shadow-[0_30px_70px_rgba(0,0,0,0.2)]" align="start" sideOffset={8}>
                             <div className="flex items-center justify-between border-b border-zinc-100 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900">
-                                <div>
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Stay Selection</span>
-                                    <p className="mt-1 text-sm font-black text-zinc-950 dark:text-white">
-                                        Pick the exact dates you want to carry throughout the booking flow
-                                    </p>
-                                </div>
+                                <p className="text-sm font-black text-zinc-950 dark:text-white">
+                                    Choose stay dates
+                                </p>
                                 <Button
                                     variant="ghost"
                                     size="sm"
@@ -209,10 +206,10 @@ export function SearchForm({ className, compact = false }: SearchFormProps) {
                             />
                             <div className="border-t border-zinc-100 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-950">
                                 <Button
-                                    className="h-12 w-full rounded-2xl bg-zinc-950 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-xl dark:bg-white dark:text-zinc-950"
+                                    className="h-12 w-full rounded-2xl bg-blue-600 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700"
                                     onClick={() => setIsDatePopoverOpen(false)}
                                 >
-                                    Keep These Dates
+                                    Done
                                 </Button>
                             </div>
                         </PopoverContent>
@@ -222,53 +219,32 @@ export function SearchForm({ className, compact = false }: SearchFormProps) {
                         <PopoverTrigger asChild>
                             <button
                                 type="button"
-                                className="group rounded-2xl border border-zinc-200 bg-white px-4 py-4 text-left shadow-sm transition-all hover:border-zinc-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-white/10 dark:bg-white/5"
+                                className="group rounded-[1.35rem] border border-zinc-200 bg-white px-4 py-4 text-left shadow-sm transition-all hover:border-zinc-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-white/10 dark:bg-white/5"
                             >
-                                <div className="flex items-start justify-between gap-2">
-                                    <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+                                <div className="flex items-center justify-between gap-2">
+                                    <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
+                                        <Users className="h-3.5 w-3.5 text-zinc-400" />
                                         Guests & rooms
                                     </p>
                                     <ChevronDown className="h-4 w-4 shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-500" />
                                 </div>
-                                <div className="mt-3 grid grid-cols-2 gap-3">
-                                    <div className="rounded-xl bg-zinc-50 px-3 py-3 dark:bg-white/5">
-                                        <p className="flex items-center gap-2 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
-                                            <Users className="h-3.5 w-3.5 text-zinc-400" />
-                                            Guests
-                                        </p>
-                                        <p className="mt-2 text-base font-bold leading-tight tracking-tight text-zinc-950 dark:text-white">
-                                            {totalGuests}
-                                        </p>
-                                        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                                            {adults} adult{adults > 1 ? "s" : ""}{children > 0 ? `, ${children} child${children > 1 ? "ren" : ""}` : ""}
-                                        </p>
-                                    </div>
-                                    <div className="rounded-xl bg-zinc-50 px-3 py-3 dark:bg-white/5">
-                                        <p className="flex items-center gap-2 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
-                                            <BedDouble className="h-3.5 w-3.5 text-zinc-400" />
-                                            Rooms
-                                        </p>
-                                        <p className="mt-2 text-base font-bold leading-tight tracking-tight text-zinc-950 dark:text-white">
-                                            {rooms}
-                                        </p>
-                                        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                                            {rooms === 1 ? "Single room request" : `${rooms} rooms requested`}
-                                        </p>
-                                    </div>
+                                <p className="mt-3 text-base font-black leading-tight tracking-tight text-zinc-950 dark:text-white">
+                                    {totalGuests} guest{totalGuests > 1 ? "s" : ""} · {rooms} room{rooms > 1 ? "s" : ""}
+                                </p>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-semibold text-zinc-600 dark:bg-white/5 dark:text-zinc-300">
+                                        <Users className="h-3 w-3" />
+                                        {adults} adult{adults > 1 ? "s" : ""}{children > 0 ? `, ${children} child${children > 1 ? "ren" : ""}` : ""}
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-semibold text-zinc-600 dark:bg-white/5 dark:text-zinc-300">
+                                        <BedDouble className="h-3 w-3" />
+                                        {rooms} room{rooms > 1 ? "s" : ""}
+                                    </span>
                                 </div>
                             </button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80 rounded-3xl border-zinc-200 bg-white p-6 shadow-[0_30px_70px_rgba(0,0,0,0.2)] dark:border-zinc-800 dark:bg-zinc-900" align="start" sideOffset={8}>
                             <div className="space-y-6">
-                                <div className="rounded-2xl border border-blue-100 bg-blue-50/80 px-4 py-3 dark:border-blue-900/40 dark:bg-blue-950/20">
-                                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
-                                        Synced Request
-                                    </p>
-                                    <p className="mt-1 text-sm font-black text-zinc-950 dark:text-white">
-                                        {rooms} room{rooms > 1 ? "s" : ""} requested for {totalGuests} guest{totalGuests > 1 ? "s" : ""}
-                                    </p>
-                                </div>
-
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
                                         <span className="text-sm font-black uppercase tracking-tight text-zinc-950 dark:text-white">Adults</span>
@@ -332,7 +308,7 @@ export function SearchForm({ className, compact = false }: SearchFormProps) {
                                     className="h-12 w-full rounded-2xl bg-blue-600 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-xl hover:bg-blue-700"
                                     onClick={() => setIsGuestsPopoverOpen(false)}
                                 >
-                                    Save Guest Setup
+                                    Done
                                 </Button>
                             </div>
                         </PopoverContent>
@@ -426,7 +402,7 @@ export function SearchForm({ className, compact = false }: SearchFormProps) {
                             />
                             <div className="border-t border-zinc-100 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-950">
                                 <Button
-                                    className="h-12 w-full rounded-2xl bg-zinc-950 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-xl dark:bg-white dark:text-zinc-950"
+                                    className="h-12 w-full rounded-2xl bg-blue-600 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700"
                                     onClick={() => setIsDatePopoverOpen(false)}
                                 >
                                     Keep These Dates
