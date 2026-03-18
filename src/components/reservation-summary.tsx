@@ -100,74 +100,60 @@ export function ReservationSummary({ hotelId, rooms, checkIn, checkOut, mode = "
 
     const mobileBar = showMobileSummary ? (
         <div
-            className="fixed inset-x-0 bottom-0 z-50 px-4 lg:hidden"
-            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}
+            className="fixed inset-x-0 bottom-0 z-50 lg:hidden"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
-            <div className="mx-auto max-w-md rounded-[1.5rem] border border-zinc-200/80 bg-white/95 p-3 shadow-[0_18px_40px_rgba(0,0,0,0.14)] backdrop-blur-xl dark:border-zinc-700 dark:bg-zinc-900/95">
+            <div className="mx-auto max-w-md px-3">
+                <div className="rounded-t-[1.4rem] border border-zinc-200/80 border-b-0 bg-white/96 p-3 shadow-[0_-12px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl dark:border-zinc-700 dark:bg-zinc-900/96">
                 {selectedRooms.length === 0 ? (
-                    <div className="space-y-3">
-                        <div className="space-y-1">
-                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">
-                                Room selection
+                    <div className="flex items-center gap-3">
+                        <div className="min-w-0 flex-1">
+                            <p className="text-sm font-black tracking-tight text-zinc-950 dark:text-white">
+                                Choose a room
                             </p>
-                            <p className="text-base font-black tracking-tight text-zinc-950 dark:text-white">
-                                Choose a room to continue
-                            </p>
-                            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                                View available room types and rates.
+                            <p className="mt-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                                View types and rates to continue.
                             </p>
                         </div>
 
                         <Button
                             type="button"
                             onClick={scrollToRooms}
-                            className="h-12 w-full rounded-[1.15rem] bg-blue-600 px-4 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700"
+                            className="h-11 min-w-[8.25rem] shrink-0 rounded-[1rem] bg-blue-600 px-4 text-[10px] font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700"
                         >
                             View Rooms
                             <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
                     </div>
                 ) : (
-                    <div className="space-y-3">
-                        <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
-                                    {hasDates ? "Ready to continue" : "Finish your selection"}
-                                </p>
-                                <p className="mt-1 text-sm font-black text-zinc-950 dark:text-white">
-                                    {totalRooms} room{totalRooms > 1 ? "s" : ""}{hasDates ? ` • ${nights} night${nights > 1 ? "s" : ""}` : ""}
-                                </p>
-                            </div>
-                            {hasDates && (
-                                <div className="shrink-0 rounded-full bg-blue-50 px-3 py-1.5 text-right dark:bg-blue-950/30">
-                                    <p className="text-[9px] font-black uppercase tracking-[0.16em] text-blue-600 dark:text-blue-400">
-                                        Total
-                                    </p>
-                                    <p className="mt-0.5 text-sm font-black text-blue-600 dark:text-blue-400">
-                                        ${totalPrice}
-                                    </p>
-                                </div>
-                            )}
+                    <div className="flex items-center gap-3">
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">
+                                {hasDates ? "Ready to continue" : "Finish your selection"}
+                            </p>
+                            <p className="mt-1 text-sm font-black text-zinc-950 dark:text-white">
+                                {totalRooms} room{totalRooms > 1 ? "s" : ""}{hasDates ? ` • ${nights} night${nights > 1 ? "s" : ""}` : ""}
+                            </p>
+                            <p className="mt-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                                {hasDates ? `$${totalPrice} total` : "Add stay dates to continue"}
+                            </p>
                         </div>
 
-                        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                            {hasDates ? "Continue to guest details and payment." : "Add stay dates to unlock checkout."}
-                        </p>
-
                         {hasDates ? (
-                            <Button asChild className="h-12 w-full rounded-[1.15rem] bg-blue-600 px-5 text-[11px] font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700">
+                            <Button asChild className="h-11 min-w-[8.25rem] shrink-0 rounded-[1rem] bg-blue-600 px-4 text-[10px] font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700">
                                 <Link href={checkoutHref}>
                                     Continue
                                     <ArrowRight className="ml-2 h-4 w-4" />
                                 </Link>
                             </Button>
                         ) : (
-                            <Button asChild variant="outline" className="h-12 w-full rounded-[1.15rem] border-zinc-200 px-4 text-[11px] font-black uppercase tracking-[0.16em] dark:border-zinc-700">
+                            <Button asChild variant="outline" className="h-11 min-w-[8.25rem] shrink-0 rounded-[1rem] border-zinc-200 px-4 text-[10px] font-black uppercase tracking-[0.16em] dark:border-zinc-700">
                                 <Link href="#mobile-search-assistant">Set Dates</Link>
                             </Button>
                         )}
                     </div>
                 )}
+                </div>
             </div>
         </div>
     ) : null;

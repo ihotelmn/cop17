@@ -207,11 +207,7 @@ export default async function Home(props: Props) {
                   </div>
                 </div>
 
-                <div className="mt-0 flex items-center justify-between gap-2 lg:hidden">
-                  <p className="min-w-0 text-sm font-semibold text-zinc-900 dark:text-white">
-                    {hotels.length} stays
-                  </p>
-
+                <div className="mt-0 flex items-center justify-end gap-2 lg:hidden">
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -238,7 +234,7 @@ export default async function Home(props: Props) {
                 ) : (
                   view === "map" ? (
                     <div className="space-y-8">
-                      <div className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm h-[420px] sm:h-[600px]">
+                      <div className="rounded-2xl overflow-hidden">
                         <Suspense fallback={<div className="h-full bg-zinc-100 animate-pulse" />}>
                           <HotelMap hotels={hotels} query={query} />
                         </Suspense>
