@@ -254,7 +254,7 @@ export default function HotelMap({ hotels, query }: { hotels: (Hotel & { minPric
                                 }}
                                 className={
                                     isMobileViewport
-                                        ? `relative z-10 rounded-full border border-white/90 bg-white/95 px-2 py-1 text-[11px] font-black tracking-tight text-blue-700 shadow-lg transition-all duration-200 ${selectedHotelId ? "opacity-70" : "opacity-100"}`
+                                        ? `relative z-10 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-black tracking-tight text-zinc-950 shadow-[0_8px_18px_rgba(0,0,0,0.18)] transition-all duration-200 ${selectedHotelId ? "opacity-90" : "opacity-100"}`
                                         : "relative z-10 flex items-center gap-1.5 rounded-xl border-2 border-white bg-blue-600 px-3 py-2 text-white shadow-xl transition-all duration-300 hover:scale-110 hover:bg-blue-700"
                                 }
                                 aria-label={`View ${hotel.name}`}
@@ -288,7 +288,7 @@ export default function HotelMap({ hotels, query }: { hotels: (Hotel & { minPric
                                 }}
                                 className={
                                     isMobileViewport
-                                        ? "relative z-[121] rounded-full border border-amber-300 bg-zinc-950 px-2.5 py-1 text-[11px] font-black tracking-tight text-amber-300 shadow-xl ring-4 ring-amber-400/25"
+                                        ? "relative z-[121] rounded-full border border-blue-200 bg-blue-600 px-2.5 py-1 text-[11px] font-black tracking-tight text-white shadow-[0_10px_20px_rgba(37,99,235,0.35)] ring-4 ring-blue-500/20"
                                         : "relative z-[121] flex items-center gap-1.5 rounded-xl border-2 border-amber-400 bg-zinc-900 px-3 py-2 text-white shadow-xl ring-4 ring-amber-400/20 transition-all duration-300 scale-125"
                                 }
                                 aria-label={`Selected hotel ${selectedMapHotel.name}`}
