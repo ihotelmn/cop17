@@ -5,7 +5,7 @@ import { CheckCircle2, ArrowRight, MapPin, Calendar, Building2, Mail, ShieldChec
 import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
 import { PrintButton } from "@/components/booking/print-button";
-import { cn } from "@/lib/utils";
+import { cn, formatUsd, roundCurrencyAmount } from "@/lib/utils";
 import { getPreferredHotelAddress, getPreferredHotelName } from "@/lib/hotel-display";
 import { getPaymentAttemptByGroupId } from "@/lib/payment-attempts";
 import { FallbackImage } from "@/components/ui/fallback-image";
@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 type RoomSummaryItem = {
     count: number;
-    price: number;
+    subtotal: number;
 };
 
 function getSuccessRoomName(value: unknown): string {
@@ -116,6 +116,7 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
                 check_out_date,
                 status,
                 total_price,
+                service_fee,
                 guest_name,
                 guest_email,
                 room:rooms (
@@ -175,12 +176,17 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
         // Group rooms summary
         const roomSummary = bookings.reduce<Record<string, RoomSummaryItem>>((acc, curr) => {
             const name = getSuccessRoomName(curr.room);
-            if (!acc[name]) acc[name] = { count: 0, price: Number(curr.total_price || 0) };
+            if (!acc[name]) acc[name] = { count: 0, subtotal: 0 };
             acc[name].count += 1;
+            acc[name].subtotal = roundCurrencyAmount(
+                acc[name].subtotal + (Number(curr.total_price || 0) - Number(curr.service_fee || 0))
+            );
             return acc;
         }, {});
 
-        const totalPrice = bookings.reduce((sum, b) => sum + Number(b.total_price || 0), 0);
+        const totalPrice = roundCurrencyAmount(bookings.reduce((sum, b) => sum + Number(b.total_price || 0), 0));
+        const serviceFeeTotal = roundCurrencyAmount(bookings.reduce((sum, b) => sum + Number(b.service_fee || 0), 0));
+        const subtotal = roundCurrencyAmount(totalPrice - serviceFeeTotal);
 
         return (
             <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 py-12 px-4 md:py-20 text-zinc-900 dark:text-zinc-100">
@@ -297,7 +303,7 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className="font-black text-lg">${Number(data.price || 0) * data.count}</p>
+                                                <p className="font-black text-lg">{formatUsd(data.subtotal)}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -311,7 +317,17 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
                                 <p className="text-[10px] font-black opacity-60 uppercase tracking-widest mb-1">
                                     {isConfirmed ? "Total Paid" : isPrebookRequested ? "Estimated Total" : "Total Reserved"}
                                 </p>
-                                <h3 className="text-4xl font-black mb-6">${totalPrice}</h3>
+                                <h3 className="text-4xl font-black mb-6">{formatUsd(totalPrice)}</h3>
+                                <div className="mb-6 space-y-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-white/60">Accommodation subtotal</span>
+                                        <span className="font-semibold">{formatUsd(subtotal)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-white/60">Service fee (3%)</span>
+                                        <span className="font-semibold text-blue-300">{formatUsd(serviceFeeTotal)}</span>
+                                    </div>
+                                </div>
                                 <div className="space-y-4 mb-8 text-sm">
                                     <div className="flex items-center gap-3"><Mail className="h-4 w-4 opacity-60" /> {firstBooking.guest_email}</div>
                                     <div className="flex items-center gap-3"><Calendar className="h-4 w-4 opacity-60" /> {safeFormat(checkInDate, "MMM d")} - {safeFormat(checkOutDate, "MMM d")}</div>

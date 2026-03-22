@@ -37,12 +37,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { calculateBookingPolicyState, formatPolicyWindow } from "@/lib/cancellation-policy";
 import { getPreferredHotelAddress, getPreferredHotelName } from "@/lib/hotel-display";
 import { FallbackImage } from "@/components/ui/fallback-image";
+import { formatUsd, roundCurrencyAmount } from "@/lib/utils";
 
 type PortalBooking = {
     id: string;
     status: string;
     user_id: string | null;
     total_price: number | string;
+    service_fee?: number | string | null;
     check_in_date: string;
     check_out_date: string;
     room?: {
@@ -147,6 +149,9 @@ export default function BookingPortalPage() {
     const showDirectHotelContact = ["confirmed", "checked-in", "completed", "paid"].includes(booking.status) && Boolean(
         hotel?.contact_phone || hotel?.contact_email || hotel?.website
     );
+    const totalPaid = roundCurrencyAmount(booking.total_price);
+    const serviceFee = roundCurrencyAmount(booking.service_fee);
+    const subtotal = roundCurrencyAmount(totalPaid - serviceFee);
     const canManageDocuments = ["confirmed", "checked-in", "completed", "paid"].includes(booking.status);
     const receiptHref = accessToken
         ? `/booking/receipt/${booking.id}?access=${encodeURIComponent(accessToken)}`
@@ -430,11 +435,19 @@ export default function BookingPortalPage() {
                                         {isPrebookRequested ? "Pre-book Request" : "Flexible - COP17"}
                                     </span>
                                 </div>
+                                <div className="flex justify-between items-center text-sm font-medium">
+                                    <span className="text-zinc-500">Accommodation subtotal</span>
+                                    <span className="text-zinc-900 dark:text-white">{formatUsd(subtotal)}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm font-medium">
+                                    <span className="text-zinc-500">Service fee (3%)</span>
+                                    <span className="text-blue-600">{formatUsd(serviceFee)}</span>
+                                </div>
                                 <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 mt-4 flex justify-between items-center">
                                     <span className="text-base font-bold text-zinc-900 dark:text-white">
                                         {isPrebookRequested ? "Estimated Total" : "Total Paid"}
                                     </span>
-                                    <span className="text-2xl font-black text-blue-600">${booking.total_price}</span>
+                                    <span className="text-2xl font-black text-blue-600">{formatUsd(totalPaid)}</span>
                                 </div>
                             </div>
 

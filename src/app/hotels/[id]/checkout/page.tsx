@@ -4,7 +4,7 @@ import { format, differenceInDays } from "date-fns";
 import { CheckoutForm } from "./checkout-form";
 import { ShieldCheck, Users, MapPin, Building2 } from "lucide-react";
 import { FallbackImage } from "@/components/ui/fallback-image";
-import { formatUsd, roundCurrencyAmount } from "@/lib/utils";
+import { calculateBookingServiceFee, calculateBookingTotalWithFee, formatUsd, roundCurrencyAmount } from "@/lib/utils";
 
 interface CheckoutPageProps {
     params: Promise<{ id: string }>;
@@ -53,7 +53,7 @@ export default async function CheckoutPage({ params, searchParams }: CheckoutPag
 
     // Calculate selected rooms
     const selectedRooms: SelectedCheckoutRoom[] = [];
-    let totalPrice = 0;
+    let subtotal = 0;
     let totalQuantity = 0;
     const hotelImages = Array.isArray(hotel.images)
         ? hotel.images.filter((image): image is string => typeof image === "string" && image.trim().length > 0)
@@ -73,12 +73,15 @@ export default async function CheckoutPage({ params, searchParams }: CheckoutPag
                         price: roundCurrencyAmount(room.price_per_night),
                         quantity
                     });
-                    totalPrice = roundCurrencyAmount(totalPrice + (Number(room.price_per_night) * quantity * nights));
+                    subtotal = roundCurrencyAmount(subtotal + (Number(room.price_per_night) * quantity * nights));
                     totalQuantity += quantity;
                 }
             }
         }
     }
+
+    const serviceFee = calculateBookingServiceFee(subtotal);
+    const totalPrice = calculateBookingTotalWithFee(subtotal);
 
     if (selectedRooms.length === 0) {
         // No rooms selected? Return to hotel page
@@ -155,9 +158,9 @@ export default async function CheckoutPage({ params, searchParams }: CheckoutPag
                         </div>
                         <div className="rounded-2xl bg-blue-50 px-3 py-3 dark:bg-blue-950/20">
                             <p className="text-[9px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">Total</p>
-                            <p className="mt-1 text-sm font-black text-zinc-950 dark:text-white">{formatUsd(totalPrice)}</p>
+                                <p className="mt-1 text-sm font-black text-zinc-950 dark:text-white">{formatUsd(totalPrice)}</p>
+                            </div>
                         </div>
-                    </div>
 
                     <div className="mt-4 space-y-2">
                         {selectedRooms.map((room) => (
@@ -186,6 +189,8 @@ export default async function CheckoutPage({ params, searchParams }: CheckoutPag
                                     selectedRooms={selectedRooms}
                                     checkIn={checkIn}
                                     checkOut={checkOut}
+                                    subtotal={subtotal}
+                                    serviceFee={serviceFee}
                                     totalPrice={totalPrice}
                                 />
                             </div>
@@ -257,8 +262,12 @@ export default async function CheckoutPage({ params, searchParams }: CheckoutPag
 
                                     <div className="space-y-2 pt-2">
                                         <div className="flex justify-between text-sm">
-                                            <span className="text-zinc-500">Service Fee</span>
-                                            <span className="font-medium text-green-600">FREE</span>
+                                            <span className="text-zinc-500">Accommodation subtotal</span>
+                                            <span className="font-medium text-zinc-900 dark:text-zinc-100">{formatUsd(subtotal)}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-zinc-500">Service fee (3%)</span>
+                                            <span className="font-medium text-blue-600">{formatUsd(serviceFee)}</span>
                                         </div>
                                         <div className="mt-4 flex items-end justify-between border-t border-zinc-100 pt-4 dark:border-zinc-800">
                                             <span className="font-bold text-zinc-900 dark:text-white">Total Amount</span>

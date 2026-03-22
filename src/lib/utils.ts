@@ -6,6 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const HOTEL_IMAGE_PLACEHOLDER = "/images/hotel-placeholder.png";
+export const BOOKING_SERVICE_FEE_RATE = 0.03;
 
 export function getHotelImageUrl(path: string | null | undefined): string {
   if (!path) return HOTEL_IMAGE_PLACEHOLDER;
@@ -40,6 +41,15 @@ export function roundCurrencyAmount(value: number | string | null | undefined): 
   }
 
   return Math.round(numericValue * 100) / 100;
+}
+
+export function calculateBookingServiceFee(subtotal: number | string | null | undefined): number {
+  return roundCurrencyAmount(roundCurrencyAmount(subtotal) * BOOKING_SERVICE_FEE_RATE);
+}
+
+export function calculateBookingTotalWithFee(subtotal: number | string | null | undefined): number {
+  const normalizedSubtotal = roundCurrencyAmount(subtotal);
+  return roundCurrencyAmount(normalizedSubtotal + calculateBookingServiceFee(normalizedSubtotal));
 }
 
 export function formatUsd(value: number | string | null | undefined): string {

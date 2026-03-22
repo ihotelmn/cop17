@@ -49,6 +49,7 @@ export interface BookingDetail {
     check_out_date: string
     status: BookingStatus
     total_price: number
+    service_fee?: number
     guest_name: string | null
     guest_email: string | null
     created_at: string

@@ -9,7 +9,7 @@ import { GolomtService } from "@/lib/golomt";
 import { getPostgresPool } from "@/lib/postgres";
 import { getPreferredHotelName } from "@/lib/hotel-display";
 import { buildGuestBookingPortalPath, verifyGuestBookingAccessToken } from "@/lib/guest-booking-access";
-import { roundCurrencyAmount } from "@/lib/utils";
+import { calculateBookingServiceFee, calculateBookingTotalWithFee, roundCurrencyAmount } from "@/lib/utils";
 import {
     createPaymentAttempt,
     getPaymentAttemptByGroupId,
@@ -306,9 +306,9 @@ async function createPendingBookingsAtomically(input: {
             }
 
             roomSelection.price = pricePerNight;
-            totalCombinedPrice = roundCurrencyAmount(
-                totalCombinedPrice + (pricePerNight * roomSelection.quantity * input.nights)
-            );
+            const lineSubtotal = roundCurrencyAmount(pricePerNight * roomSelection.quantity * input.nights);
+            const lineTotal = calculateBookingTotalWithFee(lineSubtotal);
+            totalCombinedPrice = roundCurrencyAmount(totalCombinedPrice + lineTotal);
 
             if (!ownerId) {
                 ownerId = room.owner_id;
@@ -321,6 +321,10 @@ async function createPendingBookingsAtomically(input: {
 
         for (const roomSelection of input.roomsSelected) {
             for (let i = 0; i < roomSelection.quantity; i++) {
+                const bookingSubtotal = roundCurrencyAmount(roomSelection.price * input.nights);
+                const bookingServiceFee = calculateBookingServiceFee(bookingSubtotal);
+                const bookingTotal = calculateBookingTotalWithFee(bookingSubtotal);
+
                 await client.query(
                     `
                         INSERT INTO public.bookings (
@@ -330,6 +334,7 @@ async function createPendingBookingsAtomically(input: {
                             check_out_date,
                             status,
                             total_price,
+                            service_fee,
                             guest_name,
                             guest_email,
                             guest_passport_encrypted,
@@ -337,7 +342,7 @@ async function createPendingBookingsAtomically(input: {
                             special_requests_encrypted,
                             group_id
                         ) VALUES (
-                            $1, $2, $3::date, $4::date, $5, $6, $7, $8, $9, $10, $11, $12
+                            $1, $2, $3::date, $4::date, $5, $6, $7, $8, $9, $10, $11, $12, $13
                         )
                     `,
                     [
@@ -346,7 +351,8 @@ async function createPendingBookingsAtomically(input: {
                         input.checkIn,
                         input.checkOut,
                         input.initialStatus,
-                        roundCurrencyAmount(roomSelection.price * input.nights),
+                        bookingTotal,
+                        bookingServiceFee,
                         input.guestName,
                         input.guestEmail,
                         input.encryptedPassport,
@@ -421,7 +427,9 @@ async function createPendingBookingsFallback(
         const relatedHotel = Array.isArray(roomRecord.hotel) ? roomRecord.hotel[0] : roomRecord.hotel;
         const pricePerNight = Number(roomRecord.price_per_night || 0);
         roomSelection.price = pricePerNight;
-        totalCombinedPrice = roundCurrencyAmount(totalCombinedPrice + (pricePerNight * roomSelection.quantity * input.nights));
+        const lineSubtotal = roundCurrencyAmount(pricePerNight * roomSelection.quantity * input.nights);
+        const lineTotal = calculateBookingTotalWithFee(lineSubtotal);
+        totalCombinedPrice = roundCurrencyAmount(totalCombinedPrice + lineTotal);
 
         if (!ownerId) {
             ownerId = relatedHotel?.owner_id ?? null;
@@ -429,13 +437,16 @@ async function createPendingBookingsFallback(
         }
 
         for (let i = 0; i < roomSelection.quantity; i++) {
+            const bookingSubtotal = roundCurrencyAmount(pricePerNight * input.nights);
+            const bookingServiceFee = calculateBookingServiceFee(bookingSubtotal);
             bookingRows.push({
                 room_id: roomSelection.id,
                 user_id: input.userId,
                 check_in_date: input.checkIn,
                 check_out_date: input.checkOut,
                 status: input.initialStatus,
-                total_price: roundCurrencyAmount(pricePerNight * input.nights),
+                total_price: calculateBookingTotalWithFee(bookingSubtotal),
+                service_fee: bookingServiceFee,
                 guest_name: input.guestName,
                 guest_email: input.guestEmail,
                 guest_passport_encrypted: input.encryptedPassport,

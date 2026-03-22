@@ -14,6 +14,8 @@ interface CheckoutFormProps {
     selectedRooms: { id: string; name: string; quantity: number; price: number }[];
     checkIn: Date;
     checkOut: Date;
+    subtotal: number;
+    serviceFee: number;
     totalPrice: number;
 }
 
@@ -22,6 +24,8 @@ export function CheckoutForm({
     selectedRooms,
     checkIn,
     checkOut,
+    subtotal,
+    serviceFee,
     totalPrice,
 }: CheckoutFormProps) {
     const [loading, setLoading] = useState(false);
@@ -53,9 +57,11 @@ export function CheckoutForm({
             } else {
                 setError(result.error || "Failed to create booking");
             }
-        } catch (caughtError: any) {
+        } catch (caughtError: unknown) {
             console.error("Checkout submission error:", caughtError);
-            const detail = caughtError?.message || JSON.stringify(caughtError);
+            const detail = caughtError instanceof Error
+                ? caughtError.message
+                : JSON.stringify(caughtError);
             setError(`Connection or Server Error: ${detail}`);
         } finally {
             setLoading(false);
@@ -143,6 +149,21 @@ export function CheckoutForm({
             )}
 
             <div className="pt-6 space-y-4">
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4 text-sm dark:border-zinc-800 dark:bg-zinc-900/70">
+                    <div className="flex items-center justify-between">
+                        <span className="text-zinc-500">Accommodation subtotal</span>
+                        <span className="font-semibold text-zinc-900 dark:text-white">{formatUsd(subtotal)}</span>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between">
+                        <span className="text-zinc-500">Service fee (3%)</span>
+                        <span className="font-semibold text-blue-600">{formatUsd(serviceFee)}</span>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between border-t border-zinc-200 pt-3 dark:border-zinc-800">
+                        <span className="font-bold text-zinc-900 dark:text-white">Total due</span>
+                        <span className="text-lg font-black text-blue-600">{formatUsd(totalPrice)}</span>
+                    </div>
+                </div>
+
                 <div className="grid gap-3 md:grid-cols-2">
                     <Button
                         type="submit"
@@ -188,7 +209,7 @@ export function CheckoutForm({
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-300">
                     <p className="font-semibold text-zinc-900 dark:text-white">Pre-book</p>
                     <p>
-                        Send a reservation request without immediate payment. Our team will review it, contact you directly, and confirm the booking after offline payment is received.
+                        Send a reservation request without immediate payment. Our team will review it, contact you directly, and confirm the booking after offline payment is received. The final payment will still include the 3% service fee shown above.
                     </p>
                 </div>
                 <div className="mt-4 flex items-center justify-center gap-4 grayscale opacity-50">

@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { ShieldCheck, MapPin, Phone, Mail, Globe } from "lucide-react";
 import { PrintTrigger } from "./print-trigger";
 import { getPreferredHotelAddress, getPreferredHotelName } from "@/lib/hotel-display";
+import { formatUsd, roundCurrencyAmount } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +64,7 @@ type ReceiptBooking = {
     check_in_date: string;
     check_out_date: string;
     total_price: number | string;
+    service_fee?: number | string | null;
     room: {
         name: string;
         price_per_night: number | string;
@@ -88,6 +90,9 @@ export default async function ReceiptPage({ params, searchParams }: ReceiptPageP
     const checkIn = new Date(booking.check_in_date);
     const checkOut = new Date(booking.check_out_date);
     const nights = Math.max(1, Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)));
+    const totalPaid = roundCurrencyAmount(booking.total_price);
+    const serviceFee = roundCurrencyAmount(booking.service_fee);
+    const subtotal = roundCurrencyAmount(totalPaid - serviceFee);
 
     return (
         <div className="min-h-screen bg-white text-zinc-900 p-8 md:p-16 max-w-4xl mx-auto border-x min-w-[800px]">
@@ -175,20 +180,26 @@ export default async function ReceiptPage({ params, searchParams }: ReceiptPageP
                         <tr>
                             <td className="p-6">
                                 <p className="font-bold">{booking.room.name}</p>
-                                <p className="text-sm text-zinc-500">${booking.room.price_per_night} per night x {nights} nights</p>
+                                <p className="text-sm text-zinc-500">{formatUsd(booking.room.price_per_night)} per night x {nights} nights</p>
                             </td>
                             <td className="p-6 text-sm font-medium">
                                 {format(checkIn, "MMM d, yyyy")} - <br /> {format(checkOut, "MMM d, yyyy")}
                             </td>
                             <td className="p-6 text-right font-bold text-lg">
-                                ${booking.total_price}
+                                {formatUsd(subtotal)}
                             </td>
+                        </tr>
+                        <tr>
+                            <td colSpan={2} className="p-6 text-right text-sm font-bold uppercase text-zinc-400">
+                                Service Fee (3%)
+                            </td>
+                            <td className="p-6 text-right font-bold text-base text-blue-600">{formatUsd(serviceFee)}</td>
                         </tr>
                         <tr className="bg-zinc-50/50">
                             <td colSpan={2} className="p-6 text-right text-sm font-bold uppercase text-zinc-400">
                                 {isPrebookRequested ? "Estimated Total (USD)" : "Total Paid (USD)"}
                             </td>
-                            <td className="p-6 text-right font-black text-2xl text-blue-600">${booking.total_price}</td>
+                            <td className="p-6 text-right font-black text-2xl text-blue-600">{formatUsd(totalPaid)}</td>
                         </tr>
                     </tbody>
                 </table>

@@ -132,6 +132,7 @@ export interface Database {
                     check_out_date: string
                     status: BookingStatus
                     total_price: number
+                    service_fee: number
                     guest_passport_encrypted: string | null
                     guest_phone_encrypted: string | null
                     special_requests_encrypted: string | null
@@ -159,6 +160,7 @@ export interface Database {
                     check_out_date: string
                     status?: BookingStatus
                     total_price: number
+                    service_fee?: number
                     guest_passport_encrypted?: string | null
                     guest_phone_encrypted?: string | null
                     special_requests_encrypted?: string | null
