@@ -5,6 +5,7 @@ export interface EmailPayload {
 }
 
 import { Resend } from 'resend';
+import { getCanonicalAppHost, getPublicAppUrl, getTransactionalFromEmail } from "@/lib/site-config";
 
 export async function sendEmail(payload: EmailPayload): Promise<{ success: boolean; error?: string }> {
     const apiKey = process.env.RESEND_API_KEY;
@@ -20,8 +21,7 @@ export async function sendEmail(payload: EmailPayload): Promise<{ success: boole
 
     try {
         const resend = new Resend(apiKey);
-        // Using the professional subdomain email
-        const fromEmail = "COP17 Mongolia <noreply@cop17.ihotel.mn>";
+        const fromEmail = getTransactionalFromEmail();
 
         const { error } = await resend.emails.send({
             from: fromEmail,
@@ -55,7 +55,8 @@ export async function sendBookingConfirmation(
 ) {
     const subject = `Booking Confirmation: ${hotelName} - ${bookingId}`;
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cop17.ihotel.mn';
+    const baseUrl = getPublicAppUrl();
+    const siteHost = getCanonicalAppHost();
     const bookingLink = manageBookingPath
         ? new URL(manageBookingPath, baseUrl).toString()
         : `${baseUrl}/my-bookings`;
@@ -129,7 +130,7 @@ export async function sendBookingConfirmation(
                 <div style="text-align: center; margin-top: 40px; font-size: 11px; color: #94a3b8; line-height: 1.8;">
                     &copy; 2026 COP17 Mongolia Organizing Committee.<br>
                     Official Accommodation & Logistics Partner.<br>
-                    <a href="${baseUrl}" style="color: #64748b; text-decoration: underline;">Visit cop17.ihotel.mn</a>
+                    <a href="${baseUrl}" style="color: #64748b; text-decoration: underline;">Visit ${siteHost}</a>
                 </div>
             </div>
         </body>
@@ -149,7 +150,7 @@ export async function sendPreBookingRequestReceived(
 ) {
     const subject = `Pre-booking Request Received: ${hotelName} - ${bookingId}`;
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cop17.ihotel.mn';
+    const baseUrl = getPublicAppUrl();
     const bookingLink = manageBookingPath
         ? new URL(manageBookingPath, baseUrl).toString()
         : `${baseUrl}/my-bookings`;

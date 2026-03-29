@@ -7,6 +7,7 @@ import {
     markPaymentAttemptPaid,
 } from "@/lib/payment-attempts";
 import type { PaymentAttemptRecord } from "@/lib/payment-attempts";
+import { getCanonicalUrl } from "@/lib/site-config";
 
 function getStoredReturnUrl(paymentAttempt?: PaymentAttemptRecord | null) {
     const rawRequest = paymentAttempt?.raw_request;
@@ -23,15 +24,14 @@ function getStoredReturnUrl(paymentAttempt?: PaymentAttemptRecord | null) {
 }
 
 function buildSuccessUrl(
-    request: NextRequest,
     groupId: string,
     paymentState?: string,
     paymentAttempt?: Awaited<ReturnType<typeof getPaymentAttemptByTransactionId>>
 ) {
     const storedReturnUrl = getStoredReturnUrl(paymentAttempt);
     const url = storedReturnUrl
-        ? new URL(storedReturnUrl, request.url)
-        : new URL(`/booking/success?groupId=${encodeURIComponent(groupId)}`, request.url);
+        ? getCanonicalUrl(storedReturnUrl)
+        : getCanonicalUrl(`/booking/success?groupId=${encodeURIComponent(groupId)}`);
 
     url.searchParams.set("groupId", groupId);
 
@@ -91,7 +91,7 @@ async function handleCallback(request: NextRequest) {
         }
 
         if (request.method === "GET") {
-            return NextResponse.redirect(buildSuccessUrl(request, paymentAttempt.group_id || groupId, "confirmed", paymentAttempt));
+            return NextResponse.redirect(buildSuccessUrl(paymentAttempt.group_id || groupId, "confirmed", paymentAttempt));
         }
 
         return NextResponse.json({
@@ -116,7 +116,7 @@ async function handleCallback(request: NextRequest) {
         });
 
         if (request.method === "GET") {
-            return NextResponse.redirect(buildSuccessUrl(request, groupId, "failed", paymentAttempt));
+            return NextResponse.redirect(buildSuccessUrl(groupId, "failed", paymentAttempt));
         }
 
         return NextResponse.json(
@@ -141,7 +141,7 @@ async function handleCallback(request: NextRequest) {
     }
 
     if (request.method === "GET") {
-        return NextResponse.redirect(buildSuccessUrl(request, paymentAttempt?.group_id || groupId, "confirmed", paymentAttempt));
+        return NextResponse.redirect(buildSuccessUrl(paymentAttempt?.group_id || groupId, "confirmed", paymentAttempt));
     }
 
     return NextResponse.json({

@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { normalizeEnvValue } from "@/lib/env";
+import { getCanonicalUrl } from "@/lib/site-config";
 
 type GolomtMode = "mock" | "live";
 type NormalizedPaymentStatus = "PAID" | "PENDING" | "FAILED" | "NOT_FOUND";
@@ -50,7 +51,6 @@ interface VerifyCallbackResult {
     error?: string;
 }
 
-const DEFAULT_APP_URL = "https://cop17.ihotel.mn";
 const GOLOMT_ENDPOINT = normalizeEnvValue(process.env.GOLOMT_ENDPOINT);
 const GOLOMT_CHECKOUT_URL = normalizeEnvValue(process.env.GOLOMT_CHECKOUT_URL) || GOLOMT_ENDPOINT;
 const GOLOMT_STATUS_URL = normalizeEnvValue(process.env.GOLOMT_STATUS_URL);
@@ -73,7 +73,7 @@ function getMode(): GolomtMode {
 }
 
 function getAppBaseUrl(override?: string | null) {
-    return normalizeEnvValue(override) || normalizeEnvValue(process.env.NEXT_PUBLIC_APP_URL) || DEFAULT_APP_URL;
+    return getCanonicalUrl(override || undefined).toString().replace(/\/$/, "");
 }
 
 function normalizeAmount(amount: number) {

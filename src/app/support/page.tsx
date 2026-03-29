@@ -1,39 +1,13 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { Headphones, Mail, Phone, Clock, MessageCircle, Globe, MapPin, Shield, ArrowRight, HelpCircle, FileText, AlertTriangle } from "lucide-react";
+import { Headphones, Mail, Phone, MessageCircle, MapPin, ArrowRight, HelpCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getPublicSupportEmail, getPublicSupportMailto } from "@/lib/site-config";
 
 export const metadata: Metadata = {
     title: "Delegate Support | COP17 Mongolia",
     description: "24/7 support for COP17 delegates — booking assistance, travel help, and emergency services.",
 };
-
-const channels = [
-    {
-        icon: Phone,
-        title: "24/7 Hotline",
-        value: "+976 7000 1700",
-        desc: "Immediate assistance in English, Mongolian, French, and Russian",
-        color: "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600",
-        action: "tel:+97670001700",
-    },
-    {
-        icon: Mail,
-        title: "Email Support",
-        value: "support@cop17.ihotel.mn",
-        desc: "Response within 2 hours during conference period",
-        color: "bg-blue-50 dark:bg-blue-900/20 text-blue-600",
-        action: "mailto:support@cop17.ihotel.mn",
-    },
-    {
-        icon: MessageCircle,
-        title: "WhatsApp",
-        value: "+976 9911 1700",
-        desc: "Quick queries, shuttle updates, and real-time assistance",
-        color: "bg-green-50 dark:bg-green-900/20 text-green-600",
-        action: "https://wa.me/97699111700",
-    },
-];
 
 const faqs = [
     {
@@ -63,6 +37,34 @@ const faqs = [
 ];
 
 export default function SupportPage() {
+    const supportEmail = getPublicSupportEmail();
+    const channels = [
+        {
+            icon: Phone,
+            title: "24/7 Hotline",
+            value: "+976 7000 1700",
+            desc: "Immediate assistance in English, Mongolian, French, and Russian",
+            color: "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600",
+            action: "tel:+97670001700",
+        },
+        {
+            icon: Mail,
+            title: "Email Support",
+            value: supportEmail,
+            desc: "Response within 2 hours during conference period",
+            color: "bg-blue-50 dark:bg-blue-900/20 text-blue-600",
+            action: getPublicSupportMailto(),
+        },
+        {
+            icon: MessageCircle,
+            title: "WhatsApp",
+            value: "+976 9911 1700",
+            desc: "Quick queries, shuttle updates, and real-time assistance",
+            color: "bg-green-50 dark:bg-green-900/20 text-green-600",
+            action: "https://wa.me/97699111700",
+        },
+    ];
+
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pt-24 pb-20">
             {/* Hero */}
@@ -78,7 +80,7 @@ export default function SupportPage() {
                             Delegate Assistance
                         </div>
                         <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-6">
-                            We're Here <br />
+                            We&apos;re Here <br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-blue-400">To Help</span>
                         </h1>
                         <p className="text-xl text-white/70 font-medium leading-relaxed max-w-2xl">

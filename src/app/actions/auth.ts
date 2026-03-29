@@ -12,6 +12,7 @@ import {
     enforceActionRateLimitSafely,
     getClientIpFromHeaders,
 } from "@/lib/action-rate-limit";
+import { getPublicAppUrl } from "@/lib/site-config";
 
 const authSchema = z.object({
     email: z.string().email(),
@@ -154,8 +155,7 @@ export async function signupAction(prevState: AuthState, formData: FormData): Pr
         return { error: getRateLimitErrorMessage(error, "Too many sign-up attempts. Please try again later.") };
     }
 
-    const productionUrl = 'https://cop17.ihotel.mn';
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || productionUrl;
+    const baseUrl = getPublicAppUrl();
 
     console.log("Starting signup flow. Redirecting to:", `${baseUrl}/auth/callback`);
 

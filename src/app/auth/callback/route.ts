@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getPublicAppUrl } from "@/lib/site-config";
 
 function normalizeNextPath(next: string | null) {
     if (!next || !next.startsWith("/") || next.startsWith("//")) {
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
     const { searchParams } = requestUrl;
     const code = searchParams.get("code");
     const next = normalizeNextPath(searchParams.get("next"));
-    const origin = requestUrl.origin;
+    const origin = getPublicAppUrl();
 
     if (code) {
         const supabase = await createClient();

@@ -2,7 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Facebook, Twitter, Instagram, Mail, Phone, MapPin, Monitor } from "lucide-react";
+import { Facebook, Twitter, Instagram, Mail, Phone, Monitor } from "lucide-react";
+import { getPublicSupportEmail, getPublicSupportMailto } from "@/lib/site-config";
+
+const supportEmail = getPublicSupportEmail();
+const supportMailto = getPublicSupportMailto();
 
 export function SiteFooter() {
     return (
@@ -52,7 +56,7 @@ export function SiteFooter() {
                         <ul className="space-y-4 text-[13px] font-medium text-zinc-400">
                             <li className="flex items-center gap-3 group px-0.5">
                                 <Mail className="h-4 w-4 text-zinc-600 group-hover:text-blue-500 transition-colors" />
-                                <span className="group-hover:text-white transition-colors">info@ihotel.mn</span>
+                                <a href={supportMailto} className="group-hover:text-white transition-colors">{supportEmail}</a>
                             </li>
                             <li className="flex items-center gap-3 group px-0.5">
                                 <Phone className="h-4 w-4 text-zinc-600 group-hover:text-blue-500 transition-colors" />

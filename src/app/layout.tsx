@@ -1,11 +1,23 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
+import { getCanonicalUrl } from "@/lib/site-config";
+
+const canonicalUrl = getCanonicalUrl();
 
 export const metadata: Metadata = {
   title: "COP17 Mongolia | Official Hotel Booking",
   description: "Exclusive hotel booking platform for COP17 delegates in Mongolia.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://cop17.ihotel.mn"),
+  metadataBase: canonicalUrl,
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "COP17 Mongolia | Official Hotel Booking",
+    description: "Exclusive hotel booking platform for COP17 delegates in Mongolia.",
+    url: canonicalUrl.toString(),
+    siteName: "COP17 Mongolia",
+  },
   icons: {
     icon: [
       { url: "/favicon.webp", type: "image/webp" },
