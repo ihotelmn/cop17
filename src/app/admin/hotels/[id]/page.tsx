@@ -1,4 +1,4 @@
-import { getHotel, getRooms, deleteRoom, quickUpdateRoom } from "@/app/actions/admin";
+import { getHotel, getRooms, deleteRoom, quickUpdateRoom, updateRoomActiveStatus } from "@/app/actions/admin";
 import { RoomImagePreviewDialog } from "@/components/admin/room-image-preview-dialog";
 import { FallbackImage } from "@/components/ui/fallback-image";
 import { Badge } from "@/components/ui/badge";
@@ -9,9 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { getPreferredHotelAddress, getPreferredHotelName } from "@/lib/hotel-display";
 import { sanitizeRichTextToPlainText } from "@/lib/safe-rich-text";
 import type { Room } from "@/types/hotel";
-import { Plus, Trash, ArrowLeft, Pencil, Save } from "lucide-react";
+import { Plus, Trash, ArrowLeft, Pencil, Save, Check, X } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 export default async function HotelDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -36,7 +37,7 @@ export default async function HotelDetailsPage({ params }: { params: Promise<{ i
                         </Link>
                     </Button>
                     <div>
-                        <h2 className="text-3xl font-bold tracking-tight text-white">{displayName}</h2>
+                        <h2 className="text-3xl font-bold tracking-tight text-zinc-900">{displayName}</h2>
                         <p className="text-muted-foreground">{displayAddress} • {hotel.stars} Stars</p>
                     </div>
                 </div>
@@ -51,7 +52,7 @@ export default async function HotelDetailsPage({ params }: { params: Promise<{ i
             {/* Rooms Section */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-semibold text-white">Room Types & Inventory</h3>
+                    <h3 className="text-xl font-semibold text-zinc-900">Room Types & Inventory</h3>
                     <Button asChild className="bg-amber-500 hover:bg-amber-600 text-black font-semibold">
                         <Link href={`/admin/hotels/${hotel.id}/rooms/new`}>
                             <Plus className="mr-2 h-4 w-4" />
@@ -60,7 +61,7 @@ export default async function HotelDetailsPage({ params }: { params: Promise<{ i
                     </Button>
                 </div>
 
-                <Card className="bg-zinc-900 border-zinc-800">
+                <Card className="bg-white border-zinc-200">
                     <CardHeader>
                         <CardDescription>Manage room types, pricing, and blocked inventory for this hotel.</CardDescription>
                         <CardDescription>Price, max guests, and allocation can be updated directly from this list. Use the green save icon on each row to apply changes.</CardDescription>
@@ -68,14 +69,15 @@ export default async function HotelDetailsPage({ params }: { params: Promise<{ i
                     <CardContent>
                         <Table>
                             <TableHeader>
-                                <TableRow className="border-zinc-800 hover:bg-zinc-800/50">
-                                    <TableHead className="text-zinc-400">Room Type</TableHead>
-                                    <TableHead className="text-zinc-400">Category</TableHead>
-                                    <TableHead className="text-zinc-400">Guests</TableHead>
-                                    <TableHead className="text-zinc-400">Price/Night</TableHead>
-                                    <TableHead className="text-zinc-400">Total Allocation</TableHead>
-                                    <TableHead className="text-zinc-400">Data</TableHead>
-                                    <TableHead className="text-zinc-400 text-right">Actions</TableHead>
+                                <TableRow className="border-zinc-200 hover:bg-zinc-50">
+                                    <TableHead className="text-zinc-500">Room Type</TableHead>
+                                    <TableHead className="text-zinc-500">Category</TableHead>
+                                    <TableHead className="text-zinc-500">Guests</TableHead>
+                                    <TableHead className="text-zinc-500">Price/Night</TableHead>
+                                    <TableHead className="text-zinc-500">Total Allocation</TableHead>
+                                    <TableHead className="text-zinc-500 text-center">Active</TableHead>
+                                    <TableHead className="text-zinc-500">Data</TableHead>
+                                    <TableHead className="text-zinc-500 text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -90,7 +92,7 @@ export default async function HotelDetailsPage({ params }: { params: Promise<{ i
                                         const formId = `room-quick-edit-${room.id}`;
 
                                         return (
-                                        <TableRow key={room.id} className="border-zinc-800 hover:bg-zinc-800/50">
+                                        <TableRow key={room.id} className="border-zinc-200 hover:bg-zinc-50">
                                             <TableCell className="min-w-[360px]">
                                                 <form
                                                     id={formId}
@@ -100,7 +102,7 @@ export default async function HotelDetailsPage({ params }: { params: Promise<{ i
                                                     }}
                                                 />
                                                 <div className="flex items-start gap-3">
-                                                    <div className="relative h-16 w-24 overflow-hidden rounded-md border border-zinc-800 bg-zinc-950">
+                                                    <div className="relative h-16 w-24 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100">
                                                         <FallbackImage
                                                             src={room.images?.[0] ?? null}
                                                             alt={room.name}
@@ -110,7 +112,7 @@ export default async function HotelDetailsPage({ params }: { params: Promise<{ i
                                                         />
                                                     </div>
                                                     <div className="space-y-1">
-                                                        <div className="font-medium text-white">{room.name}</div>
+                                                        <div className="font-medium text-zinc-900">{room.name}</div>
                                                         {getRoomPlainDescription(room) ? (
                                                             <p className="max-w-md line-clamp-2 text-sm text-zinc-400">
                                                                 {getRoomPlainDescription(room)}
@@ -126,18 +128,18 @@ export default async function HotelDetailsPage({ params }: { params: Promise<{ i
                                                     </div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-zinc-300">{room.type}</TableCell>
-                                            <TableCell className="text-zinc-300">
+                                            <TableCell className="text-zinc-700">{room.type}</TableCell>
+                                            <TableCell className="text-zinc-700 dark:text-zinc-300">
                                                 <Input
                                                     form={formId}
                                                     name="capacity"
                                                     type="number"
                                                     min="1"
                                                     defaultValue={room.capacity}
-                                                    className="h-9 w-24 border-zinc-700 bg-zinc-950 text-white"
+                                                    className="h-9 w-24 border-zinc-200 bg-zinc-100 text-zinc-900"
                                                 />
                                             </TableCell>
-                                            <TableCell className="text-zinc-300">
+                                            <TableCell className="text-zinc-700 dark:text-zinc-300">
                                                 <Input
                                                     form={formId}
                                                     name="price_per_night"
@@ -145,18 +147,47 @@ export default async function HotelDetailsPage({ params }: { params: Promise<{ i
                                                     min="0"
                                                     step="0.01"
                                                     defaultValue={room.price_per_night}
-                                                    className="h-9 w-32 border-zinc-700 bg-zinc-950 text-white"
+                                                    className="h-9 w-32 border-zinc-200 bg-zinc-100 text-zinc-900"
                                                 />
                                             </TableCell>
-                                            <TableCell className="text-white font-bold text-center">
+                                            <TableCell className="text-zinc-900 dark:text-white font-bold text-center">
                                                 <Input
                                                     form={formId}
                                                     name="total_inventory"
                                                     type="number"
                                                     min="0"
                                                     defaultValue={room.total_inventory}
-                                                    className="mx-auto h-9 w-24 border-zinc-700 bg-zinc-950 text-center text-white"
+                                                    className="mx-auto h-9 w-24 border-zinc-200 bg-zinc-100 text-center text-zinc-900"
                                                 />
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <div className="flex justify-center">
+                                                    <form action={async () => {
+                                                        "use server";
+                                                        await updateRoomActiveStatus(room.id, hotel.id, !room.is_active);
+                                                    }}>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            type="submit"
+                                                            className={cn(
+                                                                "h-8 px-2 transition-colors",
+                                                                room.is_active !== false 
+                                                                    ? "text-emerald-500 hover:text-emerald-400 hover:bg-emerald-950/20" 
+                                                                    : "text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800/50"
+                                                            )}
+                                                        >
+                                                            {room.is_active !== false ? (
+                                                                <Check className="h-4 w-4 mr-1" />
+                                                            ) : (
+                                                                <X className="h-4 w-4 mr-1" />
+                                                            )}
+                                                            <span className="text-xs font-medium">
+                                                                {room.is_active !== false ? "Active" : "Inactive"}
+                                                            </span>
+                                                        </Button>
+                                                    </form>
+                                                </div>
                                             </TableCell>
                                             <TableCell className="min-w-[220px]">
                                                 <div className="flex flex-wrap gap-2">
@@ -201,7 +232,7 @@ export default async function HotelDetailsPage({ params }: { params: Promise<{ i
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-8 w-8 text-zinc-400 hover:text-white"
+                                                    className="h-8 w-8 text-zinc-500 hover:text-zinc-900"
                                                     asChild
                                                 >
                                                     <Link href={`/admin/hotels/${hotel.id}/rooms/${room.id}/edit`}>

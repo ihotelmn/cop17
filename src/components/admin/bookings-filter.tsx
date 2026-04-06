@@ -75,7 +75,7 @@ export function BookingsFilter() {
                 <Input
                     type="search"
                     placeholder="Search guests, IDs..."
-                    className="pl-9 bg-white dark:bg-zinc-900"
+                    className="pl-9 bg-white"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                 />
@@ -83,7 +83,7 @@ export function BookingsFilter() {
 
             {/* Status Filter */}
             <Select value={status} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-[180px] bg-white dark:bg-zinc-900">
+                <SelectTrigger className="w-[180px] bg-white">
                     <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>

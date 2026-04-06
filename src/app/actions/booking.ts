@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { format } from "date-fns";
-import { sendBookingConfirmation, sendPreBookingRequestReceived } from "@/lib/email";
+import { sendBookingConfirmation, sendPreBookingRequestReceived, sendBookingCancelledEmail } from "@/lib/email";
 import { encrypt } from "@/lib/encryption";
 import { GolomtService } from "@/lib/golomt";
 import { getPostgresPool } from "@/lib/postgres";
@@ -1282,6 +1282,24 @@ export async function cancelBookingAction(bookingId: string, reason?: string, ac
         revalidatePath("/admin/bookings");
         revalidatePath("/my-bookings");
         revalidatePath(`/my-bookings/${bookingId}/portal`);
+
+        // 4. Send Email Notification to Guest
+        if (booking.guest_email) {
+            const guestName = (booking as any).guest_name || "Guest";
+            const datesStr = `${format(new Date(booking.check_in_date), "MMM d, yyyy")}`;
+            const refundInfo = cancellationState.penaltyPercent === 0 
+                ? "Eligible for a full refund." 
+                : `${cancellationState.penaltyPercent}% cancellation penalty applies (${cancellationState.penaltyAmount}).`;
+
+            await sendBookingCancelledEmail(
+                booking.guest_email,
+                guestName,
+                bookingId,
+                hotelName,
+                datesStr,
+                refundInfo
+            ).catch(e => console.error("Failed to send cancellation email:", e));
+        }
 
         return {
             success: true,

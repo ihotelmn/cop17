@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { decrypt } from "@/lib/encryption";
 import { getPreferredHotelName } from "@/lib/hotel-display";
 import { buildGuestBookingPortalPath } from "@/lib/guest-booking-access";
-import { sendBookingConfirmation } from "@/lib/email";
+import { sendBookingConfirmation, sendModificationReviewEmail } from "@/lib/email";
 import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { BookingAdmin, BookingFilters } from "@/types/booking";
@@ -247,6 +247,23 @@ export async function updateBookingStatus(bookingId: string, status: string) {
         if (existingBooking?.modification_request_status === "pending") {
             updatePayload.modification_request_status = "reviewed";
             updatePayload.modification_reviewed_at = new Date().toISOString();
+            
+            // Send Modification Update Email
+            if (existingBooking.guest_email) {
+                const hotelRelation = Array.isArray(existingBooking.room) ? existingBooking.room[0] : existingBooking.room;
+                const hotel = hotelRelation && typeof hotelRelation === "object" && "hotel" in hotelRelation
+                    ? (Array.isArray(hotelRelation.hotel) ? hotelRelation.hotel[0] : hotelRelation.hotel)
+                    : null;
+                const hotelName = hotel?.name || "COP17 Hotel";
+
+                await sendModificationReviewEmail(
+                    existingBooking.guest_email,
+                    existingBooking.guest_name || "Guest",
+                    bookingId,
+                    hotelName,
+                    normalizedNextStatus === 'cancelled' ? 'rejected' : 'approved'
+                ).catch(e => console.error("Failed to send modification review email:", e));
+            }
         }
 
         const shouldUpdateWholeGroup = Boolean(

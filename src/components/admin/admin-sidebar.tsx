@@ -57,13 +57,13 @@ export function AdminSidebar({ userRole }: AdminSidebarProps) {
 
     const sidebarContent = (
         <>
-            <div className="flex h-16 items-center px-6 border-b border-zinc-200 dark:border-zinc-800">
+            <div className="flex h-16 items-center px-6 border-b border-zinc-200">
                 <Image
                     src="/images/cop17-logo-horizontal.png"
                     alt="COP17 Mongolia"
                     width={140}
                     height={40}
-                    className="h-8 w-auto object-contain dark:invert"
+                    className="h-8 w-auto object-contain"
                 />
             </div>
             <nav className="p-4 space-y-1 flex-1">
@@ -75,13 +75,13 @@ export function AdminSidebar({ userRole }: AdminSidebarProps) {
                         className={cn(
                             "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
                             isActive(item.href)
-                                ? "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 shadow-sm"
-                                : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                                ? "bg-blue-50 text-blue-700 shadow-sm"
+                                : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
                         )}
                     >
                         <span className={cn(
                             "transition-colors",
-                            isActive(item.href) ? "text-blue-600 dark:text-blue-400" : ""
+                            isActive(item.href) ? "text-blue-600" : ""
                         )}>
                             {item.icon}
                         </span>
@@ -92,9 +92,9 @@ export function AdminSidebar({ userRole }: AdminSidebarProps) {
                     </Link>
                 ))}
             </nav>
-            <div className="p-4 border-t border-zinc-100 dark:border-zinc-800">
+            <div className="p-4 border-t border-zinc-100">
                 <form action={signOutAction}>
-                    <Button variant="outline" className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg">
+                    <Button variant="outline" className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg">
                         <LogOut className="mr-2 h-4 w-4" />
                         Sign Out
                     </Button>
@@ -108,10 +108,10 @@ export function AdminSidebar({ userRole }: AdminSidebarProps) {
             {/* Mobile Toggle Button */}
             <button
                 onClick={() => setMobileOpen(true)}
-                className="fixed top-20 left-4 z-50 md:hidden bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 shadow-lg"
+                className="fixed top-20 left-4 z-50 md:hidden bg-white border border-zinc-200 rounded-xl p-2.5 shadow-lg"
                 aria-label="Open admin menu"
             >
-                <Menu className="h-5 w-5 text-zinc-700 dark:text-zinc-300" />
+                <Menu className="h-5 w-5 text-zinc-700" />
             </button>
 
             {/* Mobile Overlay */}
@@ -124,12 +124,12 @@ export function AdminSidebar({ userRole }: AdminSidebarProps) {
 
             {/* Mobile Sidebar */}
             <aside className={cn(
-                "fixed inset-y-0 left-0 z-[70] w-72 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col transform transition-transform duration-300 md:hidden",
+                "fixed inset-y-0 left-0 z-[70] w-72 bg-white border-r border-zinc-200 flex flex-col transform transition-transform duration-300 md:hidden",
                 mobileOpen ? "translate-x-0" : "-translate-x-full"
             )}>
                 <button
                     onClick={() => setMobileOpen(false)}
-                    className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-zinc-100"
                     aria-label="Close admin menu"
                 >
                     <X className="h-5 w-5 text-zinc-500" />
@@ -138,7 +138,7 @@ export function AdminSidebar({ userRole }: AdminSidebarProps) {
             </aside>
 
             {/* Desktop Sidebar */}
-            <aside className="w-64 border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 hidden md:flex md:flex-col fixed top-16 bottom-0 left-0 z-40">
+            <aside className="w-64 border-r border-zinc-200 bg-white hidden md:flex md:flex-col fixed top-16 bottom-0 left-0 z-40">
                 {sidebarContent}
             </aside>
 

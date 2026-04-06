@@ -51,10 +51,10 @@ export function InventoryCalendar({ initialData }: InventoryCalendarProps) {
                 </div>
                 <div className="flex items-center gap-3">
                     <BulkBlockModal rooms={data.rooms} />
-                    <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 border rounded-lg p-1 shadow-sm">
+                    <div className="flex items-center gap-2 bg-white border rounded-lg p-1 shadow-sm">
                         <button
                             onClick={prevPeriod}
-                            className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
+                            className="p-2 hover:bg-zinc-100 rounded-md transition-colors"
                         >
                             <ChevronLeft className="h-5 w-5" />
                         </button>
@@ -64,7 +64,7 @@ export function InventoryCalendar({ initialData }: InventoryCalendarProps) {
                         </div>
                         <button
                             onClick={nextPeriod}
-                            className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
+                            className="p-2 hover:bg-zinc-100 rounded-md transition-colors"
                         >
                             <ChevronRight className="h-5 w-5" />
                         </button>
@@ -72,12 +72,12 @@ export function InventoryCalendar({ initialData }: InventoryCalendarProps) {
                 </div>
             </div>
 
-            <div className="rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 overflow-hidden">
+            <div className="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full border-collapse">
                         <thead>
                             <tr className="bg-zinc-50 dark:bg-zinc-800/50">
-                                <th className="sticky left-0 z-20 bg-zinc-50 dark:bg-zinc-800/50 p-4 text-left font-semibold text-sm border-b border-r w-[250px]">
+                                <th className="sticky left-0 z-20 bg-zinc-50 p-4 text-left font-semibold text-sm border-b border-r w-[250px]">
                                     Property & Room
                                 </th>
                                 {data.dates.map((date: string) => {
@@ -88,7 +88,7 @@ export function InventoryCalendar({ initialData }: InventoryCalendarProps) {
                                             key={date}
                                             className={cn(
                                                 "p-3 text-center border-b font-medium text-xs min-w-[60px]",
-                                                isWeekend && "bg-zinc-100/50 dark:bg-zinc-800/20"
+                                                isWeekend && "bg-zinc-100/50"
                                             )}
                                         >
                                             <div className="text-muted-foreground">{format(d, "EEE")}</div>
@@ -108,9 +108,9 @@ export function InventoryCalendar({ initialData }: InventoryCalendarProps) {
                             ) : (
                                 data.rooms.map((room: any) => (
                                     <tr key={room.roomId} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
-                                        <td className="sticky left-0 z-10 bg-white dark:bg-zinc-900 p-4 border-r">
+                                        <td className="sticky left-0 z-10 bg-white p-4 border-r">
                                             <div className="flex items-center gap-3">
-                                                <div className="p-1.5 bg-indigo-50 dark:bg-indigo-900/20 rounded text-indigo-600 dark:text-indigo-400">
+                                                <div className="p-1.5 bg-indigo-50 rounded text-indigo-600">
                                                     <Hotel className="h-4 w-4" />
                                                 </div>
                                                 <div>
@@ -130,9 +130,9 @@ export function InventoryCalendar({ initialData }: InventoryCalendarProps) {
                                                 <td key={day.date} className="p-1 border text-center">
                                                     <div className={cn(
                                                         "h-full w-full py-3 rounded-md flex flex-col items-center justify-center transition-all",
-                                                        isFull ? "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400" :
-                                                            isClosing ? "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400" :
-                                                                "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/10 dark:text-emerald-400"
+                                                        isFull ? "bg-red-50 text-red-700" :
+                                                            isClosing ? "bg-amber-50 text-amber-700" :
+                                                                "bg-emerald-50 text-emerald-700"
                                                     )}>
                                                         <span className="text-sm font-bold">{day.available}</span>
                                                         <span className="text-[9px] uppercase font-medium opacity-70">Left</span>
@@ -147,14 +147,14 @@ export function InventoryCalendar({ initialData }: InventoryCalendarProps) {
                     </table>
                 </div>
                 {isPending && (
-                    <div className="absolute inset-0 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-[1px] flex items-center justify-center z-30">
+                    <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] flex items-center justify-center z-30">
                         <Loader2 className="h-8 w-8 text-indigo-600 animate-spin" />
                     </div>
                 )}
             </div>
 
             {/* Legend */}
-            <div className="flex flex-wrap items-center gap-6 p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border text-xs">
+            <div className="flex flex-wrap items-center gap-6 p-4 rounded-lg bg-zinc-50 border text-xs">
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
                     <span className="text-muted-foreground">High Availability</span>

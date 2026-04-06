@@ -27,8 +27,8 @@ export default async function HotelImportPage() {
     return (
         <div className="space-y-6">
             <div className="max-w-3xl">
-                <h2 className="text-3xl font-bold tracking-tight text-white">Import Hotels</h2>
-                <p className="mt-2 text-zinc-400">
+                <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">Import Hotels</h2>
+                <p className="mt-2 text-zinc-600 dark:text-zinc-400">
                     Build hotel drafts faster from pasted spreadsheets, website metadata, and bulk images. The assistant will classify hotel details, room types, prices, and images for review before anything goes live.
                 </p>
             </div>

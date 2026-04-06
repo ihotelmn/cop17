@@ -41,7 +41,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
             <BookingsFilter />
 
             {/* Table */}
-            <div className="rounded-md border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="rounded-md border border-zinc-200 bg-white">
                 <Table>
                     <TableHeader>
                         <TableRow>

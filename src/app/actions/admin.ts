@@ -723,7 +723,8 @@ export async function createRoom(hotelId: string, prevState: any, formData: Form
         capacity,
         total_inventory,
         amenities: amenitiesArray,
-        images: imagesArray
+        images: imagesArray,
+        is_active: true
     });
 
     if (error) {
@@ -887,5 +888,52 @@ export async function quickUpdateRoom(roomId: string, hotelId: string, formData:
     revalidatePath(`/admin/hotels/${hotelId}`);
     revalidatePath(`/hotels/${hotelId}`);
     revalidatePath(`/hotels/${hotelId}/checkout`);
+    return { success: true };
+}
+
+export async function updateRoomActiveStatus(roomId: string, hotelId: string, isActive: boolean) {
+    const supabase = await createClient();
+    const adminClient = getSupabaseAdmin();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Unauthorized" };
+
+    const { data: profile } = await adminClient
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+    if (!profile || (profile.role !== "admin" && profile.role !== "super_admin")) {
+        return { error: "Unauthorized: insufficient permissions" };
+    }
+
+    if (profile.role !== "super_admin") {
+        const { data: room } = await adminClient
+            .from("rooms")
+            .select("hotel_id, hotel:hotels(owner_id)")
+            .eq("id", roomId)
+            .single();
+
+        const hotel = Array.isArray(room?.hotel) ? room.hotel[0] : room?.hotel;
+        if (!hotel || hotel.owner_id !== user.id) {
+            return { error: "Unauthorized: you do not own this hotel" };
+        }
+    }
+
+    const { error } = await adminClient
+        .from("rooms")
+        .update({ is_active: isActive })
+        .eq("id", roomId)
+        .eq("hotel_id", hotelId);
+
+    if (error) {
+        console.error("Error updating room active status:", error);
+        return { error: "Failed to update room status" };
+    }
+
+    revalidatePath(`/admin/hotels/${hotelId}`);
+    revalidatePath(`/hotels/${hotelId}`);
+    revalidatePath(`/hotels/${hotelId}/checkout`);
+    (revalidateTag as any)("hotels");
     return { success: true };
 }

@@ -13,6 +13,8 @@ import {
     getClientIpFromHeaders,
 } from "@/lib/action-rate-limit";
 import { getPublicAppUrl } from "@/lib/site-config";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { sendVerificationEmail, sendPasswordResetEmail } from "@/lib/email";
 
 const authSchema = z.object({
     email: z.string().email(),
@@ -159,7 +161,9 @@ export async function signupAction(prevState: AuthState, formData: FormData): Pr
 
     console.log("Starting signup flow. Redirecting to:", `${baseUrl}/auth/callback`);
 
-    const { error } = await supabase.auth.signUp({
+    const adminSupabase = getSupabaseAdmin();
+    const { data: linkData, error } = await adminSupabase.auth.admin.generateLink({
+        type: "signup",
         email,
         password,
         options: {
@@ -167,12 +171,19 @@ export async function signupAction(prevState: AuthState, formData: FormData): Pr
                 full_name: fullName,
                 role: "guest",
             },
-            emailRedirectTo: `${baseUrl}/auth/callback`,
+            redirectTo: `${baseUrl}/auth/callback`,
         },
     });
 
     if (error) {
         return { error: error.message };
+    }
+
+    const verificationLink = linkData?.properties?.action_link;
+    if (verificationLink) {
+        await sendVerificationEmail(email, fullName || "Guest", verificationLink).catch((emailErr) => {
+            console.error("Failed to send verification email:", emailErr);
+        });
     }
 
     revalidatePath("/", "layout");
@@ -221,4 +232,46 @@ export async function updatePasswordAction(prevState: AuthState, formData: FormD
     }
 
     return { success: true, message: "Password updated successfully!" };
+}
+
+export async function requestPasswordResetAction(prevState: AuthState, formData: FormData): Promise<AuthState> {
+    const email = formData.get("email") as string;
+    if (!email) return { error: "Email is required" };
+
+    const baseUrl = getPublicAppUrl();
+    const adminSupabase = getSupabaseAdmin();
+
+    try {
+        const { data: linkData, error } = await adminSupabase.auth.admin.generateLink({
+            type: "recovery",
+            email: email,
+            options: {
+                redirectTo: `${baseUrl}/auth/callback?next=/settings/profile`,
+            },
+        });
+
+        if (error) {
+            // Security best practice: don't reveal if user exists
+            return { success: true, message: "If an account exists, a reset link has been sent." };
+        }
+
+        const resetLink = linkData?.properties?.action_link;
+        if (resetLink) {
+            // Try to find the user's name
+            const { data: profile } = await adminSupabase
+                .from("profiles")
+                .select("full_name")
+                .eq("email", email)
+                .maybeSingle();
+
+            await sendPasswordResetEmail(email, profile?.full_name || "Guest", resetLink).catch((e) => {
+                console.error("Failed to send reset email:", e);
+            });
+        }
+
+        return { success: true, message: "If an account exists, a reset link has been sent." };
+    } catch (e) {
+        console.error("Reset Request Error:", e);
+        return { error: "An unexpected error occurred." };
+    }
 }

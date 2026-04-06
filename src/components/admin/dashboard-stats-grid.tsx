@@ -67,10 +67,10 @@ export function DashboardStatsGrid({ stats }: DashboardStatsGridProps) {
 
             {/* Stats Grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 transition-all hover:shadow-md">
+                <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:shadow-md">
                     <div className="flex items-center gap-4">
-                        <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-                            <CalendarCheck className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                        <div className="p-2 bg-indigo-50 rounded-lg">
+                            <CalendarCheck className="h-6 w-6 text-indigo-600" />
                         </div>
                         <div>
                             <p className="text-sm font-medium text-muted-foreground">Total Bookings</p>
@@ -80,8 +80,8 @@ export function DashboardStatsGrid({ stats }: DashboardStatsGridProps) {
                 </div>
                 <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 transition-all hover:shadow-md">
                     <div className="flex items-center gap-4">
-                        <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
-                            <CreditCard className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                        <div className="p-2 bg-emerald-50 rounded-lg">
+                            <CreditCard className="h-6 w-6 text-emerald-600" />
                         </div>
                         <div>
                             <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
@@ -91,8 +91,8 @@ export function DashboardStatsGrid({ stats }: DashboardStatsGridProps) {
                 </div>
                 <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 transition-all hover:shadow-md">
                     <div className="flex items-center gap-4">
-                        <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                            <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                        <div className="p-2 bg-blue-50 rounded-lg">
+                            <Users className="h-6 w-6 text-blue-600" />
                         </div>
                         <div>
                             <p className="text-sm font-medium text-muted-foreground">Checked-In</p>
@@ -102,8 +102,8 @@ export function DashboardStatsGrid({ stats }: DashboardStatsGridProps) {
                 </div>
                 <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 transition-all hover:shadow-md">
                     <div className="flex items-center gap-4">
-                        <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                            <Activity className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                        <div className="p-2 bg-amber-50 rounded-lg">
+                            <Activity className="h-6 w-6 text-amber-600" />
                         </div>
                         <div>
                             <p className="text-sm font-medium text-muted-foreground">Occupancy Rate</p>
@@ -115,25 +115,25 @@ export function DashboardStatsGrid({ stats }: DashboardStatsGridProps) {
 
             {/* Charts Section */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <div className="col-span-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <div className="col-span-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
                     <h3 className="font-semibold text-lg mb-6">Revenue Trends (Last 7 Days)</h3>
                     <RevenueTrendChart data={revenueTrends} />
                 </div>
-                <div className="col-span-3 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <div className="col-span-3 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
                     <h3 className="font-semibold text-lg mb-6">Booking Status</h3>
                     <StatusDistributionChart data={statusDistribution} />
                 </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <div className="col-span-3 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <div className="col-span-3 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
                     <h3 className="font-semibold text-lg mb-6">Top Performing Hotels</h3>
                     <TopHotelsChart data={topHotels} />
                 </div>
-                <div className="col-span-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <div className="col-span-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="font-semibold text-lg">System Health</h3>
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-500">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
                             <span className="h-1.5 w-1.5 rounded-full bg-green-500"></span>
                             Operational
                         </span>

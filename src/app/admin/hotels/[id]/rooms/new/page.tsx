@@ -40,23 +40,23 @@ export default function NewRoomPage({ params }: { params: Promise<{ id: string }
                         <ArrowLeft className="h-4 w-4" />
                     </Link>
                 </Button>
-                <h2 className="text-3xl font-bold tracking-tight text-white">Add New Room Type</h2>
+                <h2 className="text-3xl font-bold tracking-tight text-zinc-950">Add New Room Type</h2>
             </div>
 
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 shadow-sm">
+            <div className="bg-white border border-zinc-200 rounded-lg p-6 shadow-sm">
                 <form action={formAction} className="space-y-8">
                     {/* Basic Info */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label htmlFor="name" className="text-zinc-300">Room Name *</Label>
-                            <Input id="name" name="name" placeholder="e.g. Deluxe Ocean View" required className="bg-zinc-800 border-zinc-700 text-white" />
+                            <Label htmlFor="name" className="text-zinc-700">Room Name *</Label>
+                            <Input id="name" name="name" placeholder="e.g. Deluxe Ocean View" required className="bg-white border-zinc-200 text-zinc-950" />
                             {state?.fieldErrors?.name && <p className="text-red-500 text-sm">{state.fieldErrors.name}</p>}
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="type" className="text-zinc-300">Room Category</Label>
+                            <Label htmlFor="type" className="text-zinc-700">Room Category</Label>
                             <Select name="type" defaultValue="Standard">
-                                <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                                <SelectTrigger className="bg-white border-zinc-200 text-zinc-950">
                                     <SelectValue placeholder="Select type" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -72,52 +72,52 @@ export default function NewRoomPage({ params }: { params: Promise<{ id: string }
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="description" className="text-zinc-300">Description</Label>
-                        <Textarea id="description" name="description" placeholder="Example: 55 m2, one king bed, work desk, bathtub and shower." className="bg-zinc-800 border-zinc-700 text-white min-h-[100px]" />
+                        <Label htmlFor="description" className="text-zinc-700">Description</Label>
+                        <Textarea id="description" name="description" placeholder="Example: 55 m2, one king bed, work desk, bathtub and shower." className="bg-white border-zinc-200 text-zinc-950 min-h-[100px]" />
                         <p className="text-xs text-zinc-500">Normal text is enough. Old HTML tags like &lt;ul&gt; or &lt;li&gt; are cleaned automatically.</p>
                     </div>
 
                     {/* Pricing & Inventory */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2">
-                            <Label htmlFor="price_per_night" className="text-zinc-300">Price per Night ($)</Label>
-                            <Input id="price_per_night" name="price_per_night" type="number" min="0" step="0.01" required className="bg-zinc-800 border-zinc-700 text-white" />
+                            <Label htmlFor="price_per_night" className="text-zinc-700">Price per Night ($)</Label>
+                            <Input id="price_per_night" name="price_per_night" type="number" min="0" step="0.01" required className="bg-white border-zinc-200 text-zinc-950" />
                             {state?.fieldErrors?.price_per_night && <p className="text-red-500 text-sm">{state.fieldErrors.price_per_night}</p>}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="capacity" className="text-zinc-300">Max Guests</Label>
-                            <Input id="capacity" name="capacity" type="number" min="1" defaultValue="2" className="bg-zinc-800 border-zinc-700 text-white" />
+                            <Label htmlFor="capacity" className="text-zinc-700">Max Guests</Label>
+                            <Input id="capacity" name="capacity" type="number" min="1" defaultValue="2" className="bg-white border-zinc-200 text-zinc-950" />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="total_inventory" className="text-zinc-300">Total Inventory</Label>
-                            <Input id="total_inventory" name="total_inventory" type="number" min="0" defaultValue="1" className="bg-zinc-800 border-zinc-700 text-white" />
+                            <Label htmlFor="total_inventory" className="text-zinc-700">Total Inventory</Label>
+                            <Input id="total_inventory" name="total_inventory" type="number" min="0" defaultValue="1" className="bg-white border-zinc-200 text-zinc-950" />
                             <p className="text-xs text-zinc-500">How many rooms of this type exist?</p>
                         </div>
                     </div>
 
                     {/* Amenities */}
                     <div className="space-y-2">
-                        <Label className="text-zinc-300">Room Amenities</Label>
+                        <Label className="text-zinc-700">Room Amenities</Label>
                         <AmenitiesSelector value={amenities} onChange={setAmenities} />
                         <input type="hidden" name="amenities" value={JSON.stringify(amenities)} />
                     </div>
 
                     {/* Images */}
                     <div className="space-y-2">
-                        <Label className="text-zinc-300">Room Images</Label>
-                        <ImageUpload value={images} onChange={setImages} />
+                        <Label className="text-zinc-700">Room Images</Label>
+                        <ImageUpload value={images} onChange={setImages} maxFiles={10} />
                         <input type="hidden" name="images" value={JSON.stringify(images)} />
                     </div>
 
                     {/* Errors */}
                     {state?.error && (
-                        <div className="p-3 bg-red-900/20 border border-red-900/50 rounded text-red-400 text-sm">
+                        <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
                             {state.error}
                         </div>
                     )}
 
-                    <div className="pt-4 flex justify-end gap-4 border-t border-zinc-800">
-                        <Button variant="outline" asChild className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white">
+                    <div className="pt-4 flex justify-end gap-4 border-t border-zinc-200">
+                        <Button variant="outline" asChild className="border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900">
                             <Link href={`/admin/hotels/${id}`}>Cancel</Link>
                         </Button>
                         <SubmitButton />

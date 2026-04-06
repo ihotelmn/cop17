@@ -37,7 +37,7 @@ export function SiteHeader() {
             "fixed top-0 left-0 right-0 z-40 transition-all duration-500",
             isHome
                 ? "bg-black/20 backdrop-blur-md border-b border-white/5"
-                : "bg-zinc-950/90 backdrop-blur-xl border-b border-white/10 shadow-2xl"
+                : "bg-white/90 backdrop-blur-xl border-b border-zinc-200 shadow-sm"
         )}>
             <div className="container mx-auto px-4 h-16 flex items-center justify-between">
 
@@ -49,19 +49,22 @@ export function SiteHeader() {
                             alt="COP17 Logo"
                             width={120}
                             height={40}
-                            className="h-9 w-auto object-contain brightness-0 invert drop-shadow-md"
+                            className={cn(
+                                "h-9 w-auto object-contain transition-all",
+                                isHome ? "brightness-0 invert" : ""
+                            )}
                         />
                     </div>
                 </SearchAwareLink>
 
                 {/* Navigation */}
                 <nav className="hidden lg:flex items-center gap-8">
-                    <NavLink href="/" active={pathname === "/"} preserveSearch>Home</NavLink>
-                    <NavLink href="/#search" active={pathname.startsWith("/hotels")} preserveSearch>Hotels</NavLink>
-                    <NavLink href="/tours" active={pathname === "/tours"}>Tours</NavLink>
-                    <NavLink href="/shuttle" active={pathname === "/shuttle"}>Shuttle</NavLink>
-                    <NavLink href="/support" active={pathname === "/support"}>Support</NavLink>
-                    <NavLink href="https://unccdcop17.org" external>About COP17</NavLink>
+                    <NavLink href="/" active={pathname === "/"} isHome={isHome} preserveSearch>Home</NavLink>
+                    <NavLink href="/#search" active={pathname.startsWith("/hotels")} isHome={isHome} preserveSearch>Hotels</NavLink>
+                    <NavLink href="/tours" active={pathname === "/tours"} isHome={isHome}>Tours</NavLink>
+                    <NavLink href="/shuttle" active={pathname === "/shuttle"} isHome={isHome}>Shuttle</NavLink>
+                    <NavLink href="/support" active={pathname === "/support"} isHome={isHome}>Support</NavLink>
+                    <NavLink href="https://unccdcop17.org" isHome={isHome} external>About COP17</NavLink>
                 </nav>
 
                 {/* Actions */}
@@ -71,7 +74,10 @@ export function SiteHeader() {
                             <div className="hidden md:flex items-center gap-6">
                                 <NavLink href="/my-bookings" active={pathname === "/my-bookings"}>My Bookings</NavLink>
                                 {isAdminUser && (
-                                    <Button asChild variant="ghost" className="text-[12px] font-bold uppercase tracking-wider text-white/70 hover:text-white hover:bg-white/10 rounded-xl px-4">
+                                <Button asChild variant="ghost" className={cn(
+                                    "text-[12px] font-bold uppercase tracking-wider rounded-xl px-4",
+                                    isHome ? "text-white/70 hover:text-white hover:bg-white/10" : "text-zinc-500 hover:text-zinc-950 hover:bg-zinc-100"
+                                )}>
                                         <Link href="/admin">Dashboard</Link>
                                     </Button>
                                 )}
@@ -82,18 +88,26 @@ export function SiteHeader() {
                                     <NotificationBell userId={user!.id} />
                                 )}
                                 <UserNav />
-                                <MobileHeaderMenu showUserContent={showUserContent} isAdminUser={isAdminUser} isAuthPage={isAuthPage} />
+                                <MobileHeaderMenu showUserContent={showUserContent} isAdminUser={isAdminUser} isAuthPage={isAuthPage} isHome={isHome} />
                             </div>
                         </>
                     ) : !isAuthPage && (
                         <div className="flex items-center gap-2 sm:gap-3 lg:gap-6">
-                            <Link href="/login" className="hidden text-[12px] font-bold uppercase tracking-wider text-white/60 transition-all hover:text-white sm:inline-flex">
+                            <Link href="/login" className={cn(
+                                "hidden text-[12px] font-bold uppercase tracking-wider transition-all sm:inline-flex",
+                                isHome ? "text-white/60 hover:text-white" : "text-zinc-500 hover:text-zinc-950"
+                            )}>
                                 Sign In
                             </Link>
-                            <Button asChild className="h-10 rounded-2xl bg-white px-4 text-[11px] font-bold uppercase tracking-[0.18em] text-black shadow-[0_10px_30px_rgba(255,255,255,0.15)] transition-all hover:scale-105 hover:bg-zinc-100 active:scale-95 sm:h-11 sm:px-8 sm:text-[12px] sm:tracking-wider">
+                            <Button asChild className={cn(
+                                "h-10 rounded-2xl px-4 text-[11px] font-bold uppercase tracking-[0.18em] transition-all hover:scale-105 active:scale-95 sm:h-11 sm:px-8 sm:text-[12px] sm:tracking-wider",
+                                isHome 
+                                    ? "bg-white text-black shadow-[0_10px_30px_rgba(255,255,255,0.15)] hover:bg-zinc-100" 
+                                    : "bg-zinc-950 text-white shadow-[0_10px_30px_rgba(0,0,0,0.1)] hover:bg-zinc-800"
+                            )}>
                                 <SearchAwareLink href="/#search">Book Stay</SearchAwareLink>
                             </Button>
-                            <MobileHeaderMenu showUserContent={showUserContent} isAdminUser={isAdminUser} isAuthPage={isAuthPage} />
+                            <MobileHeaderMenu showUserContent={showUserContent} isAdminUser={isAdminUser} isAuthPage={isAuthPage} isHome={isHome} />
                         </div>
                     )}
                 </div>
@@ -107,10 +121,12 @@ function MobileHeaderMenu({
     showUserContent,
     isAdminUser,
     isAuthPage,
+    isHome,
 }: {
     showUserContent: boolean;
     isAdminUser: boolean;
     isAuthPage: boolean;
+    isHome: boolean;
 }) {
     const pathname = usePathname();
 
@@ -120,7 +136,12 @@ function MobileHeaderMenu({
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-10 w-10 rounded-2xl border border-white/10 bg-white/5 text-white hover:bg-white/10 hover:text-white lg:hidden"
+                    className={cn(
+                        "h-10 w-10 rounded-2xl border lg:hidden",
+                        isHome 
+                            ? "border-white/10 bg-white/5 text-white hover:bg-white/10 hover:text-white" 
+                            : "border-zinc-200 bg-zinc-50 text-zinc-900 hover:bg-zinc-100 hover:text-black"
+                    )}
                     aria-label="Open navigation menu"
                 >
                     <Menu className="h-5 w-5" />
@@ -224,17 +245,21 @@ function NavLink({
     active,
     external,
     preserveSearch,
+    isHome,
     children,
 }: {
     href: string,
     active?: boolean,
     external?: boolean,
     preserveSearch?: boolean,
+    isHome?: boolean,
     children: React.ReactNode
 }) {
     const className = cn(
         "text-[12px] font-bold uppercase tracking-wider transition-all relative pb-1 group flex items-center h-full",
-        active ? "text-white" : "text-white/70 hover:text-white"
+        active 
+            ? (isHome ? "text-white" : "text-zinc-950") 
+            : (isHome ? "text-white/70 hover:text-white" : "text-zinc-500 hover:text-zinc-950")
     );
 
 

@@ -73,6 +73,7 @@ export interface Room {
     bed_config?: string | null
     max_adults?: number | null
     max_children?: number | null
+    is_active?: boolean
 }
 
 export interface HotelSearchParams {

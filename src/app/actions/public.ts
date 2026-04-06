@@ -78,7 +78,8 @@ export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
                         id,
                         price_per_night,
                         capacity,
-                        total_inventory
+                        total_inventory,
+                        is_active
                     )
                 `)
                 .order("created_at", { ascending: false });
@@ -153,10 +154,16 @@ export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
                 is_official_partner: !!hotel.is_official_partner,
                 is_recommended: !!hotel.is_recommended,
                 has_shuttle_service: !!hotel.has_shuttle_service,
-                minPrice: hotel.rooms?.length > 0 ? Math.min(...hotel.rooms.map((room: any) => Number(room.price_per_night))) : null,
-                max_capacity: hotel.rooms?.length > 0 ? Math.max(...hotel.rooms.map((room: any) => Number(room.capacity))) : 0,
+                minPrice: (hotel.rooms ?? []).filter((r: any) => r.is_active !== false).length > 0 ? Math.min(...hotel.rooms.filter((r: any) => r.is_active !== false).map((room: any) => Number(room.price_per_night))) : null,
+                max_capacity: (hotel.rooms ?? []).filter((r: any) => r.is_active !== false).length > 0 ? Math.max(...hotel.rooms.filter((r: any) => r.is_active !== false).map((room: any) => Number(room.capacity))) : 0,
             });
         });
+
+        // Filter out inactive rooms from the results early
+        results = results.map((hotel: any) => ({
+            ...hotel,
+            rooms: (hotel.rooms ?? []).filter((room: any) => room.is_active !== false)
+        }));
 
         const totalRequired = parseInt(params?.adults || "1") + parseInt(params?.children || "0");
         const shouldApplyAvailabilityFilters = hasAvailabilityFilters(params);
@@ -346,6 +353,7 @@ export async function getPublicRooms(hotelId: string, _guests?: number, from?: s
             .from("rooms")
             .select("*")
             .eq("hotel_id", publishedHotelId)
+            .eq("is_active", true)
             .order("price_per_night", { ascending: true });
 
         if (error) {
@@ -401,6 +409,7 @@ export async function getPublicRoom(roomId: string) {
                 hotel:hotels (*)
             `)
             .eq("id", roomId)
+            .eq("is_active", true)
             .maybeSingle();
 
         if (error) {
@@ -497,6 +506,7 @@ export async function getHomepageStats() {
         const { data: rooms, error: roomsError } = await supabase
             .from("rooms")
             .select("total_inventory")
+            .eq("is_active", true)
             .in("hotel_id", publishedHotelIds);
 
         if (roomsError) {

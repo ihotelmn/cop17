@@ -15,7 +15,7 @@ interface ImageUploadProps {
     disabled?: boolean;
 }
 
-export function ImageUpload({ value, onChange, maxFiles = 5, disabled }: ImageUploadProps) {
+export function ImageUpload({ value, onChange, maxFiles = 10, disabled }: ImageUploadProps) {
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const supabase = createClient();
@@ -38,8 +38,8 @@ export function ImageUpload({ value, onChange, maxFiles = 5, disabled }: ImageUp
             }
 
             const compressionOptions = {
-                maxSizeMB: 1,
-                maxWidthOrHeight: 1920,
+                maxSizeMB: 2,
+                maxWidthOrHeight: 2560,
                 useWebWorker: false,
                 fileType: "image/webp"
             };
@@ -54,7 +54,7 @@ export function ImageUpload({ value, onChange, maxFiles = 5, disabled }: ImageUp
 
                     const compressPromise = imageCompression(file, compressionOptions);
                     const timeoutPromise = new Promise<File>((_, reject) =>
-                        setTimeout(() => reject(new Error("Compression timeout")), 10000)
+                        setTimeout(() => reject(new Error("Compression timeout")), 15000)
                     );
 
                     const compressedFile = await Promise.race([compressPromise, timeoutPromise]) as File;
@@ -78,7 +78,7 @@ export function ImageUpload({ value, onChange, maxFiles = 5, disabled }: ImageUp
 
                     if (uploadError) {
                         console.error("Upload error:", uploadError);
-                        setError(`Failed to upload ${file.name}: ${uploadError.message}`);
+                        setError(`Upload failed for ${file.name}: ${uploadError.message}. Check storage permissions.`);
                         continue;
                     }
 
@@ -121,7 +121,7 @@ export function ImageUpload({ value, onChange, maxFiles = 5, disabled }: ImageUp
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
                 {value.map((url) => (
-                    <div key={url} className="relative aspect-video rounded-md overflow-hidden border border-zinc-200 dark:border-zinc-800 group">
+                    <div key={url} className="relative aspect-video rounded-md overflow-hidden border border-zinc-200 group">
                         <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button
                                 type="button"
@@ -148,7 +148,7 @@ export function ImageUpload({ value, onChange, maxFiles = 5, disabled }: ImageUp
             {(value.length < maxFiles) && (
                 <div className="flex items-center justify-center w-full">
                     <label className={cn(
-                        "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors",
+                        "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-zinc-200 rounded-lg cursor-pointer hover:bg-zinc-50 transition-colors",
                         isUploading || disabled ? "opacity-50 cursor-not-allowed" : ""
                     )}>
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -158,11 +158,11 @@ export function ImageUpload({ value, onChange, maxFiles = 5, disabled }: ImageUp
                                 <ImagePlus className="h-8 w-8 text-zinc-400 mb-2" />
                             )}
                             <div className="text-center">
-                                <p className="mb-1 text-sm text-zinc-500 dark:text-zinc-400">
+                                <p className="mb-1 text-sm text-zinc-600">
                                     <span className="font-semibold">Click to upload</span>
                                 </p>
-                                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                                    Max 5MB (JPG, PNG)
+                                <p className="text-xs text-zinc-500">
+                                    Recommended: high-quality JPG/PNG, WebP
                                 </p>
                             </div>
                         </div>
