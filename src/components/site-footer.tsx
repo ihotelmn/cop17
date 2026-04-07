@@ -58,10 +58,6 @@ export function SiteFooter() {
                                 <Mail className="h-4 w-4 text-zinc-600 group-hover:text-blue-500 transition-colors" />
                                 <a href={supportMailto} className="group-hover:text-white transition-colors">{supportEmail}</a>
                             </li>
-                            <li className="flex items-center gap-3 group px-0.5">
-                                <Phone className="h-4 w-4 text-zinc-600 group-hover:text-blue-500 transition-colors" />
-                                <span className="group-hover:text-white transition-colors">+976 8857 9090</span>
-                            </li>
                         </ul>
                     </div>
 

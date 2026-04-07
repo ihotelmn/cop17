@@ -141,20 +141,22 @@ async function uploadImageFile(file: File, supabase: ReturnType<typeof createCli
     let extension = originalName.split(".").pop()?.toLowerCase() || "jpg";
 
     try {
+        console.log(`Starting compression for: ${originalName}`);
         const compressed = await Promise.race([
             imageCompression(file, {
-                maxSizeMB: 1.2,
+                maxSizeMB: 1.0,
                 maxWidthOrHeight: 2048,
-                useWebWorker: false,
+                useWebWorker: true,
                 fileType: "image/webp",
             }),
-            new Promise<File>((_, reject) => setTimeout(() => reject(new Error("Compression timeout")), 10000)),
+            new Promise<File>((_, reject) => setTimeout(() => reject(new Error("Compression timeout")), 8000)),
         ]) as File;
 
         fileToUpload = compressed;
         extension = compressed.type.split("/")[1] || "webp";
-    } catch {
-        // Fall back to the original image if compression fails.
+        console.log(`Compression successful: ${originalName}`);
+    } catch (e) {
+        console.warn(`Compression failed or timed out for ${originalName}, using original.`, e);
     }
 
     const safeBaseName = originalName
@@ -167,11 +169,13 @@ async function uploadImageFile(file: File, supabase: ReturnType<typeof createCli
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const filePath = `imports/${id}-${safeBaseName}.${extension}`;
 
+    console.log(`Uploading to Supabase: ${filePath}`);
     const { error } = await supabase.storage
         .from("hotel-images")
         .upload(filePath, fileToUpload);
 
     if (error) {
+        console.error(`Supabase upload error for ${originalName}:`, error);
         return null;
     }
 
@@ -179,6 +183,7 @@ async function uploadImageFile(file: File, supabase: ReturnType<typeof createCli
         data: { publicUrl },
     } = supabase.storage.from("hotel-images").getPublicUrl(filePath);
 
+    console.log(`Upload complete: ${publicUrl}`);
     return {
         id,
         name: originalName,

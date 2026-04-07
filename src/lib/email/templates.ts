@@ -77,10 +77,9 @@ export async function sendBookingConfirmation(
                     </div>
                 </div>
 
-                <!-- Support Footer -->
                 <div style="margin-top: 32px; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 32px;">
                     <p style="font-size: 13px; color: #64748b; margin-bottom: 8px;">Need assistance with your booking?</p>
-                    <p style="font-size: 13px; color: #0f172a; font-weight: 700; margin: 0;">Call +976 7010 1234 or reply to this email.</p>
+                    <p style="font-size: 13px; color: #0f172a; font-weight: 700; margin: 0;">Reply to this email or contact <a href="mailto:hotel@unccdcop17.org" style="color: #2563eb;">hotel@unccdcop17.org</a></p>
                 </div>
 
                 <div style="text-align: center; margin-top: 40px; font-size: 11px; color: #94a3b8; line-height: 1.8;">
@@ -168,7 +167,7 @@ export async function sendPreBookingRequestReceived(
 
                 <div style="margin-top: 32px; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 32px;">
                     <p style="font-size: 13px; color: #64748b; margin-bottom: 8px;">Our team will contact you using the details you submitted.</p>
-                    <p style="font-size: 13px; color: #0f172a; font-weight: 700; margin: 0;">If you need support, reply to this email.</p>
+                    <p style="font-size: 13px; color: #0f172a; font-weight: 700; margin: 0;">If you need support, contact <a href="mailto:hotel@unccdcop17.org" style="color: #2563eb;">hotel@unccdcop17.org</a></p>
                 </div>
             </div>
         </body>
@@ -333,7 +332,7 @@ export async function sendBookingCancelledEmail(
                         ` : ''}
                     </div>
 
-                    <p style="margin: 0; color: #64748b; font-size: 13px;">If you have any questions regarding refunds or need to make a new reservation, please contact our support team.</p>
+                    <p style="margin: 0; color: #64748b; font-size: 13px;">If you have any questions regarding refunds or need to make a new reservation, please contact us at <a href="mailto:hotel@unccdcop17.org" style="color: #2563eb;">hotel@unccdcop17.org</a></p>
                 </div>
             </div>
         </body>

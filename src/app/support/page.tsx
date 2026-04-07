@@ -40,28 +40,12 @@ export default function SupportPage() {
     const supportEmail = getPublicSupportEmail();
     const channels = [
         {
-            icon: Phone,
-            title: "24/7 Hotline",
-            value: "+976 7000 1700",
-            desc: "Immediate assistance in English, Mongolian, French, and Russian",
-            color: "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600",
-            action: "tel:+97670001700",
-        },
-        {
             icon: Mail,
             title: "Email Support",
             value: supportEmail,
             desc: "Response within 2 hours during conference period",
             color: "bg-blue-50 dark:bg-blue-900/20 text-blue-600",
             action: getPublicSupportMailto(),
-        },
-        {
-            icon: MessageCircle,
-            title: "WhatsApp",
-            value: "+976 9911 1700",
-            desc: "Quick queries, shuttle updates, and real-time assistance",
-            color: "bg-green-50 dark:bg-green-900/20 text-green-600",
-            action: "https://wa.me/97699111700",
         },
     ];
 
@@ -84,8 +68,8 @@ export default function SupportPage() {
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-blue-400">To Help</span>
                         </h1>
                         <p className="text-xl text-white/70 font-medium leading-relaxed max-w-2xl">
-                            Round-the-clock support for all COP17 delegates. Available in 4 languages,
-                            through phone, email, and messaging.
+                            Round-the-clock support for all COP17 delegates. Available in 4 languages
+                            through email correspondence.
                         </p>
                     </div>
                 </div>
@@ -147,8 +131,6 @@ export default function SupportPage() {
                                 { label: "Police", number: "102", note: "Mongolian National Police" },
                                 { label: "Ambulance", number: "103", note: "Emergency Medical Services" },
                                 { label: "Fire Department", number: "101", note: "Fire & Rescue" },
-                                { label: "COP17 Security", number: "+976 7000 1799", note: "Venue security team" },
-                                { label: "Embassy Liaison", number: "+976 7000 1750", note: "Diplomatic assistance" },
                             ].map((e, i) => (
                                 <div key={i} className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl">
                                     <div>

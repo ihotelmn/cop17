@@ -216,8 +216,7 @@ export default async function ReceiptPage({ params, searchParams }: ReceiptPageP
                 </div>
                 <div className="text-right">
                     <p className="font-bold text-zinc-600 mb-2 uppercase tracking-tighter">Need Assistance?</p>
-                    <p>Support Line: +976 7000 0000</p>
-                    <p>Email: accommodation@cop17.mn</p>
+                    <p>Contact: hotel@unccdcop17.org</p>
                 </div>
             </div>
 

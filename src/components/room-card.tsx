@@ -134,6 +134,7 @@ export function RoomCard({ room, hotelId, checkIn, checkOut }: RoomCardProps) {
                                     </div>
                                 )}
                             </div>
+                            </div>
                         </div>
                         <div className="text-left md:text-right">
                             <p className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2">Base Rate</p>
@@ -144,8 +145,22 @@ export function RoomCard({ room, hotelId, checkIn, checkOut }: RoomCardProps) {
                         </div>
                     </div>
 
-
-                </div>
+                    {/* Amenities Display */}
+                    {room.amenities && Array.isArray(room.amenities) && room.amenities.filter(Boolean).length > 0 && (
+                        <div className="mb-10">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-4 font-mono">Room Features & Services</p>
+                            <div className="flex flex-wrap gap-2 md:gap-3">
+                                {room.amenities.filter(Boolean).map((amenity, i) => (
+                                    <div key={i} className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-white/5 hover:border-blue-500/30 transition-all hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                                        <div className="h-4.5 w-4.5 bg-blue-500 rounded-full flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
+                                            <Check className="h-3 w-3 text-white" strokeWidth={4} />
+                                        </div>
+                                        <span className="text-[11px] font-black text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">{amenity.trim()}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                 <div className="pt-8 border-t border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row items-center justify-between gap-8 mt-auto">
                     <div className="flex items-center gap-3">
