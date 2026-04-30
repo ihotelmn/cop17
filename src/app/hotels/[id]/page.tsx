@@ -10,6 +10,10 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { sanitizeRichTextToParagraphs, sanitizeRichTextToPlainText } from "@/lib/safe-rich-text";
 
+// Hotel detail pages are mostly static (name, description, images, amenities).
+// Cache for 5 minutes — availability/pricing calls can stream separately.
+export const revalidate = 300;
+
 interface PageProps {
     params: Promise<{ id: string }>;
     searchParams: Promise<{ [key: string]: string | undefined }>;

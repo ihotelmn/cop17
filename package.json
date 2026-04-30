@@ -8,11 +8,12 @@
     "build:ci": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "lint:ci": "eslint --max-warnings=0 playwright.config.ts tests/booking-flow.spec.ts src/lib/booking-search.ts src/lib/cancellation-policy.ts src/lib/encryption.ts src/lib/golomt.ts src/lib/payment-attempts.ts src/lib/postgres.ts src/lib/action-rate-limit.ts src/lib/auth-context.tsx src/lib/utils.ts src/components/ui/fallback-image.tsx src/app/actions/auth.ts src/app/actions/booking.ts src/app/api/payments/golomt/callback/route.ts src/app/mock-payment/page.tsx",
+    "lint:ci": "eslint src playwright.config.ts tests",
+    "lint:strict": "eslint --max-warnings=0 src/lib/booking-search.ts src/lib/cancellation-policy.ts src/lib/encryption.ts src/lib/golomt.ts src/lib/payment-attempts.ts src/lib/postgres.ts src/lib/action-rate-limit.ts src/lib/guest-booking-access.ts src/lib/golomt.test.ts src/instrumentation.ts src/app/actions/auth.ts src/app/api/payments/golomt/callback/route.ts src/app/mock-payment/layout.tsx",
     "test": "npm run test:unit",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
-    "verify": "npm run lint:ci && npm run test:unit && npm run test:e2e && npm run build:ci"
+    "verify": "npm run lint:strict && npm run lint:ci && npm run test:unit && npm run test:e2e && npm run build:ci"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
@@ -44,7 +45,6 @@
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
     "next-themes": "^0.4.6",
-    "nodemailer": "^8.0.1",
     "pg": "^8.19.0",
     "query-string": "^9.3.1",
     "react": "19.2.3",
@@ -65,7 +65,6 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
-    "@types/nodemailer": "^7.0.11",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/testing-library__jest-dom": "^5.14.9",

@@ -19,8 +19,10 @@ import { HotelSections } from "@/components/hotel-sections";
 import type { Metadata } from "next";
 import { getHotelDisplayDistance } from "@/lib/hotel-distance";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// ISR: homepage is mostly static aside from live availability. 60s cache gives
+// us CDN hits during traffic bursts (keynote link drops, press releases) while
+// letting updated prices/inventory propagate within a minute.
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Official Accommodation Booking | COP17 Mongolia",

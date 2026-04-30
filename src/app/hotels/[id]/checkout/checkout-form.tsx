@@ -17,6 +17,12 @@ interface CheckoutFormProps {
     subtotal: number;
     serviceFee: number;
     totalPrice: number;
+    /**
+     * When false, the "Pay Now" path is hidden and only Pre-book is shown.
+     * Used while the Golomt Bank contract is being finalised. Flips back
+     * automatically when GOLOMT_MODE=live + credentials are provided.
+     */
+    payNowEnabled?: boolean;
 }
 
 export function CheckoutForm({
@@ -27,6 +33,7 @@ export function CheckoutForm({
     subtotal,
     serviceFee,
     totalPrice,
+    payNowEnabled = true,
 }: CheckoutFormProps) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -164,33 +171,39 @@ export function CheckoutForm({
                     </div>
                 </div>
 
-                <div className="grid gap-3 md:grid-cols-2">
-                    <Button
-                        type="submit"
-                        name="bookingMode"
-                        value="pay_now"
-                        className="h-14 rounded-2xl bg-blue-600 text-base font-bold shadow-xl shadow-blue-500/20 hover:bg-blue-700 sm:h-[3.75rem] sm:text-lg"
-                        disabled={loading}
-                    >
-                        {loading && activeAction === "pay_now" ? (
-                            <>
-                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                Redirecting to Payment...
-                            </>
-                        ) : (
-                            <span className="flex items-center gap-2 text-center">
-                                Pay Now ({formatUsd(totalPrice)})
-                                <ArrowRight className="h-5 w-5" />
-                            </span>
-                        )}
-                    </Button>
+                <div className={payNowEnabled ? "grid gap-3 md:grid-cols-2" : "grid gap-3"}>
+                    {payNowEnabled && (
+                        <Button
+                            type="submit"
+                            name="bookingMode"
+                            value="pay_now"
+                            className="h-14 rounded-2xl bg-blue-600 text-base font-bold shadow-xl shadow-blue-500/20 hover:bg-blue-700 sm:h-[3.75rem] sm:text-lg"
+                            disabled={loading}
+                        >
+                            {loading && activeAction === "pay_now" ? (
+                                <>
+                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                    Redirecting to Payment...
+                                </>
+                            ) : (
+                                <span className="flex items-center gap-2 text-center">
+                                    Pay Now ({formatUsd(totalPrice)})
+                                    <ArrowRight className="h-5 w-5" />
+                                </span>
+                            )}
+                        </Button>
+                    )}
 
                     <Button
                         type="submit"
                         name="bookingMode"
                         value="prebook"
-                        variant="outline"
-                        className="h-14 rounded-2xl border-zinc-300 bg-white text-base font-bold text-zinc-900 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800 sm:h-[3.75rem] sm:text-lg"
+                        variant={payNowEnabled ? "outline" : "default"}
+                        className={
+                            payNowEnabled
+                                ? "h-14 rounded-2xl border-zinc-300 bg-white text-base font-bold text-zinc-900 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800 sm:h-[3.75rem] sm:text-lg"
+                                : "h-14 rounded-2xl bg-blue-600 text-base font-bold shadow-xl shadow-blue-500/20 hover:bg-blue-700 sm:h-[3.75rem] sm:text-lg"
+                        }
                         disabled={loading}
                     >
                         {loading && activeAction === "prebook" ? (
@@ -200,7 +213,7 @@ export function CheckoutForm({
                             </>
                         ) : (
                             <span className="flex items-center gap-2 text-center">
-                                Pre-book
+                                {payNowEnabled ? "Pre-book" : `Send Pre-book Request (${formatUsd(totalPrice)})`}
                                 <ArrowRight className="h-5 w-5" />
                             </span>
                         )}
@@ -209,15 +222,18 @@ export function CheckoutForm({
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-300">
                     <p className="font-semibold text-zinc-900 dark:text-white">Pre-book</p>
                     <p>
-                        Send a reservation request without immediate payment. Our team will review it, contact you directly, and confirm the booking after offline payment is received. The final payment will still include the 3% service fee shown above.
+                        {payNowEnabled
+                            ? "Send a reservation request without immediate payment. Our team will review it, contact you directly, and confirm the booking after offline payment is received. The final payment will still include the 3% service fee shown above."
+                            : "Online card payments will be available shortly. For now, send a reservation request and our team will contact you directly to arrange payment. The final amount includes the 3% service fee shown above."}
                     </p>
                 </div>
-                <div className="mt-4 flex items-center justify-center gap-4 grayscale opacity-50">
-                    {/* Mock payment logos */}
-                    <div className="text-[10px] font-bold border px-2 py-1 rounded">VISA</div>
-                    <div className="text-[10px] font-bold border px-2 py-1 rounded">MASTERCARD</div>
-                    <div className="text-[10px] font-bold border px-2 py-1 rounded">GOLOMT BANK</div>
-                </div>
+                {payNowEnabled && (
+                    <div className="mt-4 flex items-center justify-center gap-4 grayscale opacity-50">
+                        <div className="text-[10px] font-bold border px-2 py-1 rounded">VISA</div>
+                        <div className="text-[10px] font-bold border px-2 py-1 rounded">MASTERCARD</div>
+                        <div className="text-[10px] font-bold border px-2 py-1 rounded">GOLOMT BANK</div>
+                    </div>
+                )}
             </div>
         </form>
     );

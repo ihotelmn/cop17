@@ -1,12 +1,19 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { differenceInDays } from "date-fns";
 import { ArrowRight, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import type { Room } from "@/types/hotel";
+import {
+    type BookingSearchState,
+    applyBookingSearchStateToParams,
+    mergeBookingSearchState,
+    readPartialBookingSearchState,
+    readStoredBookingSearchState,
+} from "@/lib/booking-search";
 
 type SelectedRoom = Room & { quantity: number };
 
@@ -60,9 +67,34 @@ export function ReservationSummary({ hotelId, rooms, checkIn, checkOut, mode = "
         desktopAssistant.scrollIntoView({ behavior: "smooth", block: "start" });
     }, []);
 
-    // Use URL params as single source of truth for dates
-    const fromParam = searchParams.get("from");
-    const toParam = searchParams.get("to");
+    // Source of truth for dates: merge URL params with localStorage-persisted
+    // state (the same pattern SearchForm uses). On first paint after a hard
+    // navigation the URL may be missing `from`/`to` even though the user has
+    // already chosen dates in a previous session — falling back to localStorage
+    // here keeps the summary in sync with the visible "Stay details" widget.
+    const searchParamsString = searchParams.toString();
+    const urlSearchState = useMemo(
+        () => readPartialBookingSearchState(new URLSearchParams(searchParamsString)),
+        [searchParamsString]
+    );
+    const [storedSearchState, setStoredSearchState] = useState<Partial<BookingSearchState> | null>(
+        () => readStoredBookingSearchState()
+    );
+
+    useEffect(() => {
+        // Pick up persisted state once the component is on the client. This
+        // mirrors the effect inside SearchForm so both stay in lockstep when
+        // navigating between hotel cards.
+        setStoredSearchState(readStoredBookingSearchState());
+    }, [searchParamsString]);
+
+    const merged = useMemo(
+        () => mergeBookingSearchState(urlSearchState, storedSearchState),
+        [storedSearchState, urlSearchState]
+    );
+
+    const fromParam = searchParams.get("from") ?? merged.from ?? undefined;
+    const toParam = searchParams.get("to") ?? merged.to ?? undefined;
     const clientCheckIn = fromParam ? new Date(`${fromParam}T12:00:00`) : checkIn;
     const clientCheckOut = toParam ? new Date(`${toParam}T12:00:00`) : checkOut;
 
@@ -89,7 +121,10 @@ export function ReservationSummary({ hotelId, rooms, checkIn, checkOut, mode = "
         .join(", ");
     const remainingSelectedRooms = Math.max(0, selectedRooms.length - 2);
 
+    // Build checkout URL with the merged search state so dates persist even
+    // when the user reached this page via a deep link without `from`/`to`.
     const checkoutParams = new URLSearchParams(searchParams.toString());
+    applyBookingSearchStateToParams(checkoutParams, merged);
     if (!checkoutParams.has("from") && fromParam) checkoutParams.set("from", fromParam);
     if (!checkoutParams.has("to") && toParam) checkoutParams.set("to", toParam);
     const checkoutHref = `/hotels/${hotelId}/checkout?${checkoutParams.toString()}`;

@@ -5,6 +5,22 @@ import { CheckoutForm } from "./checkout-form";
 import { ShieldCheck, Users, MapPin, Building2 } from "lucide-react";
 import { FallbackImage } from "@/components/ui/fallback-image";
 import { calculateBookingServiceFee, calculateBookingTotalWithFee, formatUsd, roundCurrencyAmount } from "@/lib/utils";
+import { GolomtService } from "@/lib/golomt";
+
+/**
+ * Real online payments are gated on Golomt being in live mode with real
+ * credentials. Until that contract is signed, we hide the "Pay Now" button so
+ * delegates can't accidentally complete a booking via the mock-payment path.
+ * The flag flips back automatically when GOLOMT_MODE=live + creds are set.
+ */
+function isOnlinePaymentEnabled(): boolean {
+    try {
+        return GolomtService.getMode() === "live";
+    } catch {
+        // getMode() throws in production when creds are missing — treat as disabled.
+        return false;
+    }
+}
 
 interface CheckoutPageProps {
     params: Promise<{ id: string }>;
@@ -192,6 +208,7 @@ export default async function CheckoutPage({ params, searchParams }: CheckoutPag
                                     subtotal={subtotal}
                                     serviceFee={serviceFee}
                                     totalPrice={totalPrice}
+                                    payNowEnabled={isOnlinePaymentEnabled()}
                                 />
                             </div>
                         </section>

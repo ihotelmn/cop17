@@ -3,10 +3,19 @@ import "server-only";
 import crypto from "crypto";
 
 function getGuestBookingAccessSecret() {
-    const secret = process.env.BOOKING_ACCESS_TOKEN_SECRET || process.env.ENCRYPTION_KEY;
+    const secret = process.env.BOOKING_ACCESS_TOKEN_SECRET;
 
     if (!secret) {
-        throw new Error("Guest booking access secret is not configured.");
+        // In production, instrumentation.ts enforces this at boot. Dev/test should
+        // set BOOKING_ACCESS_TOKEN_SECRET explicitly too — falling back to
+        // ENCRYPTION_KEY coupled guest-token forgery to PII-decryption compromise.
+        if (process.env.NODE_ENV === "production") {
+            throw new Error("BOOKING_ACCESS_TOKEN_SECRET is required in production.");
+        }
+        // Non-prod fallback kept so local dev continues to work without extra setup,
+        // but explicitly NOT the encryption key.
+        const fallback = process.env.BOOKING_ACCESS_TOKEN_SECRET_DEV || "dev-only-booking-access-secret";
+        return fallback;
     }
 
     return secret;

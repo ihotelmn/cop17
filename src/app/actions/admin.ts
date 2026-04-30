@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { Hotel, Room } from "@/types/hotel";
@@ -12,6 +12,14 @@ import { sanitizeRichTextToPlainText } from "@/lib/safe-rich-text";
 
 // No re-exports here to avoid Turbopack build errors.
 // Import types from @/types/hotel instead.
+
+// Explicit app-level authorization. Previously many mutation actions only checked
+// `auth.getUser()` and relied on RLS to block non-admins — defense-in-depth was
+// relying on a single layer. This helper is the second layer.
+const ADMIN_ROLES = ["admin", "super_admin"] as const;
+function isAdminRole(role?: string | null): boolean {
+    return !!role && (ADMIN_ROLES as readonly string[]).includes(role);
+}
 
 const hotelSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
@@ -192,12 +200,14 @@ async function fetchGooglePlaceDetails(name: string, lat: number, lng: number) {
 
 export async function createHotel(prevState: any, formData: FormData) {
     const supabase = await createClient();
+    const adminClient = getSupabaseAdmin();
 
-    // Check auth
+    // Check auth + admin role
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        return { error: "Unauthorized" };
-    }
+    if (!user) return { error: "Unauthorized" };
+    const { data: authzProfile } = await adminClient
+        .from("profiles").select("role").eq("id", user.id).single();
+    if (!isAdminRole(authzProfile?.role)) return { error: "Forbidden" };
 
     const rawData = {
         name: formData.get("name"),
@@ -316,7 +326,7 @@ export async function createHotel(prevState: any, formData: FormData) {
         revalidatePath(`/hotels/${createdHotel.id}`, "page");
         revalidatePath(`/hotels/${createdHotel.id}/checkout`, "page");
     }
-    (revalidateTag as any)("hotels");
+    updateTag("hotels");
     redirect("/admin/hotels");
 }
 
@@ -335,6 +345,7 @@ export async function deleteHotel(id: string) {
         .single();
 
     if (!profile) return { error: "Profile not found" };
+    if (!isAdminRole(profile.role)) return { error: "Forbidden" };
 
     let query = supabase.from("hotels").delete().eq("id", id);
 
@@ -351,7 +362,7 @@ export async function deleteHotel(id: string) {
     }
 
     revalidatePath("/admin/hotels", "page");
-    (revalidateTag as any)("hotels");
+    updateTag("hotels");
 }
 
 export async function submitDeleteHotel(id: string): Promise<void> {
@@ -372,6 +383,7 @@ export async function updateHotelPublishedStatus(id: string, isPublished: boolea
         .single();
 
     if (!profile) return { error: "Profile not found" };
+    if (!isAdminRole(profile.role)) return { error: "Forbidden" };
 
     let query = supabase
         .from("hotels")
@@ -392,7 +404,7 @@ export async function updateHotelPublishedStatus(id: string, isPublished: boolea
     revalidatePath("/admin/hotels", "page");
     revalidatePath("/", "page");
     revalidatePath("/hotels", "page");
-    (revalidateTag as any)("hotels");
+    updateTag("hotels");
 
     return { success: true };
 }
@@ -417,6 +429,7 @@ export async function bulkUpdateHotelPublishedStatus(ids: string[], isPublished:
         .single();
 
     if (!profile) return { error: "Profile not found" };
+    if (!isAdminRole(profile.role)) return { error: "Forbidden" };
 
     let allowedIds = normalizedIds;
 
@@ -447,7 +460,7 @@ export async function bulkUpdateHotelPublishedStatus(ids: string[], isPublished:
     revalidatePath("/admin/hotels", "page");
     revalidatePath("/", "page");
     revalidatePath("/hotels", "page");
-    revalidateTag("hotels", "max");
+    updateTag("hotels");
 
     return { success: true, updatedCount: allowedIds.length };
 }
@@ -494,10 +507,14 @@ export async function getHotel(id: string) {
 
 export async function updateHotel(id: string, prevState: any, formData: FormData) {
     const supabase = await createClient();
+    const adminAuthzClient = getSupabaseAdmin();
 
-    // Check auth
+    // Check auth + admin role
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: "Unauthorized" };
+    const { data: authzProfile } = await adminAuthzClient
+        .from("profiles").select("role").eq("id", user.id).single();
+    if (!isAdminRole(authzProfile?.role)) return { error: "Forbidden" };
 
     const rawData = {
         name: formData.get("name"),
@@ -627,7 +644,7 @@ export async function updateHotel(id: string, prevState: any, formData: FormData
     revalidatePath("/hotels", "page");
     revalidatePath(`/hotels/${id}`, "page");
     revalidatePath(`/hotels/${id}/checkout`, "page");
-    (revalidateTag as any)("hotels");
+    updateTag("hotels");
     redirect("/admin/hotels");
 }
 
@@ -689,8 +706,12 @@ export async function getRooms(hotelId: string) {
 
 export async function createRoom(hotelId: string, prevState: any, formData: FormData) {
     const supabase = await createClient();
+    const adminAuthzClient = getSupabaseAdmin();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: "Unauthorized" };
+    const { data: authzProfile } = await adminAuthzClient
+        .from("profiles").select("role").eq("id", user.id).single();
+    if (!isAdminRole(authzProfile?.role)) return { error: "Forbidden" };
 
     const rawData = {
         name: formData.get("name"),
@@ -787,8 +808,12 @@ export async function getRoom(roomId: string) {
 
 export async function updateRoom(hotelId: string, roomId: string, prevState: any, formData: FormData) {
     const supabase = await createClient();
+    const adminAuthzClient = getSupabaseAdmin();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: "Unauthorized" };
+    const { data: authzProfile } = await adminAuthzClient
+        .from("profiles").select("role").eq("id", user.id).single();
+    if (!isAdminRole(authzProfile?.role)) return { error: "Forbidden" };
 
     const rawData = {
         name: formData.get("name"),
@@ -934,6 +959,6 @@ export async function updateRoomActiveStatus(roomId: string, hotelId: string, is
     revalidatePath(`/admin/hotels/${hotelId}`);
     revalidatePath(`/hotels/${hotelId}`);
     revalidatePath(`/hotels/${hotelId}/checkout`);
-    (revalidateTag as any)("hotels");
+    updateTag("hotels");
     return { success: true };
 }

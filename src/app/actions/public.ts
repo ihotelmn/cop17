@@ -5,6 +5,31 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { calculateDistance, COP17_VENUE } from "@/lib/venue";
 import type { Hotel, Room, HotelSearchParams } from "@/types/hotel";
 
+// Explicit public-hotel column allowlist. Keeps us from accidentally exposing
+// future PII columns added to `hotels` (contact_phone, contact_email, website
+// are intentionally excluded and nulled by normalizeHotelForPublic).
+const PUBLIC_HOTEL_COLUMNS = [
+    "id", "name", "name_en", "description", "description_en",
+    "address", "address_en", "stars", "hotel_type", "amenities", "images",
+    "latitude", "longitude",
+    "check_in_time", "check_out_time",
+    "is_published", "is_official_partner", "is_recommended", "has_shuttle_service",
+    "cached_distance_km", "cached_drive_time_text", "cached_drive_time_value",
+    "cached_walk_time_text", "cached_walk_time_value",
+    "google_place_id", "cached_rating", "cached_review_count",
+    "free_cancellation_window_hours", "partial_cancellation_window_hours",
+    "partial_cancellation_penalty_percent", "late_cancellation_penalty_percent",
+    "modification_cutoff_hours", "cancellation_policy_notes",
+    "created_at",
+].join(", ");
+
+const PUBLIC_ROOM_COLUMNS = [
+    "id", "hotel_id", "name", "description", "type",
+    "price_per_night", "capacity", "total_inventory",
+    "size_sqm", "bed_config", "max_adults", "max_children",
+    "amenities", "images", "is_active", "created_at",
+].join(", ");
+
 function isMissingPublishedColumn(error: unknown) {
     return typeof error === "object" && error !== null && "code" in error && (error as { code?: string }).code === "42703";
 }
@@ -73,7 +98,7 @@ export const getPublishedHotels = async (searchParams?: HotelSearchParams) => {
             let queryBuilder = publicClient
                 .from("hotels")
                 .select(`
-                    *,
+                    ${PUBLIC_HOTEL_COLUMNS},
                     rooms (
                         id,
                         price_per_night,

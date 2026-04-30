@@ -38,7 +38,7 @@ export function ImageGallery({
         // 2. If it's not a string, we can't do much more
         if (typeof input !== 'string') return [];
 
-        let str = input.trim();
+        const str = input.trim();
         if (!str) return [];
 
         // 3. Handle stringified JSON (starts with [ or { or quoted [)

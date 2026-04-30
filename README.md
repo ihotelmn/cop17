@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# COP17 Mongolia — hotel booking platform
 
-## Getting Started
+Official delegate accommodation platform for UNCCD COP17 in Ulaanbaatar.
+Production: **https://hotel.unccdcop17.org**.
 
-First, run the development server:
+Next.js 16 (App Router) · React 19 · TypeScript · Supabase (Postgres + Auth +
+Storage + Realtime) · Tailwind v4 · Golomt Bank payments · Resend email ·
+Google Maps + Leaflet.
+
+## Quick start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.local.example .env.local   # then fill in values — see docs/DEPLOYMENT.md
+npm install
+npm run dev                         # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Required env vars are documented in [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md).
+The app validates them on boot via `src/instrumentation.ts` and will refuse
+to start if any production-required var is missing or left as a placeholder.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | What it does |
+|---|---|
+| `npm run dev` | Local dev server |
+| `npm run build` | Production build |
+| `npm run test:unit` | Vitest |
+| `npm run test:e2e` | Playwright |
+| `npm run lint:strict` | Strict lint on payment/auth/security-critical files (zero warnings allowed) |
+| `npm run lint:ci` | Broader lint over `src/` (warnings allowed, errors fail) |
+| `npm run verify` | `lint:strict` → `lint:ci` → `test:unit` → `test:e2e` → `build:ci` |
 
-## Learn More
+## Repository layout
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+  app/           Next.js routes (public + /admin + /api)
+  components/    UI; components/ui/ hosts shadcn primitives
+  lib/           Domain logic — booking-search, golomt, payment-attempts, auth, encryption
+  instrumentation.ts  Boots env validation
+supabase/migrations/   Authoritative schema
+scripts/               Maintenance / backfill / audit tooling
+docs/                  Deployment, incidents, observability, audit report
+tests/                 Playwright e2e
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Production readiness
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Before any launch, read:
+- [`docs/PRODUCTION_AUDIT_2026-04-18.md`](./docs/PRODUCTION_AUDIT_2026-04-18.md) — the full audit that drove 2026-04-18's hardening pass.
+- [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) — env vars, cutover checklist.
+- [`docs/INCIDENTS.md`](./docs/INCIDENTS.md) — on-call playbooks.
+- [`docs/OBSERVABILITY.md`](./docs/OBSERVABILITY.md) — logging, Sentry, load testing.
 
-## Deploy on Vercel
+## Payments
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Golomt Bank hosted checkout. Mock mode (`GOLOMT_MODE=mock`) is available only
+outside production — in production `getMode()` throws if creds are missing or
+set to placeholders. See [`src/lib/golomt.ts`](./src/lib/golomt.ts) and the
+callback handler at
+[`src/app/api/payments/golomt/callback/route.ts`](./src/app/api/payments/golomt/callback/route.ts).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Security notes
+
+- All server actions that mutate hotels/rooms verify admin role at the app layer
+  (`isAdminRole`) in addition to RLS.
+- Guest booking portal links are HMAC-signed with `BOOKING_ACCESS_TOKEN_SECRET`
+  (separate from `ENCRYPTION_KEY`; no fallback in production).
+- Row Level Security is enabled on every table; see
+  [`supabase/migrations/`](./supabase/migrations/).
+- PII fields (guest passport, phone) are AES-GCM encrypted via
+  [`src/lib/encryption.ts`](./src/lib/encryption.ts).

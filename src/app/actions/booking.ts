@@ -864,6 +864,21 @@ export async function createBookingAction(prevState: BookingState, formData: For
         }
 
         // 4. Initiate Payment (Golomt Bank)
+        // Server-side guard: refuse online payments unless Golomt is in live mode
+        // with real credentials. This blocks the mock-payment path even if the
+        // client-side button were re-enabled by a tampered request.
+        try {
+            if (GolomtService.getMode() !== "live") {
+                return {
+                    error: "Online card payments are temporarily unavailable. Please use Pre-book and our team will contact you to arrange payment.",
+                };
+            }
+        } catch {
+            return {
+                error: "Online card payments are temporarily unavailable. Please use Pre-book and our team will contact you to arrange payment.",
+            };
+        }
+
         try {
             const returnUrl = `/booking/success?groupId=${groupId}`;
             const appBaseUrl = getRequestBaseUrl(requestHeaders);
@@ -1285,7 +1300,7 @@ export async function cancelBookingAction(bookingId: string, reason?: string, ac
 
         // 4. Send Email Notification to Guest
         if (booking.guest_email) {
-            const guestName = (booking as any).guest_name || "Guest";
+            const guestName = (booking as { guest_name?: string | null }).guest_name || "Guest";
             const datesStr = `${format(new Date(booking.check_in_date), "MMM d, yyyy")}`;
             const refundInfo = cancellationState.penaltyPercent === 0 
                 ? "Eligible for a full refund." 

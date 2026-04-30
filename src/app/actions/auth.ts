@@ -118,8 +118,6 @@ export async function loginAction(prevState: AuthState, formData: FormData): Pro
 }
 
 export async function signupAction(prevState: AuthState, formData: FormData): Promise<AuthState> {
-    const supabase = await createClient();
-
     const validatedFields = authSchema.safeParse({
         email: formData.get("email"),
         password: formData.get("password"),
@@ -237,6 +235,25 @@ export async function updatePasswordAction(prevState: AuthState, formData: FormD
 export async function requestPasswordResetAction(prevState: AuthState, formData: FormData): Promise<AuthState> {
     const email = formData.get("email") as string;
     if (!email) return { error: "Email is required" };
+
+    // Rate limit by email to prevent abuse: 3 reset requests per 15 minutes per email.
+    // The table-based limiter fails open on DB errors (dev convenience).
+    try {
+        const { enforceActionRateLimitSafely, buildActionRateLimitKey, ActionRateLimitError } =
+            await import("@/lib/action-rate-limit");
+        const key = buildActionRateLimitKey("pwd-reset", email);
+        await enforceActionRateLimitSafely(
+            { scope: "pwd-reset", key, maxHits: 3, windowMs: 15 * 60 * 1000,
+              message: "Too many password reset requests. Try again later." },
+            "password-reset"
+        );
+        void ActionRateLimitError;
+    } catch (e: unknown) {
+        if (e && typeof e === "object" && "name" in e && (e as { name?: string }).name === "ActionRateLimitError") {
+            return { error: (e as Error).message };
+        }
+        // Any other failure: fail open (rate-limit table may be missing in dev).
+    }
 
     const baseUrl = getPublicAppUrl();
     const adminSupabase = getSupabaseAdmin();

@@ -62,14 +62,43 @@ function isPlaceholder(value?: string) {
     return !value || value.startsWith("YOUR_") || value.startsWith("TEST_");
 }
 
+function requireCallbackSecret(): string {
+    if (!CALLBACK_SECRET) {
+        throw new Error(
+            "GOLOMT_CALLBACK_SECRET (or GOLOMT_SECRET_TOKEN) is required for payment signature verification."
+        );
+    }
+    return CALLBACK_SECRET;
+}
+
 function getMode(): GolomtMode {
     const envMode = normalizeEnvValue(process.env.GOLOMT_MODE)?.toLowerCase();
     if (envMode === "live") return "live";
-    if (envMode === "mock") return "mock";
+    if (envMode === "mock") {
+        // Explicit mock is only permitted outside production. Prevents a misconfigured
+        // prod deploy from silently serving free bookings via /mock-payment.
+        if (process.env.NODE_ENV === "production") {
+            throw new Error(
+                "GOLOMT_MODE=mock is not permitted in production. Set GOLOMT_MODE=live with real Golomt credentials."
+            );
+        }
+        return "mock";
+    }
 
-    return !isPlaceholder(MERCHANT_ID) && !isPlaceholder(SECRET_KEY) && Boolean(GOLOMT_CHECKOUT_URL)
-        ? "live"
-        : "mock";
+    // Auto-detect: live only when all creds are real and non-placeholder; otherwise mock.
+    const autoLive =
+        !isPlaceholder(MERCHANT_ID) &&
+        !isPlaceholder(SECRET_KEY) &&
+        Boolean(GOLOMT_CHECKOUT_URL);
+
+    if (autoLive) return "live";
+
+    if (process.env.NODE_ENV === "production") {
+        throw new Error(
+            "Golomt credentials missing in production. Set GOLOMT_MODE=live, GOLOMT_MERCHANT_ID, GOLOMT_SECRET_TOKEN, GOLOMT_CALLBACK_SECRET, and GOLOMT_CHECKOUT_URL."
+        );
+    }
+    return "mock";
 }
 
 function getAppBaseUrl(override?: string | null) {
@@ -91,7 +120,7 @@ function buildCallbackSignature(params: {
     amount: number;
     status: string;
 }) {
-    const signer = crypto.createHmac("sha256", CALLBACK_SECRET || "cop17-fallback-payment-secret");
+    const signer = crypto.createHmac("sha256", requireCallbackSecret());
     const normalized = [
         params.transactionId,
         params.invoiceId,

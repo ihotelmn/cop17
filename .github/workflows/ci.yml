@@ -16,9 +16,19 @@ jobs:
       NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key
       SUPABASE_SERVICE_ROLE_KEY: dummy-service-role-key
       ENCRYPTION_KEY: 12345678901234567890123456789012
+      BOOKING_ACCESS_TOKEN_SECRET: ci-booking-access-secret-32-hex-chars
       NEXT_PUBLIC_APP_URL: https://example.com
       RESEND_API_KEY: dummy-resend-key
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+      # Mock Golomt is fine in CI — instrumentation.ts only enforces live creds
+      # when NODE_ENV=production; CI builds run as NODE_ENV=test for tests and
+      # NODE_ENV=production for `next build`, but BOOKING_ACCESS_TOKEN_SECRET
+      # and NEXT_PUBLIC_APP_URL above satisfy the prod-only checks.
+      GOLOMT_MODE: mock
+      GOLOMT_MERCHANT_ID: TEST_MERCHANT
+      GOLOMT_SECRET_TOKEN: test-token
+      GOLOMT_CALLBACK_SECRET: test-callback-secret
+      GOLOMT_CHECKOUT_URL: https://example.com/mock-checkout
     steps:
       - uses: actions/checkout@v4
 
@@ -28,6 +38,11 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Audit dependencies (high severity)
+        run: npm audit --audit-level=high --omit=dev || true
+        # Does not fail the build yet — CVE data evolves out from under us.
+        # Flip `|| true` once we have time to triage current advisories.
 
       - run: npx playwright install --with-deps chromium
 

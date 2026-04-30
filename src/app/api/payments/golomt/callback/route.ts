@@ -8,6 +8,12 @@ import {
 } from "@/lib/payment-attempts";
 import type { PaymentAttemptRecord } from "@/lib/payment-attempts";
 import { getCanonicalUrl } from "@/lib/site-config";
+import {
+    ActionRateLimitError,
+    buildActionRateLimitKey,
+    enforceActionRateLimitSafely,
+    getClientIpFromHeaders,
+} from "@/lib/action-rate-limit";
 
 function getStoredReturnUrl(paymentAttempt?: PaymentAttemptRecord | null) {
     const rawRequest = paymentAttempt?.raw_request;
@@ -67,6 +73,21 @@ async function parseCallbackPayload(request: NextRequest) {
 }
 
 async function handleCallback(request: NextRequest) {
+    // Rate-limit by client IP — bounds brute-force against our payment endpoint.
+    // 30 callbacks per IP per minute is generous for legitimate browser redirects.
+    try {
+        const ip = getClientIpFromHeaders(request.headers);
+        const key = buildActionRateLimitKey("golomt-callback", ip);
+        await enforceActionRateLimitSafely(
+            { scope: "golomt-callback", key, maxHits: 30, windowMs: 60 * 1000 },
+            "golomt-callback"
+        );
+    } catch (e) {
+        if (e instanceof ActionRateLimitError) {
+            return NextResponse.json({ success: false, error: "Too many callback requests." }, { status: 429 });
+        }
+    }
+
     const rawPayload = await parseCallbackPayload(request);
     const callbackPayload = GolomtService.extractCallbackPayload(rawPayload);
 
@@ -80,13 +101,22 @@ async function handleCallback(request: NextRequest) {
     const groupId = callbackPayload.transactionId;
     const paymentAttempt = await getPaymentAttemptByTransactionId(callbackPayload.transactionId);
 
-    if (paymentAttempt?.status === "paid") {
-        const confirmed = await confirmBookingAction(paymentAttempt.group_id || groupId, true);
+    // Always verify signature first — even for replays of an already-paid attempt.
+    // The previous "skip-if-paid" shortcut let anyone with a known transactionId
+    // re-trigger the booking-confirmation codepath without a signature check.
+    const verification = await GolomtService.verifyCallback(callbackPayload, {
+        transactionId: paymentAttempt?.transaction_id || callbackPayload.transactionId,
+        invoiceId: paymentAttempt?.invoice_id || callbackPayload.invoiceId,
+        amount: paymentAttempt?.amount ?? callbackPayload.amount,
+    });
 
-        if (!confirmed.success) {
+    // Replay of an already-paid attempt: signature must still match. If it does,
+    // treat as idempotent success without re-running booking confirmation.
+    if (paymentAttempt?.status === "paid") {
+        if (!verification.success || verification.status !== "PAID") {
             return NextResponse.json(
-                { success: false, error: confirmed.error || "Booking confirmation failed after payment." },
-                { status: 500 }
+                { success: false, error: "Signature verification failed on replay of paid attempt." },
+                { status: 400 }
             );
         }
 
@@ -101,12 +131,6 @@ async function handleCallback(request: NextRequest) {
             alreadyProcessed: true,
         });
     }
-
-    const verification = await GolomtService.verifyCallback(callbackPayload, {
-        transactionId: paymentAttempt?.transaction_id || callbackPayload.transactionId,
-        invoiceId: paymentAttempt?.invoice_id || callbackPayload.invoiceId,
-        amount: paymentAttempt?.amount ?? callbackPayload.amount,
-    });
 
     if (!verification.success || verification.status !== "PAID") {
         await markPaymentAttemptFailed({

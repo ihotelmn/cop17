@@ -1,0 +1,708 @@
+{
+  "source": "Untitled spreadsheet.xlsx — sheet FOR IHotel des",
+  "extractedAt": "2026-04-16",
+  "rows": [
+    {
+      "rowIndex": 2,
+      "hotelName": "The Corporate Hotel and Convention Centre",
+      "roomName": "Standart room (Sinlge or Double)",
+      "inventoryRaw": 40.0,
+      "price": 200.0,
+      "cancellationPolicy": "Corporate Convention Center Hotel - 6-р сарын 1-ээс өмнө урьдчилгаа төлбөр болох 50%-ийг төлөх, Хэрэв заасан хугацаанд төлөгдөөгүй тохиолдолд захиалга цуцлагдана. 21 хоногийн өмнө цуцлалт хийгдээгүй тохиолдолд урьдчилгаа төлбөрийг буцаах боломжгүй.",
+      "amenitiesRaw": "Popular amenities\nPool\nSpa\nParking included\nFree WiFi\nRestaurant\nAir conditioning"
+    },
+    {
+      "rowIndex": 3,
+      "hotelName": "Bayangol Hotel",
+      "roomName": "Standart Single",
+      "inventoryRaw": 25.0,
+      "price": 105.0,
+      "cancellationPolicy": "Зочин буухаас 20 хоногийн өмнө төлбөр 100% төлнө.",
+      "amenitiesRaw": "Restaurant & lounge\nEvent hall\nMeeting rooms\nKaraoke\nBusiness center"
+    },
+    {
+      "rowIndex": 4,
+      "hotelName": "Bayangol Hotel",
+      "roomName": "Standart Twin",
+      "inventoryRaw": 25.0,
+      "price": 135.0,
+      "cancellationPolicy": "Зочин буухаас 20 хоногийн өмнө төлбөр 100% төлнө.",
+      "amenitiesRaw": "Restaurant & lounge\nEvent hall\nMeeting rooms\nKaraoke\nBusiness center"
+    },
+    {
+      "rowIndex": 5,
+      "hotelName": "Ramada Ulaanbaatar Citycenter",
+      "roomName": "Standart Single",
+      "inventoryRaw": 3.0,
+      "price": 151.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Spa & massage\nFitness center\nRestaurant & café\nMeeting rooms\nFree parking"
+    },
+    {
+      "rowIndex": 6,
+      "hotelName": "Ramada Ulaanbaatar Citycenter",
+      "roomName": "Deluxe King Room",
+      "inventoryRaw": 22.0,
+      "price": 156.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Spa & massage\nFitness center\nRestaurant & café\nMeeting rooms\nFree parking"
+    },
+    {
+      "rowIndex": 7,
+      "hotelName": "Ramada Ulaanbaatar Citycenter",
+      "roomName": "Deluxe Twin Room",
+      "inventoryRaw": 2.0,
+      "price": 175.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Spa & massage\nFitness center\nRestaurant & café\nMeeting rooms\nFree parking"
+    },
+    {
+      "rowIndex": 8,
+      "hotelName": "Zuchi Hotel",
+      "roomName": "Standart Room",
+      "inventoryRaw": 6.0,
+      "price": 73.0,
+      "cancellationPolicy": "Zuchi Hotel - 6-р сарын 15-аас өмнө урьдчилгаа төлбөр болох 30%-50%-ийг төлөх, Хэрэв заасан хугацаанд төлөгдөөгүй тохиолдолд захиалга цуцлагдана. 10 хоногийн өмнө цуцлалт хийгдээгүй тохиолдолд урьдчилгаа төлбөрийг буцаах боломжгүй.",
+      "amenitiesRaw": "Restaurant\nConference / event hall\nFree WiFi"
+    },
+    {
+      "rowIndex": 9,
+      "hotelName": "Zuchi Hotel",
+      "roomName": "Standart Twin",
+      "inventoryRaw": 39.0,
+      "price": 73.0,
+      "cancellationPolicy": "Zuchi Hotel - 6-р сарын 15-аас өмнө урьдчилгаа төлбөр болох 30%-50%-ийг төлөх, Хэрэв заасан хугацаанд төлөгдөөгүй тохиолдолд захиалга цуцлагдана. 10 хоногийн өмнө цуцлалт хийгдээгүй тохиолдолд урьдчилгаа төлбөрийг буцаах боломжгүй.",
+      "amenitiesRaw": "Restaurant\nConference / event hall\nFree WiFi"
+    },
+    {
+      "rowIndex": 10,
+      "hotelName": "Zuchi Hotel",
+      "roomName": "Superior Room",
+      "inventoryRaw": 15.0,
+      "price": 89.0,
+      "cancellationPolicy": "Zuchi Hotel - 6-р сарын 15-аас өмнө урьдчилгаа төлбөр болох 30%-50%-ийг төлөх, Хэрэв заасан хугацаанд төлөгдөөгүй тохиолдолд захиалга цуцлагдана. 10 хоногийн өмнө цуцлалт хийгдээгүй тохиолдолд урьдчилгаа төлбөрийг буцаах боломжгүй.",
+      "amenitiesRaw": "Restaurant\nConference / event hall\nFree WiFi"
+    },
+    {
+      "rowIndex": 11,
+      "hotelName": "Millenium Plaza Hotel",
+      "roomName": "Deluxe King Room",
+      "inventoryRaw": 13.0,
+      "price": 123.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nMeeting rooms\nFree WiFi\nBusiness services"
+    },
+    {
+      "rowIndex": 12,
+      "hotelName": "Millenium Plaza Hotel",
+      "roomName": "Deluxe Twin Room",
+      "inventoryRaw": 37.0,
+      "price": 143.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nMeeting rooms\nFree WiFi\nBusiness services"
+    },
+    {
+      "rowIndex": 13,
+      "hotelName": "City tower hotel",
+      "roomName": "Standart Room",
+      "inventoryRaw": 31.0,
+      "price": 69.0,
+      "cancellationPolicy": "City Tower - 6-р сарын 1-ээс өмнө үлдэгдэл төлбөр болох 50%-ийг төлөх, Хэрэв заасан хугацаанд төлөгдөөгүй тохиолдолд захиалга цуцлагдана. 20 хоногийн өмнө цуцлалт хийгдээгүй тохиолдолд урьдчилгаа төлбөрийг буцаах боломжгүй.",
+      "amenitiesRaw": "Central location\nRestaurant\nFree WiFi"
+    },
+    {
+      "rowIndex": 14,
+      "hotelName": "City tower hotel",
+      "roomName": "Хагас люкс",
+      "inventoryRaw": 17.0,
+      "price": 80.0,
+      "cancellationPolicy": "City Tower - 6-р сарын 1-ээс өмнө үлдэгдэл төлбөр болох 50%-ийг төлөх, Хэрэв заасан хугацаанд төлөгдөөгүй тохиолдолд захиалга цуцлагдана. 20 хоногийн өмнө цуцлалт хийгдээгүй тохиолдолд урьдчилгаа төлбөрийг буцаах боломжгүй.",
+      "amenitiesRaw": "Central location\nRestaurant\nFree WiFi"
+    },
+    {
+      "rowIndex": 15,
+      "hotelName": "City tower hotel",
+      "roomName": "Бүтэн люкс өрөө",
+      "inventoryRaw": 4.0,
+      "price": 86.0,
+      "cancellationPolicy": "City Tower - 6-р сарын 1-ээс өмнө үлдэгдэл төлбөр болох 50%-ийг төлөх, Хэрэв заасан хугацаанд төлөгдөөгүй тохиолдолд захиалга цуцлагдана. 20 хоногийн өмнө цуцлалт хийгдээгүй тохиолдолд урьдчилгаа төлбөрийг буцаах боломжгүй.",
+      "amenitiesRaw": "Central location\nRestaurant\nFree WiFi"
+    },
+    {
+      "rowIndex": 16,
+      "hotelName": "City tower hotel",
+      "roomName": "Standart Twin",
+      "inventoryRaw": 7.0,
+      "price": 86.0,
+      "cancellationPolicy": "City Tower - 6-р сарын 1-ээс өмнө үлдэгдэл төлбөр болох 50%-ийг төлөх, Хэрэв заасан хугацаанд төлөгдөөгүй тохиолдолд захиалга цуцлагдана. 20 хоногийн өмнө цуцлалт хийгдээгүй тохиолдолд урьдчилгаа төлбөрийг буцаах боломжгүй.",
+      "amenitiesRaw": "Central location\nRestaurant\nFree WiFi"
+    },
+    {
+      "rowIndex": 17,
+      "hotelName": "Premium Hotel",
+      "roomName": null,
+      "inventoryRaw": 0.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nFree WiFi\nParking"
+    },
+    {
+      "rowIndex": 18,
+      "hotelName": "Bojon Hotel",
+      "roomName": null,
+      "inventoryRaw": 0.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nFree WiFi\nParking"
+    },
+    {
+      "rowIndex": 19,
+      "hotelName": "Holiday Inn Ulaanbaatar",
+      "roomName": "superior twin",
+      "inventoryRaw": 25.0,
+      "price": 260.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Spa & sauna\nFitness center\nRestaurant & bar\nMeeting rooms"
+    },
+    {
+      "rowIndex": 20,
+      "hotelName": "Holiday Inn Ulaanbaatar",
+      "roomName": "double",
+      "inventoryRaw": 25.0,
+      "price": 230.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Spa & sauna\nFitness center\nRestaurant & bar\nMeeting rooms"
+    },
+    {
+      "rowIndex": 21,
+      "hotelName": "Royal Mountain Hotel",
+      "roomName": "Double and Twin",
+      "inventoryRaw": 49.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Scenic location\nRestaurant\nEvent space"
+    },
+    {
+      "rowIndex": 22,
+      "hotelName": "Toyoko Inn Ulaanbaatar Hotel",
+      "roomName": "Single and double",
+      "inventoryRaw": 30.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Free breakfast\nFree WiFi\nLaundry\nBusiness desk"
+    },
+    {
+      "rowIndex": 23,
+      "hotelName": "The Grand Hill Hotel",
+      "roomName": "Twin",
+      "inventoryRaw": 50.0,
+      "price": 130.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant & bar\nMeeting rooms\nFitness center\nFree WiFi"
+    },
+    {
+      "rowIndex": 24,
+      "hotelName": "The Grand Hill Hotel",
+      "roomName": "Single",
+      "inventoryRaw": 25.0,
+      "price": 100.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant & bar\nMeeting rooms\nFitness center\nFree WiFi"
+    },
+    {
+      "rowIndex": 25,
+      "hotelName": "The Grand Hill Hotel",
+      "roomName": "Double",
+      "inventoryRaw": 25.0,
+      "price": 120.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant & bar\nMeeting rooms\nFitness center\nFree WiFi"
+    },
+    {
+      "rowIndex": 26,
+      "hotelName": "Platinum Hotel",
+      "roomName": "Twin",
+      "inventoryRaw": 15.0,
+      "price": 80.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nFree WiFi\nBusiness services"
+    },
+    {
+      "rowIndex": 27,
+      "hotelName": "Platinum Hotel",
+      "roomName": "Double",
+      "inventoryRaw": 15.0,
+      "price": 80.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nFree WiFi\nBusiness services"
+    },
+    {
+      "rowIndex": 28,
+      "hotelName": "Platinum Hotel",
+      "roomName": "Single",
+      "inventoryRaw": 10.0,
+      "price": 75.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nFree WiFi\nBusiness services"
+    },
+    {
+      "rowIndex": 29,
+      "hotelName": "Ramada Ulaanbaatar Citycenter",
+      "roomName": "standard single",
+      "inventoryRaw": 5.0,
+      "price": 151.0,
+      "cancellationPolicy": "Ramada Hotel - 6-р сарын 17-оос өмнө үлдэгдэл төлбөр болох 90%-ийг төлөх, Хэрэв заасан хугацаанд төлөгдөөгүй тохиолдолд захиалга цуцлагдана. 21 хоногийн өмнө цуцлалт хийгдээгүй тохиолдолд урьдчилгаа төлбөрийг буцаах боломжгүй.",
+      "amenitiesRaw": "Spa & massage\nFitness center\nRestaurant & café\nMeeting rooms\nFree parking"
+    },
+    {
+      "rowIndex": 30,
+      "hotelName": "Ramada Ulaanbaatar Citycenter",
+      "roomName": "standard twin",
+      "inventoryRaw": 10.0,
+      "price": 170.0,
+      "cancellationPolicy": "Ramada Hotel - 6-р сарын 17-оос өмнө үлдэгдэл төлбөр болох 90%-ийг төлөх, Хэрэв заасан хугацаанд төлөгдөөгүй тохиолдолд захиалга цуцлагдана. 21 хоногийн өмнө цуцлалт хийгдээгүй тохиолдолд урьдчилгаа төлбөрийг буцаах боломжгүй.",
+      "amenitiesRaw": "Spa & massage\nFitness center\nRestaurant & café\nMeeting rooms\nFree parking"
+    },
+    {
+      "rowIndex": 31,
+      "hotelName": "Ramada Ulaanbaatar Citycenter",
+      "roomName": "deluxe king",
+      "inventoryRaw": 20.0,
+      "price": 156.0,
+      "cancellationPolicy": "Ramada Hotel - 6-р сарын 17-оос өмнө үлдэгдэл төлбөр болох 90%-ийг төлөх, Хэрэв заасан хугацаанд төлөгдөөгүй тохиолдолд захиалга цуцлагдана. 21 хоногийн өмнө цуцлалт хийгдээгүй тохиолдолд урьдчилгаа төлбөрийг буцаах боломжгүй.",
+      "amenitiesRaw": "Spa & massage\nFitness center\nRestaurant & café\nMeeting rooms\nFree parking"
+    },
+    {
+      "rowIndex": 32,
+      "hotelName": "Ramada Ulaanbaatar Citycenter",
+      "roomName": "executive suite",
+      "inventoryRaw": 12.0,
+      "price": 196.0,
+      "cancellationPolicy": "Ramada Hotel - 6-р сарын 17-оос өмнө үлдэгдэл төлбөр болох 90%-ийг төлөх, Хэрэв заасан хугацаанд төлөгдөөгүй тохиолдолд захиалга цуцлагдана. 21 хоногийн өмнө цуцлалт хийгдээгүй тохиолдолд урьдчилгаа төлбөрийг буцаах боломжгүй.",
+      "amenitiesRaw": "Spa & massage\nFitness center\nRestaurant & café\nMeeting rooms\nFree parking"
+    },
+    {
+      "rowIndex": 33,
+      "hotelName": "Ibis Styles Ulaanbaatar Polaris",
+      "roomName": "standard king",
+      "inventoryRaw": 17.0,
+      "price": 128.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Modern rooms\nRestaurant\nFree WiFi\nMeeting room\nParking"
+    },
+    {
+      "rowIndex": 34,
+      "hotelName": "Ibis Styles Ulaanbaatar Polaris",
+      "roomName": "standard twin",
+      "inventoryRaw": 25.0,
+      "price": 143.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Modern rooms\nRestaurant\nFree WiFi\nMeeting room\nParking"
+    },
+    {
+      "rowIndex": 35,
+      "hotelName": "Ibis Styles Ulaanbaatar Polaris",
+      "roomName": "Suite",
+      "inventoryRaw": 5.0,
+      "price": 170.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Modern rooms\nRestaurant\nFree WiFi\nMeeting room\nParking"
+    },
+    {
+      "rowIndex": 36,
+      "hotelName": "The Corporate Hotel",
+      "roomName": "standard",
+      "inventoryRaw": 16.0,
+      "price": null,
+      "cancellationPolicy": "Corporate Hotel - City Center - 6-р сарын 1-ээс өмнө урьдчилгаа төлбөр болох 50%-ийг төлөх, Хэрэв заасан хугацаанд төлөгдөөгүй тохиолдолд захиалга цуцлагдана. 21 хоногийн өмнө цуцлалт хийгдээгүй тохиолдолд урьдчилгаа төлбөрийг буцаах боломжгүй.",
+      "amenitiesRaw": "Popular amenities\nPool\nSpa\nParking included\nFree WiFi\nRestaurant\nAir conditioning"
+    },
+    {
+      "rowIndex": 37,
+      "hotelName": "The Corporate Hotel",
+      "roomName": "Standard twin",
+      "inventoryRaw": 8.0,
+      "price": null,
+      "cancellationPolicy": "Corporate Hotel - City Center - 6-р сарын 1-ээс өмнө урьдчилгаа төлбөр болох 50%-ийг төлөх, Хэрэв заасан хугацаанд төлөгдөөгүй тохиолдолд захиалга цуцлагдана. 21 хоногийн өмнө цуцлалт хийгдээгүй тохиолдолд урьдчилгаа төлбөрийг буцаах боломжгүй.",
+      "amenitiesRaw": "Popular amenities\nPool\nSpa\nParking included\nFree WiFi\nRestaurant\nAir conditioning"
+    },
+    {
+      "rowIndex": 38,
+      "hotelName": "Novotel Ulaanbaatar hotel",
+      "roomName": null,
+      "inventoryRaw": 22.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Indoor pool\nFitness & sauna\nKids play area\nRestaurant & bar\nMeeting rooms"
+    },
+    {
+      "rowIndex": 39,
+      "hotelName": "Toyoko inn",
+      "roomName": "Single",
+      "inventoryRaw": 50.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Free breakfast\nFree WiFi\nLaundry\nBusiness desk"
+    },
+    {
+      "rowIndex": 40,
+      "hotelName": "Toyoko inn",
+      "roomName": "Double",
+      "inventoryRaw": 50.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Free breakfast\nFree WiFi\nLaundry\nBusiness desk"
+    },
+    {
+      "rowIndex": 41,
+      "hotelName": "Toyoko inn",
+      "roomName": "Twin",
+      "inventoryRaw": 50.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Free breakfast\nFree WiFi\nLaundry\nBusiness desk"
+    },
+    {
+      "rowIndex": 42,
+      "hotelName": "UG INN",
+      "roomName": "Vip",
+      "inventoryRaw": 2.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Budget rooms\nFree WiFi"
+    },
+    {
+      "rowIndex": 43,
+      "hotelName": "UG INN",
+      "roomName": "Twin",
+      "inventoryRaw": 14.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Budget rooms\nFree WiFi"
+    },
+    {
+      "rowIndex": 44,
+      "hotelName": "UG INN",
+      "roomName": "Single",
+      "inventoryRaw": 23.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Budget rooms\nFree WiFi"
+    },
+    {
+      "rowIndex": 45,
+      "hotelName": "Best Western Premier Tuushin Hotel",
+      "roomName": null,
+      "inventoryRaw": 40.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Prime төв байршил\nRestaurant & lounge\nMeeting rooms\nFitness center"
+    },
+    {
+      "rowIndex": 46,
+      "hotelName": "Shangri-La Ulaanbaatar Hotel",
+      "roomName": "Executive Suite",
+      "inventoryRaw": 20.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Luxury spa, wellness center\nIndoor swimming pool\nMultiple fine dining restaurants\nGym & fitness center\nShopping mall access\nConference & ballroom\nConcierge, limousine service"
+    },
+    {
+      "rowIndex": 47,
+      "hotelName": "Shangri-La Ulaanbaatar Hotel",
+      "roomName": "Horizon Deluxe Room",
+      "inventoryRaw": 60.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Luxury spa, wellness center\nIndoor swimming pool\nMultiple fine dining restaurants\nGym & fitness center\nShopping mall access\nConference & ballroom\nConcierge, limousine service"
+    },
+    {
+      "rowIndex": 48,
+      "hotelName": "Shangri-La Ulaanbaatar Hotel",
+      "roomName": "Deluxe Room",
+      "inventoryRaw": 40.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Luxury spa, wellness center\nIndoor swimming pool\nMultiple fine dining restaurants\nGym & fitness center\nShopping mall access\nConference & ballroom\nConcierge, limousine service"
+    },
+    {
+      "rowIndex": 49,
+      "hotelName": "Flower Hotel",
+      "roomName": "Standard single",
+      "inventoryRaw": 15.0,
+      "price": 80.0,
+      "cancellationPolicy": "Урьдчилгаа төлбөр - 30%, үлдэгдэл 70% - г зочид байрлахаас 7 хоногийн өмнө, БУЦААЛТ, ЦУЦЛАЛТ  байхгүй.",
+      "amenitiesRaw": "Japanese restaurant\nSauna\nKaraoke\nMeeting rooms"
+    },
+    {
+      "rowIndex": 50,
+      "hotelName": "Flower Hotel",
+      "roomName": "Economy room",
+      "inventoryRaw": 15.0,
+      "price": 90.0,
+      "cancellationPolicy": "Урьдчилгаа төлбөр - 30%, үлдэгдэл 70% - г зочид байрлахаас 7 хоногийн өмнө, БУЦААЛТ, ЦУЦЛАЛТ  байхгүй.",
+      "amenitiesRaw": "Japanese restaurant\nSauna\nKaraoke\nMeeting rooms"
+    },
+    {
+      "rowIndex": 51,
+      "hotelName": "Flower Hotel",
+      "roomName": "Standard twin",
+      "inventoryRaw": 120.0,
+      "price": 120.0,
+      "cancellationPolicy": "Урьдчилгаа төлбөр - 30%, үлдэгдэл 70% - г зочид байрлахаас 7 хоногийн өмнө, БУЦААЛТ, ЦУЦЛАЛТ  байхгүй.",
+      "amenitiesRaw": "Japanese restaurant\nSauna\nKaraoke\nMeeting rooms"
+    },
+    {
+      "rowIndex": 52,
+      "hotelName": "Nova-100 hotel",
+      "roomName": "standart single",
+      "inventoryRaw": 10.0,
+      "price": 46.94444444444444,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nFree WiFi\nParking"
+    },
+    {
+      "rowIndex": 53,
+      "hotelName": "Nova-100 hotel",
+      "roomName": "Twin",
+      "inventoryRaw": 8.0,
+      "price": 49.72222222222222,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nFree WiFi\nParking"
+    },
+    {
+      "rowIndex": 54,
+      "hotelName": "Nova-100 hotel",
+      "roomName": "Triple",
+      "inventoryRaw": 1.0,
+      "price": 52.5,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nFree WiFi\nParking"
+    },
+    {
+      "rowIndex": 55,
+      "hotelName": "Lion Hotel",
+      "roomName": "Standart single",
+      "inventoryRaw": 35.0,
+      "price": 53.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nFree WiFi"
+    },
+    {
+      "rowIndex": 56,
+      "hotelName": "Lion Hotel",
+      "roomName": "Twin",
+      "inventoryRaw": 25.0,
+      "price": 60.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nFree WiFi"
+    },
+    {
+      "rowIndex": 57,
+      "hotelName": "TTi hotel",
+      "roomName": "standart single",
+      "inventoryRaw": 18.0,
+      "price": 66.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nFree WiFi"
+    },
+    {
+      "rowIndex": 58,
+      "hotelName": "TTi hotel",
+      "roomName": "Twin",
+      "inventoryRaw": 18.0,
+      "price": 103.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nFree WiFi"
+    },
+    {
+      "rowIndex": 59,
+      "hotelName": "New world Hotel",
+      "roomName": "standart single",
+      "inventoryRaw": 20.0,
+      "price": 60.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nFree WiFi"
+    },
+    {
+      "rowIndex": 60,
+      "hotelName": "New world Hotel",
+      "roomName": "Twin",
+      "inventoryRaw": 18.0,
+      "price": 90.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nFree WiFi"
+    },
+    {
+      "rowIndex": 61,
+      "hotelName": "Peace Hotel",
+      "roomName": "standart single",
+      "inventoryRaw": 18.0,
+      "price": 38.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nEvent space\nFree WiFi"
+    },
+    {
+      "rowIndex": 62,
+      "hotelName": "Peace Hotel",
+      "roomName": "twin",
+      "inventoryRaw": 4.0,
+      "price": 40.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nEvent space\nFree WiFi"
+    },
+    {
+      "rowIndex": 63,
+      "hotelName": "Munkh Khustai Hotel",
+      "roomName": "standart",
+      "inventoryRaw": 15.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nParking\nFree WiFi"
+    },
+    {
+      "rowIndex": 64,
+      "hotelName": "Munkh Khustai Hotel",
+      "roomName": "twin",
+      "inventoryRaw": 1.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nParking\nFree WiFi"
+    },
+    {
+      "rowIndex": 65,
+      "hotelName": "Taij Business Hotel",
+      "roomName": "standart",
+      "inventoryRaw": 15.0,
+      "price": 55.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Business center\nMeeting rooms\nRestaurant"
+    },
+    {
+      "rowIndex": 66,
+      "hotelName": "Taij Business Hotel",
+      "roomName": "twin",
+      "inventoryRaw": 14.0,
+      "price": 60.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Business center\nMeeting rooms\nRestaurant"
+    },
+    {
+      "rowIndex": 67,
+      "hotelName": "Taij Business Hotel",
+      "roomName": "Triple",
+      "inventoryRaw": 8.0,
+      "price": 65.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Business center\nMeeting rooms\nRestaurant"
+    },
+    {
+      "rowIndex": 68,
+      "hotelName": "Premium Hotel",
+      "roomName": null,
+      "inventoryRaw": 40.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": null
+    },
+    {
+      "rowIndex": 69,
+      "hotelName": "Best Western Premier Tuushin Hotel",
+      "roomName": "Deluxe single",
+      "inventoryRaw": 15.0,
+      "price": 370.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "\"Prime төв байршил\nRestaurant & lounge\nMeeting rooms\nFitness center\""
+    },
+    {
+      "rowIndex": 70,
+      "hotelName": "Best Western Premier Tuushin Hotel",
+      "roomName": "Deluxe twin",
+      "inventoryRaw": 30.0,
+      "price": 407.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": null
+    },
+    {
+      "rowIndex": 71,
+      "hotelName": "Novotel Ulaanbaatar hotel",
+      "roomName": "Standard Single",
+      "inventoryRaw": 20.0,
+      "price": 278.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "\"Indoor pool\nFitness & sauna\nKids play area\nRestaurant & bar\nMeeting rooms\""
+    },
+    {
+      "rowIndex": 72,
+      "hotelName": "Novotel Ulaanbaatar hotel",
+      "roomName": "Standard Twin",
+      "inventoryRaw": 40.0,
+      "price": 298.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "\"Indoor pool\nFitness & sauna\nKids play area\nRestaurant & bar\nMeeting rooms\""
+    },
+    {
+      "rowIndex": 73,
+      "hotelName": "Shangri-La Ulaanbaatar Hotel",
+      "roomName": "Deluxe single",
+      "inventoryRaw": 10.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "\"Luxury spa, wellness center\nIndoor swimming pool\nMultiple fine dining restaurants\nGym & fitness center\nShopping mall access\nConference & ballroom\nConcierge, limousine service\""
+    },
+    {
+      "rowIndex": 74,
+      "hotelName": "Shangri-La Ulaanbaatar Hotel",
+      "roomName": "Deluxe twin",
+      "inventoryRaw": 10.0,
+      "price": null,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "\"Luxury spa, wellness center\nIndoor swimming pool\nMultiple fine dining restaurants\nGym & fitness center\nShopping mall access\nConference & ballroom\nConcierge, limousine service\""
+    },
+    {
+      "rowIndex": 75,
+      "hotelName": "Chinggis Khaan Hotel",
+      "roomName": "Standard single",
+      "inventoryRaw": "13-15  */8/22, 8/23, 8/26 өрөө бхгүй/",
+      "price": 145.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant & bar\nMeeting rooms\nSauna\nBusiness services"
+    },
+    {
+      "rowIndex": 76,
+      "hotelName": "Chinggis Khaan Hotel",
+      "roomName": "Standard twin",
+      "inventoryRaw": "21-50 */өдөр бүр өөр өрөөгөөр баталгаажсан/",
+      "price": 167.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant & bar\nMeeting rooms\nSauna\nBusiness services"
+    },
+    {
+      "rowIndex": 77,
+      "hotelName": "Khubilai Hotel",
+      "roomName": "Superior Double room",
+      "inventoryRaw": 5.0,
+      "price": 160.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nFree WiFi\nParking"
+    },
+    {
+      "rowIndex": 78,
+      "hotelName": "Khubilai Hotel",
+      "roomName": "Superior room with double two bed",
+      "inventoryRaw": 20.0,
+      "price": 192.0,
+      "cancellationPolicy": null,
+      "amenitiesRaw": "Restaurant\nFree WiFi\nParking"
+    },
+    {
+      "rowIndex": 79,
+      "hotelName": "Millenium Plaza Hotel",
+      "roomName": "Single",
+      "inventoryRaw": 28.0,
+      "price": null,
+      "cancellationPolicy": "Millennium Plaza Hotel - 4-р сарын 15-аас өмнө урьдчилгаа төлбөр болох 30%-ийг төлөх, Хэрэв заасан хугацаанд төлөгдөөгүй тохиолдолд захиалга цуцлагдана. 21 хоногийн өмнө цуцлалт хийгдээгүй тохиолдолд урьдчилгаа төлбөрийг буцаах боломжгүй.",
+      "amenitiesRaw": "Restaurant\nMeeting rooms\nFree WiFi\nBusiness services"
+    }
+  ]
+}
