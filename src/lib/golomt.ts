@@ -74,31 +74,19 @@ function requireCallbackSecret(): string {
 function getMode(): GolomtMode {
     const envMode = normalizeEnvValue(process.env.GOLOMT_MODE)?.toLowerCase();
     if (envMode === "live") return "live";
-    if (envMode === "mock") {
-        // Explicit mock is only permitted outside production. Prevents a misconfigured
-        // prod deploy from silently serving free bookings via /mock-payment.
-        if (process.env.NODE_ENV === "production") {
-            throw new Error(
-                "GOLOMT_MODE=mock is not permitted in production. Set GOLOMT_MODE=live with real Golomt credentials."
-            );
-        }
-        return "mock";
-    }
+    if (envMode === "mock") return "mock";
 
-    // Auto-detect: live only when all creds are real and non-placeholder; otherwise mock.
+    // Auto-detect: live only when all creds are real and non-placeholder.
+    // Otherwise return "mock" — booking.ts refuses pay_now in any non-live mode
+    // and src/app/mock-payment/layout.tsx 404s in production builds, so a
+    // production deploy without Golomt credentials remains safe (Pre-book only)
+    // rather than refusing to start.
     const autoLive =
         !isPlaceholder(MERCHANT_ID) &&
         !isPlaceholder(SECRET_KEY) &&
         Boolean(GOLOMT_CHECKOUT_URL);
 
-    if (autoLive) return "live";
-
-    if (process.env.NODE_ENV === "production") {
-        throw new Error(
-            "Golomt credentials missing in production. Set GOLOMT_MODE=live, GOLOMT_MERCHANT_ID, GOLOMT_SECRET_TOKEN, GOLOMT_CALLBACK_SECRET, and GOLOMT_CHECKOUT_URL."
-        );
-    }
-    return "mock";
+    return autoLive ? "live" : "mock";
 }
 
 function getAppBaseUrl(override?: string | null) {

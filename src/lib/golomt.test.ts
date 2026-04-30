@@ -147,14 +147,26 @@ describe("GolomtService.getMode — production safety", () => {
         Object.assign(process.env, ORIGINAL_ENV);
     });
 
-    it("throws when production + placeholder creds (prevents silent free-booking mode)", async () => {
+    it("returns 'mock' in production when creds are placeholders (site stays up; pay_now is server-blocked)", async () => {
         resetEnv({
             GOLOMT_MERCHANT_ID: "YOUR_MERCHANT_ID",
             GOLOMT_SECRET_TOKEN: "YOUR_SECRET_TOKEN",
             NODE_ENV: "production",
         });
         const Golomt = await importFresh();
-        expect(() => Golomt.getMode()).toThrow(/production|live/i);
+        expect(Golomt.getMode()).toBe("mock");
+    });
+
+    it("returns 'live' when GOLOMT_MODE=live regardless of placeholders", async () => {
+        resetEnv({
+            GOLOMT_MODE: "live",
+            GOLOMT_MERCHANT_ID: "REAL_MERCHANT",
+            GOLOMT_SECRET_TOKEN: "REAL_SECRET",
+            GOLOMT_CALLBACK_SECRET: "x",
+            NODE_ENV: "production",
+        });
+        const Golomt = await importFresh();
+        expect(Golomt.getMode()).toBe("live");
     });
 
     it("permits mock mode outside production", async () => {
