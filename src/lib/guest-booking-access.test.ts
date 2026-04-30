@@ -84,10 +84,10 @@ describe("guest-booking-access — HMAC tokens", () => {
     });
 });
 
-describe("guest-booking-access — secret isolation from ENCRYPTION_KEY", () => {
+describe("guest-booking-access — fallback ordering", () => {
     beforeEach(() => {
         delete process.env.BOOKING_ACCESS_TOKEN_SECRET;
-        process.env.ENCRYPTION_KEY = "should-not-be-used-by-guest-tokens";
+        process.env.ENCRYPTION_KEY = "fallback-encryption-key-value";
         (process.env as Record<string, string>).NODE_ENV = "test";
     });
 
@@ -99,9 +99,25 @@ describe("guest-booking-access — secret isolation from ENCRYPTION_KEY", () => 
         vi.resetModules();
     });
 
-    it("uses a dev fallback secret distinct from ENCRYPTION_KEY in non-prod", async () => {
+    it("falls back to ENCRYPTION_KEY when BOOKING_ACCESS_TOKEN_SECRET is missing", async () => {
+        const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
         const { createGuestBookingAccessToken } = await freshModule();
         const token = createGuestBookingAccessToken("b", "a@x");
         expect(token.length).toBeGreaterThan(0);
+        // The first call should log a warning suggesting the operator set a dedicated secret.
+        expect(warnSpy).toHaveBeenCalled();
+        warnSpy.mockRestore();
+    });
+
+    it("prefers BOOKING_ACCESS_TOKEN_SECRET when both are set", async () => {
+        process.env.BOOKING_ACCESS_TOKEN_SECRET = "dedicated-secret";
+        const { createGuestBookingAccessToken: mk } = await freshModule();
+        const tDedicated = mk("b", "a@x");
+
+        delete process.env.BOOKING_ACCESS_TOKEN_SECRET;
+        const { createGuestBookingAccessToken: mk2 } = await freshModule();
+        const tFromEncryption = mk2("b", "a@x");
+
+        expect(tDedicated).not.toBe(tFromEncryption);
     });
 });

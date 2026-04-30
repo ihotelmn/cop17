@@ -2,23 +2,43 @@ import "server-only";
 
 import crypto from "crypto";
 
-function getGuestBookingAccessSecret() {
-    const secret = process.env.BOOKING_ACCESS_TOKEN_SECRET;
+let warnedAboutFallback = false;
 
-    if (!secret) {
-        // In production, instrumentation.ts enforces this at boot. Dev/test should
-        // set BOOKING_ACCESS_TOKEN_SECRET explicitly too — falling back to
-        // ENCRYPTION_KEY coupled guest-token forgery to PII-decryption compromise.
-        if (process.env.NODE_ENV === "production") {
-            throw new Error("BOOKING_ACCESS_TOKEN_SECRET is required in production.");
-        }
-        // Non-prod fallback kept so local dev continues to work without extra setup,
-        // but explicitly NOT the encryption key.
-        const fallback = process.env.BOOKING_ACCESS_TOKEN_SECRET_DEV || "dev-only-booking-access-secret";
-        return fallback;
+function getGuestBookingAccessSecret() {
+    const explicit = process.env.BOOKING_ACCESS_TOKEN_SECRET;
+    if (explicit) {
+        return explicit;
     }
 
-    return secret;
+    // Soft fallback: if the dedicated secret isn't set, reuse ENCRYPTION_KEY so
+    // the booking flow keeps working. Log loudly the FIRST time only — repeating
+    // the warning per request floods Vercel logs.
+    //
+    // Tradeoff: a compromise of ENCRYPTION_KEY would now compromise both PII
+    // decryption AND guest-portal token forgery. Rotate to a separate
+    // BOOKING_ACCESS_TOKEN_SECRET as soon as possible (see docs/DEPLOYMENT.md).
+    const encryptionKey = process.env.ENCRYPTION_KEY;
+    if (encryptionKey) {
+        if (!warnedAboutFallback) {
+            warnedAboutFallback = true;
+            console.warn(
+                "[guest-booking-access] BOOKING_ACCESS_TOKEN_SECRET is not set; falling back to ENCRYPTION_KEY. " +
+                "This couples two secrets — set BOOKING_ACCESS_TOKEN_SECRET in env soon (openssl rand -hex 32)."
+            );
+        }
+        return encryptionKey;
+    }
+
+    // No prod-suitable secret available at all. Use a dev-only fallback so the
+    // server doesn't crash; the value is well-known so anyone can forge tokens
+    // — only acceptable for local dev where the booking flow is exercised
+    // without real guests.
+    if (process.env.NODE_ENV === "production") {
+        throw new Error(
+            "Both BOOKING_ACCESS_TOKEN_SECRET and ENCRYPTION_KEY are missing in production."
+        );
+    }
+    return process.env.BOOKING_ACCESS_TOKEN_SECRET_DEV || "dev-only-booking-access-secret";
 }
 
 function buildGuestBookingSignature(bookingId: string, guestEmail: string) {
